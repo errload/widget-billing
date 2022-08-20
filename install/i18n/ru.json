@@ -1,0 +1,11 @@
+{
+    "widget": {
+        "name": "Биллинг",
+        "short_description": "Биллинг",
+        "description": "Биллинг",
+        "tour_description": "Биллинг"
+    },
+    "settings": {
+        "config_settings": "Настройки"
+    }
+}
