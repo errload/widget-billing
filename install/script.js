@@ -49,6 +49,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 return true;
             },
             render: function() {
+                console.log('render');
+
+                self.render_template({
+                    body: '',
+                    caption: { class_name: 'widget__billing' },
+                    render: ''
+                });
+
                 return true;
             },
             contacts: {
