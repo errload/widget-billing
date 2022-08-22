@@ -147,7 +147,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 var timerWrapper = `<div class="modal__timer__wrapper" style="width: 100%; margin-top: 20px;">
-                    <span style="font-size: 24px;">19:08:23</span>
+                    <span style="font-size: 24px;">00:00:00</span>
                 </div>`;
 
                 $('.modal__main-block').append(timerWrapper);
@@ -171,6 +171,26 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.hystory__link').unbind('click');
                 $('.hystory__link').bind('click', function (e) {
                     e.preventDefault();
+
+                    // получаем данные
+                    var _data = {};
+                    _data['domain'] = document.domain;
+                    _data['method'] = 'hystory';
+                    _data['essenceID'] = AMOCRM.data.current_card.id;
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'post',
+                        data: _data,
+                        dataType: 'html',
+                        success: function(data) {
+                            console.log(data)
+                        }
+                    });
+
+
+
+
+
 
                     new Modal({
                         class_name: 'hystory__timer',

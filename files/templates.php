@@ -49,171 +49,25 @@
     }
 
     /* ##################################################################### */
-/*
-    if ($_POST["method"] == "copypasteLeads" && $Config->CheckToken()) {
-        foreach ($_POST['leads']['id'] as $leadID) {
-            $leadInfo = $apiClient->leads()->getOne((int) $leadID, ['contacts', 'catalog_elements']);
-            usleep(200);
 
-            foreach ($_POST['leads']['pipelines'] as $pipeline) {
-                $pipeline = explode('_', $pipeline);
-                $piplineID = $pipeline[1];
-                $statusID = $pipeline[2];
+    if ($_POST['method'] == 'hystory' && $Config->CheckToken()) {
+//        include_once 'connect.php';
+        $essenceID = $_POST['essenceID'];
+        echo $essenceID . PHP_EOL;
 
-                $lead = new LeadModel();
-                $lead
-                    ->setName('Копия ' . $leadInfo->getName()) // имя
-                    ->setResponsibleUserId($_POST['leads']['user']) // ответственный
-                    ->setPrice($leadInfo->getPrice()) // прайс
-                    ->setPipelineId($piplineID) // воронка
-                    ->setStatusId($statusID); // статус
+        $hostname = 'https://integratorgroup.k-on.ru/phpmyadmin/';
+        $username = 'n108089_andreev';
+        $password = 'ZUCzh$bm5i24M#pN';
+        $database = 'n108089_andreev';
 
-                // копируем все поля
-                $lead->setCustomFieldsValues($leadInfo->getCustomFieldsValues());
-                // удаляем те, которые не отмечены
-                foreach ($lead->getCustomFieldsValues() as $field) {
-                    if (in_array($field->getFieldId(), $_POST['leads']['fields'])) continue;
-                    $field->setValues((new NullCustomFieldValueCollection()));
-                }
+        $connect = mysqli_connect($hostname, $username, $password, $database);
+        if (!$connect) die(mysqli_connect_error());
 
-                // копируем тэги, если отмечены
-                if ($_POST['leads']['tags'] == 'yes') $lead->setTags($leadInfo->getTags());
-                // копируем компанию, если отмечена
-                if ($_POST['leads']['company'] == 'yes') $lead->setCompany($leadInfo->getCompany());
+        echo 'bb';
 
-                // прикрепляем контакты
-                if ($_POST['leads']['contacts'] == 'all') $lead->setContacts($leadInfo->getContacts());
-                else {
-                    $contactsCollection = new ContactsCollection();
-                    foreach ($_POST['leads']['contacts'] as $contact) {
-                        in_array('main', $contact) ? $is_main = true : $is_main = false;
-                        $contactsCollection->add((new ContactModel())->setId($contact[0])->setIsMain($is_main));
-                    }
-                    $lead->setContacts($contactsCollection);
-                }
-
-                try {
-                    $lead = $apiClient->leads()->addOne($lead);
-                    usleep(200);
-                } catch (AmoCRMApiException $e) {
-                    printError($e);
-                    die;
-                }
-
-                // перебираем товары и прикрепляем к ним ссылки для новой сделки
-                if ($_POST['leads']['products'] == 'all') {
-                    $linksCollection = new LinksCollection();
-                    $catalogElementsLinks = $leadInfo->getCatalogElementsLinks();
-                    foreach ($catalogElementsLinks as $catalogElement) $linksCollection->add($catalogElement);
-                    if ($linksCollection->count()) $apiClient->leads()->link($lead, $linksCollection);
-                    usleep(200);
-                } else {
-                    $linksCollection = new LinksCollection();
-                    $catalogElementsLinks = $leadInfo->getCatalogElementsLinks();
-                    foreach ($catalogElementsLinks as $catalogElement) {
-                        if (!in_array($catalogElement->id, $_POST['leads']['products'])) continue;
-                        $linksCollection->add($catalogElement);
-                    }
-                    if ($linksCollection->count()) $apiClient->leads()->link($lead, $linksCollection);
-                    usleep(200);
-                }
-
-                // создаем копии задач, если отмечены
-                if (in_array('tasksFinish', $_POST['leads']['history']) ||
-                    in_array('tasksNotFinish', $_POST['leads']['history'])) {
-
-                    $filter = (new TasksFilter())
-                        ->setEntityType('lead')
-                        ->setEntityIds($leadInfo->getId())
-                        ->setLimit(50);
-                    $tasksCollection = $apiClient->tasks()->get($filter);
-                    usleep(200);
-
-                    if ($tasksCollection->count() > 0) $isTasks = true;
-                    while ($isTasks) {
-                        $taskCollection = new TasksCollection();
-
-                        foreach ($tasksCollection as $task) {
-                            if ($task->isCompleted && !in_array('tasksFinish', $_POST['leads']['history'])) continue;
-                            if (!$task->isCompleted && !in_array('tasksNotFinish', $_POST['leads']['history'])) continue;
-
-                            $newTask = new TaskModel();
-                            $newTask
-                                ->setResponsibleUserId($task->responsibleUserId)
-                                ->setGroupId($task->groupId)
-                                ->setCreatedBy($task->createdBy)
-                                ->setUpdatedBy($task->updatedBy)
-                                ->setCreatedAt($task->createdAt)
-                                ->setUpdatedAt($task->updatedAt)
-                                ->setAccountId($task->accountId)
-                                ->setDuration($task->duration)
-                                ->setEntityId($lead->getId())
-                                ->setEntityType($task->entityType)
-                                ->setIsCompleted($task->isCompleted)
-                                ->setTaskTypeId($task->taskTypeId)
-                                ->setText($task->text)
-                                ->setResult($task->result)
-                                ->setCompleteTill($task->completeTill);
-
-                            $taskCollection->add($newTask);
-                        }
-
-                        if ($taskCollection->count()) $apiClient->tasks()->add($taskCollection);
-                        usleep(200);
-
-                        if ($tasksCollection->getNextPageLink()) {
-                            $tasksCollection = $apiClient->tasks()->nextPage($tasksCollection);
-                            usleep(200);
-                            $isTasks = true;
-                        } else $isTasks = false;
-                    }
-                }
-
-                // перебираем примечания и создаем такие же для новой сделки
-                if (in_array('notes', $_POST['leads']['history'])) {
-                    $leadNotesService = $apiClient->notes(EntityTypesInterface::LEADS);
-                    usleep(200);
-
-                    try {
-                        $leadNotes = $leadNotesService->getByParentId($leadInfo->getId());
-                        usleep(200);
-                    } catch (AmoCRMApiException $e) { return; }
-
-                    if ($leadNotes->count() > 0) $isNotes = true;
-                    while ($isNotes) {
-                        $notesCollection = new NotesCollection();
-
-                        foreach ($leadNotes as $leadNote) {
-                            $model = '\\' . get_class($leadNote);
-                            if ($model == '\AmoCRM\Models\NoteType\AttachmentNote') continue;
-                            $note = new $model();
-                            $leadNote = (array) $leadNote;
-
-                            foreach ($leadNote as $key => $val) {
-                                $leadKey = $key;
-                                $leadKey = str_replace('*', '', $leadKey);
-                                $leadKey = 'set' . ucfirst(trim($leadKey));
-
-                                if ($leadKey == 'setModelClass' || $leadKey == 'setId') continue;
-                                if ($leadKey == 'setEntityId') $note->$leadKey($lead->getId());
-                                else $note->$leadKey($val);
-                            }
-
-                            $notesCollection->add($note);
-                        }
-
-                        if ($leadNotes->getNextPageLink()) {
-                            $leadNotes = $leadNotesService->nextPage($leadNotes);
-                            usleep(200);
-                            $isNotes = true;
-                        } else $isNotes = false;
-
-                        if ($notesCollection->count()) $leadNotesService->add($notesCollection);
-                        usleep(200);
-                    }
-                }
-                
-            }
-        }
+//        $sql = 'SELECT * FROM billing_deposit WHERE essence_id="' . $essenceID . '"';
+//        $result = mysqli_query($connect, $sql);
+//
+//        if (mysqli_num_rows($result) == 0) echo 'bb';
     }
-*/
+
