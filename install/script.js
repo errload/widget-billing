@@ -27,7 +27,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                                <div class="modal__main-block" style="width: 100%; min-height: 0px;">
+                                <div class="modal__main-block" style="width: 100%; min-height: 250px;">
                                     <h2 class="modal-body__caption head_2">Запуск таймера</h2>
                                 </div>
                             `)
@@ -140,15 +140,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 $('.modal__link-project').after(changeLinkProject);
                                 $('.modal__input__link-project').remove();
                                 $('.change__link-project').bind('click', changeLink);
-
-                                // красим поле в зеленый цвет
-                                $('.modal__link-project').css({ 'transition-duration': '0s', 'color': '#2bd153' });
-                                setTimeout(() => {
-                                    $('.modal__link-project').css({
-                                        'transition-duration': '1s',
-                                        'color': '#1375ab'
-                                    });
-                                }, 1000);
                             }
                         });
                     });
@@ -186,7 +177,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 var timerWrapper = `<div class="modal__timer__wrapper" style="width: 100%; margin-top: 20px;">
-                    <span style="font-size: 24px;">00:00:00</span>
+                    <span style="font-size: 24px;" class="timer">00:00:00</span>
                 </div>`;
 
                 $('.modal__main-block').append(timerWrapper);
@@ -194,6 +185,34 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.timer__btn').css({
                     'margin-left': '20px',
                     'margin-top': '-8px'
+                });
+
+                // запуск таймера
+                var input = $('.modal__input__link-task');
+                input.bind('input', () => { input.css('border-color', '#dbdedf') });
+
+                $('.timer__btn').unbind('click');
+                $('.timer__btn').bind('click', function () {
+                    // если ссылки на задачу нет, отключаем кнопку
+                    if (input.val().trim().length === 0) {
+                        input.css('border-color', '#f37575 ');
+                        input.val('');
+                        input.focus();
+                        return false;
+                    }
+
+                    var date = new Date();
+                    var time = $('.modal__timer__wrapper .timer').text().split(':');
+                    date.setFullYear(2000, 0, 1);
+                    date.setHours(time[0]);
+                    date.setMinutes(time[1]);
+                    date.setSeconds(time[2]);
+
+                    setInterval(() => {
+                        date.setSeconds(date.getSeconds() + 1);
+                        time = date.toLocaleTimeString();
+                        $('.modal__timer__wrapper .timer').text(time);
+                    }, 1000);
                 });
 
 
