@@ -176,77 +176,109 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     var _data = {};
                     _data['domain'] = document.domain;
                     _data['method'] = 'hystory';
-                    _data['essenceID'] = AMOCRM.data.current_card.id;
+                    _data['essence_id'] = AMOCRM.data.current_card.id;
                     $.ajax({
                         url: url_link_t,
                         method: 'post',
                         data: _data,
-                        dataType: 'html',
+                        dataType: 'json',
                         success: function(data) {
-                            console.log(data)
+                            var deposit = 0;
+                            if (data.deposit) deposit = data.deposit;
+
+                            new Modal({
+                                class_name: 'hystory__timer',
+                                init: function ($modal_body) {
+                                    var $this = $(this);
+                                    $modal_body
+                                        .trigger('modal:loaded')
+                                        .html(`
+                                            <div class="modal__hystory-block" style="width: 100%; min-height: 550px;">
+                                                <h2 class="modal-body__caption head_2">История</h2>
+                                            </div>
+                                        `)
+                                        .trigger('modal:centrify')
+                                        .append('');
+                                },
+                                destroy: function () {}
+                            });
+
+                            // депозит
+                            var inputHystoryDeposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                                name: 'modal-input-hystory-deposit',
+                                class_name: 'modal__input__hystory-deposit',
+                                value: deposit,
+                                placeholder: 'укажите депозит'
+                            });
+
+                            var HystoryDepositWrapper = `<div class="modal__hystory-deposit__wrapper" style="width: 100%; margin-top: 20px;">
+                                <span >Депозит:</span>
+                            </div>`;
+
+                            $('.modal__hystory-block').append(HystoryDepositWrapper);
+                            $('.modal__hystory-deposit__wrapper').append(inputHystoryDeposit);
+
+                            // редактирование депозита
+                            $('.modal__input__hystory-deposit').bind('input', () => {
+                                $('.modal__input__hystory-deposit').css('border-color', '#dbdedf');
+                            });
+
+                            $('.modal__input__hystory-deposit').unbind('change');
+                            $('.modal__input__hystory-deposit').bind('change', function () {
+                                var deposit = $('.modal__input__hystory-deposit').val().trim();
+
+                                var _data = {};
+                                _data['domain'] = document.domain;
+                                _data['method'] = 'change_deposit';
+                                _data['essence_id'] = AMOCRM.data.current_card.id;
+                                _data['deposit'] = $('.modal__input__hystory-deposit').val().trim();
+                                $.ajax({
+                                    url: url_link_t,
+                                    method: 'post',
+                                    data: _data,
+                                    dataType: 'json',
+                                    success: function (data) {
+                                        // в случае успеха красим поле в зеленый цвет
+                                        if (data) {
+                                            $('.modal__input__hystory-deposit').css({ 'transition-duration': '0s', 'border-color': '#2bd153' });
+                                            setTimeout(() => {
+                                                $('.modal__input__hystory-deposit').css({
+                                                    'transition-duration': '1s',
+                                                    'border-color': '#dbdedf'
+                                                });
+                                            }, 1000);
+
+                                            // иначе в красный
+                                        } else $('.modal__input__hystory-deposit').css('border-color', '#f37575');
+                                    }
+                                });
+                            });
+
+
+
+
+
+
+
+                            $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
+
+                            // кнопка Закрыть
+                            var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                                    class_name: 'modal__cancelBtn-hystory',
+                                    text: 'Закрыть'
+                                }),
+                                btnWrapper = '<div class="modal-body__actions" style="width: 100%; text-align: right;"></div>';
+
+                            $('.modal__hystory-block').append(btnWrapper);
+                            $('.modal__hystory-block .modal-body__actions').append(cancelBtn);
+                            $('.modal__hystory-block .modal-body__actions').css('margin-top', '20px');
+                            $('.modal__hystory-block').css('position', 'relative');
+                            $('.modal__hystory-block .modal-body__actions').css({
+                                'left': '0px',
+                                'bottom': '0px',
+                                'position': 'absolute'
+                            });
                         }
-                    });
-
-
-
-
-
-
-                    new Modal({
-                        class_name: 'hystory__timer',
-                        init: function ($modal_body) {
-                            var $this = $(this);
-                            $modal_body
-                                .trigger('modal:loaded')
-                                .html(`
-                                    <div class="modal__hystory-block" style="width: 100%; min-height: 550px;">
-                                        <h2 class="modal-body__caption head_2">История</h2>
-                                    </div>
-                                `)
-                                .trigger('modal:centrify')
-                                .append('');
-                        },
-                        destroy: function () {}
-                    });
-
-                    // депозит
-                    var inputHystoryDeposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                        name: 'modal-input-hystory-deposit',
-                        class_name: 'modal__input__hystory-deposit',
-                        value: '20000',
-                        placeholder: 'укажите депозит'
-                    });
-
-                    var HystoryDepositWrapper = `<div class="modal__hystory-deposit__wrapper" style="width: 100%; margin-top: 20px;">
-                        <span >Депозит:</span>
-                    </div>`;
-
-                    $('.modal__hystory-block').append(HystoryDepositWrapper);
-                    $('.modal__hystory-deposit__wrapper').append(inputHystoryDeposit);
-
-
-
-
-
-
-
-                    $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
-
-                    // кнопка Закрыть
-                    var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                            class_name: 'modal__cancelBtn-hystory',
-                            text: 'Закрыть'
-                        }),
-                        btnWrapper = '<div class="modal-body__actions" style="width: 100%; text-align: right;"></div>';
-
-                    $('.modal__hystory-block').append(btnWrapper);
-                    $('.modal__hystory-block .modal-body__actions').append(cancelBtn);
-                    $('.modal__hystory-block .modal-body__actions').css('margin-top', '20px');
-                    $('.modal__hystory-block').css('position', 'relative');
-                    $('.modal__hystory-block .modal-body__actions').css({
-                        'left': '0px',
-                        'bottom': '0px',
-                        'position': 'absolute'
                     });
                 });
 

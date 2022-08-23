@@ -1,8 +1,8 @@
 <?php
 	ini_set('error_log', 'error_in_templates.log');
     date_default_timezone_set('Europe/Moscow');
-    // header('Content-type: application/html;charset=utf8');
-    header('Content-type: text/html; charset=utf8');
+    header('Content-type: application/json;charset=utf8');
+//    header('Content-type: text/html; charset=utf8');
 	header('Access-Control-Allow-Origin: *');
 
     include_once 'config.php';
@@ -50,24 +50,37 @@
 
     /* ##################################################################### */
 
+    $hostname = 'localhost';
+    $username = 'n108089_andreev';
+    $password = 'ZUCzh$bm5i24M#pN';
+    $database = 'n108089_andreev';
+
+    $mysqli = new mysqli($hostname, $username, $password, $database);
+    if ($mysqli->connect_errno) die($mysqli->connect_error);
+
+/* ##################################################################### */
+
+    // получаем данные истории таймера
     if ($_POST['method'] == 'hystory' && $Config->CheckToken()) {
-//        include_once 'connect.php';
-        $essenceID = $_POST['essenceID'];
-        echo $essenceID . PHP_EOL;
+        $essence_id = $_POST['essence_id'];
+        $response = [];
 
-        $hostname = 'https://integratorgroup.k-on.ru/phpmyadmin/';
-        $username = 'n108089_andreev';
-        $password = 'ZUCzh$bm5i24M#pN';
-        $database = 'n108089_andreev';
+        if ($result = $mysqli->query('SELECT * FROM billing_deposit WHERE essence_id="' . $essence_id . '"')) {
+            $result = $result->fetch_array();
+            $response['deposit'] = $result['deposit'];
+        }
 
-        $connect = mysqli_connect($hostname, $username, $password, $database);
-        if (!$connect) die(mysqli_connect_error());
+        echo json_encode($response);
+    }
 
-        echo 'bb';
+    // обновляем сумму депозита
+    if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
+        $sql = 'UPDATE billing_deposit SET deposit="' . $_POST['deposit'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $mysqli->query($sql);
 
-//        $sql = 'SELECT * FROM billing_deposit WHERE essence_id="' . $essenceID . '"';
-//        $result = mysqli_query($connect, $sql);
-//
-//        if (mysqli_num_rows($result) == 0) echo 'bb';
+        $sql = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
+        if ($result = $mysqli->query($sql)) $response = $result['deposit'];
+
+        echo json_encode($response);
     }
 
