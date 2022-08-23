@@ -75,12 +75,21 @@
 
     // обновляем сумму депозита
     if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
-        $sql = 'UPDATE billing_deposit SET deposit="' . $_POST['deposit'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $mysqli->query($sql);
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $update = 'UPDATE billing_deposit SET deposit="' . $_POST['deposit'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "")';
+        $response = false;
 
-        $sql = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
-        if ($result = $mysqli->query($sql)) $response = $result['deposit'];
+        // находим нужную запись
+        $result = $mysqli->query($select);
+        // если не существует, создаем
+        if (!$result->num_rows) $mysqli->query($insert);
+        // обновляем
+        if ($mysqli->query($update)) $response = true;
+        // возвращаем актуальный депозит
+        $result = $mysqli->query($select);
+        $result = $result->fetch_array();
 
-        echo json_encode($response);
+        echo json_encode($result['deposit']);
     }
 

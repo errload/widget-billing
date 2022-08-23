@@ -219,37 +219,33 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.modal__hystory-deposit__wrapper').append(inputHystoryDeposit);
 
                             // редактирование депозита
-                            $('.modal__input__hystory-deposit').bind('input', () => {
-                                $('.modal__input__hystory-deposit').css('border-color', '#dbdedf');
-                            });
+                            var deposit = $('.modal__input__hystory-deposit');
+                            deposit.bind('input', () => deposit.css('border-color', '#dbdedf'));
 
-                            $('.modal__input__hystory-deposit').unbind('change');
-                            $('.modal__input__hystory-deposit').bind('change', function () {
-                                var deposit = $('.modal__input__hystory-deposit').val().trim();
-
+                            deposit.unbind('change');
+                            deposit.bind('change', function () {
                                 var _data = {};
                                 _data['domain'] = document.domain;
                                 _data['method'] = 'change_deposit';
                                 _data['essence_id'] = AMOCRM.data.current_card.id;
-                                _data['deposit'] = $('.modal__input__hystory-deposit').val().trim();
+                                _data['deposit'] = deposit.val().trim();
                                 $.ajax({
                                     url: url_link_t,
                                     method: 'post',
                                     data: _data,
                                     dataType: 'json',
                                     success: function (data) {
-                                        // в случае успеха красим поле в зеленый цвет
-                                        if (data) {
-                                            $('.modal__input__hystory-deposit').css({ 'transition-duration': '0s', 'border-color': '#2bd153' });
-                                            setTimeout(() => {
-                                                $('.modal__input__hystory-deposit').css({
-                                                    'transition-duration': '1s',
-                                                    'border-color': '#dbdedf'
-                                                });
-                                            }, 1000);
+                                        // обновляем значение депозита
+                                        deposit.val(data);
 
-                                            // иначе в красный
-                                        } else $('.modal__input__hystory-deposit').css('border-color', '#f37575');
+                                        // красим поле в зеленый цвет
+                                        deposit.css({ 'transition-duration': '0s', 'border-color': '#2bd153' });
+                                        setTimeout(() => {
+                                            deposit.css({
+                                                'transition-duration': '1s',
+                                                'border-color': '#dbdedf'
+                                            });
+                                        }, 1000);
                                     }
                                 });
                             });
