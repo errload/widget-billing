@@ -73,22 +73,52 @@
         echo json_encode($response);
     }
 
-    // обновляем сумму депозита
-    if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
+    // получаем ссылку на проект
+    if ($_POST['method'] == 'link_project' && $Config->CheckToken()) {
         $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $update = 'UPDATE billing_deposit SET deposit="' . $_POST['deposit'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "")';
-        $response = false;
+
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) $result = '';
+        else {
+            $result = $result->fetch_array();
+            $result = $result['link_project'];
+        }
+
+        echo json_encode($result);
+    }
+
+    // обновляем ссылку на проект
+    if ($_POST['method'] == 'change_link_project' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $update = 'UPDATE billing_deposit SET link_project="' . $_POST['link_project'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "' . $_POST['link_project'] . '")';
 
         // находим нужную запись
         $result = $mysqli->query($select);
         // если не существует, создаем
         if (!$result->num_rows) $mysqli->query($insert);
-        // обновляем
-        if ($mysqli->query($update)) $response = true;
-        // возвращаем актуальный депозит
+        // иначе обновляем
+        else $mysqli->query($update);
+        // возвращаем актуальную ссылку
+        $result = $mysqli->query($select)->fetch_array();
+
+        echo json_encode($result['link_project']);
+    }
+
+    // обновляем сумму депозита
+    if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $update = 'UPDATE billing_deposit SET deposit="' . $_POST['deposit'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "")';
+
+        // находим нужную запись
         $result = $mysqli->query($select);
-        $result = $result->fetch_array();
+        // если не существует, создаем
+        if (!$result->num_rows) $mysqli->query($insert);
+        // иначе обновляем
+        else $mysqli->query($update);
+        // возвращаем актуальный депозит
+        $result = $mysqli->query($select)->fetch_array();
 
         echo json_encode($result['deposit']);
     }

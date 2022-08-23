@@ -60,14 +60,29 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         text-decoration: none;
                         color: #1375ab;
                         word-break: break-all;
-                    " target="_blank">http://bla.bla/
+                    " target="_blank">
                 </a>`;
+
+                var _data = {};
+                _data['domain'] = document.domain;
+                _data['method'] = 'link_project';
+                _data['essence_id'] = AMOCRM.data.current_card.id;
+                $.ajax({
+                    url: url_link_t,
+                    method: 'post',
+                    data: _data,
+                    dataType: 'json',
+                    success: function (data) {
+                        $('.modal__link-project').text(data);
+                        $('.modal__link-project').attr('href', data);
+                    }
+                });
 
                 // изменение ссылки
                 var changeLinkProject = `<a href="#" class="change__link-project" style="
                         text-decoration: none;
                         color: #6b6d72;
-                    ">(изменить)
+                    ">&nbsp;(изменить)
                 </a>`;
 
                 // поле ввода ссылки
@@ -93,6 +108,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 const changeLink = function (e) {
                     e.preventDefault();
 
+                    // обновляем ссылку в форме
                     $('.modal__link-project__wrapper').append(inputLinkProject);
                     $('.modal__input__link-project').css({
                         'width': '100%',
@@ -106,12 +122,35 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.modal__input__link-project').focusout(function (e) {
                         e.preventDefault();
 
-                        $('.modal__link-project__wrapper').append(linkProject);
-                        $('.modal__link-project').text($('.modal__input__link-project').val().trim() + ' ');
-                        $('.modal__link-project').attr('href', $('.modal__link-project').text());
-                        $('.modal__link-project').after(changeLinkProject);
-                        $('.modal__input__link-project').remove();
-                        $('.change__link-project').bind('click', changeLink);
+                        // обновляем ссылку в БД
+                        var _data = {};
+                        _data['domain'] = document.domain;
+                        _data['method'] = 'change_link_project';
+                        _data['essence_id'] = AMOCRM.data.current_card.id;
+                        _data['link_project'] = $('.modal__input__link-project').val().trim();
+                        $.ajax({
+                            url: url_link_t,
+                            method: 'post',
+                            data: _data,
+                            dataType: 'json',
+                            success: function (data) {
+                                $('.modal__link-project__wrapper').append(linkProject);
+                                $('.modal__link-project').text(data);
+                                $('.modal__link-project').attr('href', data);
+                                $('.modal__link-project').after(changeLinkProject);
+                                $('.modal__input__link-project').remove();
+                                $('.change__link-project').bind('click', changeLink);
+
+                                // красим поле в зеленый цвет
+                                $('.modal__link-project').css({ 'transition-duration': '0s', 'color': '#2bd153' });
+                                setTimeout(() => {
+                                    $('.modal__link-project').css({
+                                        'transition-duration': '1s',
+                                        'color': '#1375ab'
+                                    });
+                                }, 1000);
+                            }
+                        });
                     });
                 }
                 $('.change__link-project').bind('click', changeLink);
@@ -256,7 +295,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
-                            $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
 
                             // кнопка Закрыть
                             var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
@@ -274,6 +312,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 'bottom': '0px',
                                 'position': 'absolute'
                             });
+
+                            // margin-bottom для отступа
+                            $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
                         }
                     });
                 });
@@ -296,15 +337,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.modal-body__actions').append(cancelBtn);
                 $('.modal-body__actions').css('margin-top', '20px');
 
-                // чтобы модальное окно не прижималось книзу (не смог исправить стандартный вариант)
-                // $('.modal__main-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
-
-                // нажатие на кнопку Сохранить
-                // $('.modal__saveBtn-timer').unbind('click');
-                // $('.modal__saveBtn-timer').bind('click', function () {
-                //     console.log('save');
-                //     $('.start__timer').remove();
-                // });
+                // margin-bottom для отступа
+                $('.modal__main-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
             });
         }
 
