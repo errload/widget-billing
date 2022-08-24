@@ -45,7 +45,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         timerID = key;
                     });
                 }
+
+                if (!timerID) timerID = AMOCRM.data.current_card.id;
                 if (!timeCoockie) timeCoockie = '00:00:00';
+                if (!statusCoockie) statusCoockie = '';
+                if (!linkCoockie) linkCoockie = '';
 
                 // запуск модалки
                 new Modal({
@@ -246,9 +250,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // если таймер оставновлен, прячем кнопки старт и пауза
                 if (statusCoockie == 'stop') {
-                    $('.start-timer__btn').css('display', 'none');
-                    $('.pause-timer__btn').css('display', 'none');
-                    $('.stop-timer__btn').css('display', 'block');
+                    // $('.start-timer__btn').css('display', 'none');
+                    // $('.pause-timer__btn').css('display', 'none');
+                    // $('.stop-timer__btn').css('display', 'block');
                 }
 
                 // восстанавливаем цвет ссылки задачи в случае ошибки
@@ -263,7 +267,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // заносим время с таймара в new Date
                     var date = new Date();
-                    var time = $('.modal__timer__wrapper .timer').text().split(':');
+                    $('.modal__timer__wrapper .timer').text(timeCoockie);
+                    var time = timeCoockie.split(':');
                     date.setHours(time[0]);
                     date.setMinutes(time[1]);
                     date.setSeconds(time[2]);
@@ -284,7 +289,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // если прошла минута, пишем время в куки
                         if (date.getMinutes() !== parseInt(minutes)) {
                             timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
-                            writeCookie(`timer`, JSON.stringify(timer), 30);
+                            writeCookie('timer', JSON.stringify(timer), 30);
                             // обнуляем минуты для проверки
                             minutes = date.getMinutes();
                         }
@@ -299,15 +304,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // обнуляем куки
                         statusCoockie = 'pause';
                         timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
-                        writeCookie(`timer`, JSON.stringify(timer), 30);
+                        writeCookie('timer', JSON.stringify(timer), 30);
                     });
 
                     // стоп таймера
                     $('.stop-timer__btn').unbind('click');
                     $('.stop-timer__btn').bind('click', function () {
-                        $('.start-timer__btn').css('display', 'block');
-                        $('.pause-timer__btn').css('display', 'none');
-                        clearInterval(startInterval);
+                        // $('.start-timer__btn').css('display', 'block');
+                        // $('.pause-timer__btn').css('display', 'none');
+                        // clearInterval(startInterval);
                     });
                 }
 
@@ -326,9 +331,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         statusCoockie = 'start';
                         linkCoockie = input.val();
+                        timer[AMOCRM.data.current_card.id] = ['00:00:00', statusCoockie, linkCoockie];
+                        writeCookie('timer', JSON.stringify(timer), 30);
+
                         startTimer();
                     });
                 }
+
+
 
 
 
@@ -509,21 +519,26 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 return true;
             },
             render: function() {
+                writeCookie('timer', '', 0);
                 // ссылка на запуск таймера
-                self.render_template({
-                    body: '',
-                    caption: { class_name: 'widget__billing' },
-                    render: `<a href="#" class="billing__link" style="
-                        font-size: 16px;
-                        text-decoration: none;
-                        color: #1375ab;
-                        margin-left: 12px;
-                        margin-top: 10px;
-                    ">Запустить таймер</a>`
-                });
+                if ((AMOCRM.getBaseEntity() === 'customers' || AMOCRM.getBaseEntity() === 'leads')
+                    && AMOCRM.isCard()) {
 
-                // запускаем модалку с таймером
-                modalTimer();
+                    self.render_template({
+                        body: '',
+                        caption: {class_name: 'widget__billing'},
+                        render: `<a href="#" class="billing__link" style="
+                            font-size: 16px;
+                            text-decoration: none;
+                            color: #1375ab;
+                            margin-left: 12px;
+                            margin-top: 10px;
+                        ">Запустить таймер</a>`
+                    });
+
+                    // запускаем модалку с таймером
+                    modalTimer();
+                }
 
                 return true;
             },
