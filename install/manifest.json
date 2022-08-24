@@ -3,7 +3,7 @@
         "name": "widget.name",
         "description": "widget.description",
         "short_description": "widget.short_description",
-        "version": "1.0.7",
+        "version": "1.0.9",
         "interface_version": 1,
         "init_once": true,
         "locale": ["ru"],
@@ -16,6 +16,7 @@
     "locations": [
         "lcard-1",
         "cucard-1",
+        "everywhere",
         "settings"
     ],
     "tour":{

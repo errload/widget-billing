@@ -30,18 +30,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         }
 
         // запуск таймера
-        const startTimer = function () {
+        const modalTimer = function () {
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
 
                 // достаем таймер текущей сущности из куки
-                var timer, timeCoockie, statusCoockie, linkCoockie;
+                var timer, timerID, timeCoockie, statusCoockie, linkCoockie;
                 readCookie('timer') ? timer = JSON.parse(readCookie('timer')) : timer = {};
 
                 if (timer) {
                     $.each(timer, function (key, value) {
                         if (parseInt(key) !== AMOCRM.data.current_card.id) return;
                         [timeCoockie, statusCoockie, linkCoockie] = value;
+                        timerID = key;
                     });
                 }
                 if (!timeCoockie) timeCoockie = '00:00:00';
@@ -255,19 +256,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 input.bind('input', () => { input.css('border-color', '#dbdedf') });
 
                 // старт таймера
-                $('.start-timer__btn').unbind('click');
-                $('.start-timer__btn').bind('click', function () {
-                    // если ссылки на задачу нет, отключаем кнопку
-                    if (input.val().trim().length === 0) {
-                        input.css('border-color', '#f37575 ');
-                        input.val('');
-                        input.focus();
-                        return false;
-                    }
-
-                    statusCoockie = 'start';
-                    linkCoockie = input.val();
-
+                const startTimer = function () {
                     $('.start-timer__btn').css('display', 'none');
                     $('.pause-timer__btn').css('display', 'block');
                     $('.stop-timer__btn').css('display', 'block');
@@ -298,7 +287,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             writeCookie(`timer`, JSON.stringify(timer), 30);
                             // обнуляем минуты для проверки
                             minutes = date.getMinutes();
-                            console.log(timer)
                         }
                     }, 10);
 
@@ -312,7 +300,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         statusCoockie = 'pause';
                         timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
                         writeCookie(`timer`, JSON.stringify(timer), 30);
-                        console.log(timer);
                     });
 
                     // стоп таймера
@@ -322,7 +309,26 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.pause-timer__btn').css('display', 'none');
                         clearInterval(startInterval);
                     });
-                });
+                }
+
+                // запуск таймера
+                if (statusCoockie === 'start') startTimer();
+                else {
+                    $('.start-timer__btn').unbind('click');
+                    $('.start-timer__btn').bind('click', function () {
+                        // если ссылки на задачу нет, отключаем кнопку
+                        if (input.val().trim().length === 0) {
+                            input.css('border-color', '#f37575 ');
+                            input.val('');
+                            input.focus();
+                            return false;
+                        }
+
+                        statusCoockie = 'start';
+                        linkCoockie = input.val();
+                        startTimer();
+                    });
+                }
 
 
 
@@ -508,16 +514,16 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     body: '',
                     caption: { class_name: 'widget__billing' },
                     render: `<a href="#" class="billing__link" style="
-                            font-size: 16px;
-                            text-decoration: none;
-                            color: #1375ab;
-                            margin-left: 12px;
-                            margin-top: 10px;
-                        ">Запустить таймер</a>`
+                        font-size: 16px;
+                        text-decoration: none;
+                        color: #1375ab;
+                        margin-left: 12px;
+                        margin-top: 10px;
+                    ">Запустить таймер</a>`
                 });
 
                 // запускаем модалку с таймером
-                startTimer();
+                modalTimer();
 
                 return true;
             },
