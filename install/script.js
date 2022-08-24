@@ -14,10 +14,37 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             return config_settings;
         }
 
+        // запись в куки
+        const writeCookie = function (name, val, expires) {
+            var date = new Date;
+            date.setDate(date.getDate() + expires);
+            document.cookie = `${ name }=${ val }; path=/; expires=${ date.toUTCString() }`;
+        }
+
+        // чтение с куки
+        const readCookie = function (name) {
+            var matches = document.cookie.match(new RegExp(
+                "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+            ));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
         // запуск таймера
         const startTimer = function () {
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
+
+                // достаем таймер текущей сущности из куки
+                var timer, timeCoockie, statusCoockie, linkCoockie;
+                readCookie('timer') ? timer = JSON.parse(readCookie('timer')) : timer = {};
+
+                if (timer) {
+                    $.each(timer, function (key, value) {
+                        if (parseInt(key) !== AMOCRM.data.current_card.id) return;
+                        [timeCoockie, statusCoockie, linkCoockie] = value;
+                    });
+                }
+                if (!timeCoockie) timeCoockie = '00:00:00';
 
                 // запуск модалки
                 new Modal({
@@ -152,7 +179,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
                     name: 'modal-input-link-task',
                     class_name: 'modal__input__link-task',
-                    value: '',
+                    value: linkCoockie || '',
                     placeholder: 'вставьте ссылку на задачу'
                 });
 
@@ -171,28 +198,65 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 /* ############################################################### */
 
                 // таймер
-                var timerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                    class_name: 'timer__btn',
-                    text: 'Старт',
-                });
+                var startTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                        class_name: 'start-timer__btn',
+                        text: 'Старт',
+                    }),
+                    pauseTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                        class_name: 'pause-timer__btn',
+                        text: 'Пауза',
+                    }),
+                    stopTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                        class_name: 'stop-timer__btn',
+                        text: 'Стоп',
+                    });
 
-                var timerWrapper = `<div class="modal__timer__wrapper" style="width: 100%; margin-top: 20px;">
-                    <span style="font-size: 24px;" class="timer">00:00:00</span>
+                var timerWrapper = `<div class="modal__timer__wrapper" style="
+                        width: 100%; margin-top: 20px; display: flex; flex-direction: row;
+                    ">
+                    <span style="font-size: 24px; margin-right: 20px;" class="timer">${ timeCoockie }</span>
+                    <div class="btn__timer" style="display: flex; flex-direction: row;"></div>
                 </div>`;
 
+                // добавляем кнопки
                 $('.modal__main-block').append(timerWrapper);
-                $('.modal__timer__wrapper').append(timerBtn);
-                $('.timer__btn').css({
-                    'margin-left': '20px',
-                    'margin-top': '-8px'
-                });
+                $('.modal__timer__wrapper .btn__timer').append(startTimerBtn);
+                $('.modal__timer__wrapper .btn__timer').append(pauseTimerBtn);
+                $('.modal__timer__wrapper .btn__timer').append(stopTimerBtn);
 
-                // запуск таймера
+                // выравниваем кнопки и скрываем неспользуемые
+                $('.start-timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '80px' });
+                $('.pause-timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '80px' });
+                $('.stop-timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '80px' });
+
+                // если таймер не оставновлен, показываем кнопки пауза и стоп
+                if (statusCoockie == 'start') {
+                    $('.start-timer__btn').css('display', 'none');
+                    $('.pause-timer__btn').css('display', 'block');
+                    $('.stop-timer__btn').css('display', 'block');
+                }
+
+                // если таймер на паузе, показываем кнопки старт и стоп
+                if (statusCoockie == 'pause' || !statusCoockie) {
+                    $('.pause-timer__btn').css('display', 'none');
+                    $('.start-timer__btn').css('display', 'block');
+                    $('.stop-timer__btn').css('display', 'block');
+                }
+
+                // если таймер оставновлен, прячем кнопки старт и пауза
+                if (statusCoockie == 'stop') {
+                    $('.start-timer__btn').css('display', 'none');
+                    $('.pause-timer__btn').css('display', 'none');
+                    $('.stop-timer__btn').css('display', 'block');
+                }
+
+                // восстанавливаем цвет ссылки задачи в случае ошибки
                 var input = $('.modal__input__link-task');
                 input.bind('input', () => { input.css('border-color', '#dbdedf') });
 
-                $('.timer__btn').unbind('click');
-                $('.timer__btn').bind('click', function () {
+                // старт таймера
+                $('.start-timer__btn').unbind('click');
+                $('.start-timer__btn').bind('click', function () {
                     // если ссылки на задачу нет, отключаем кнопку
                     if (input.val().trim().length === 0) {
                         input.css('border-color', '#f37575 ');
@@ -201,19 +265,66 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         return false;
                     }
 
+                    statusCoockie = 'start';
+                    linkCoockie = input.val();
+
+                    $('.start-timer__btn').css('display', 'none');
+                    $('.pause-timer__btn').css('display', 'block');
+                    $('.stop-timer__btn').css('display', 'block');
+
+                    // заносим время с таймара в new Date
                     var date = new Date();
                     var time = $('.modal__timer__wrapper .timer').text().split(':');
-                    date.setFullYear(2000, 0, 1);
                     date.setHours(time[0]);
                     date.setMinutes(time[1]);
                     date.setSeconds(time[2]);
+                    var minutes = time[1];
 
-                    setInterval(() => {
+                    // запуск интервала с таймером
+                    var startInterval = setInterval(() => {
+                        if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
+                            clearInterval(startInterval);
+                            return false;
+                        }
+
+                        // прибавляем ко времени по 1 сек каждую сек и выводим в модалку
                         date.setSeconds(date.getSeconds() + 1);
-                        time = date.toLocaleTimeString();
-                        $('.modal__timer__wrapper .timer').text(time);
-                    }, 1000);
+                        timeCoockie = date.toLocaleTimeString();
+                        $('.modal__timer__wrapper .timer').text(timeCoockie);
+
+                        // если прошла минута, пишем время в куки
+                        if (date.getMinutes() !== parseInt(minutes)) {
+                            timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
+                            writeCookie(`timer`, JSON.stringify(timer), 30);
+                            // обнуляем минуты для проверки
+                            minutes = date.getMinutes();
+                            console.log(timer)
+                        }
+                    }, 10);
+
+                    // пауза таймера
+                    $('.pause-timer__btn').unbind('click');
+                    $('.pause-timer__btn').bind('click', function () {
+                        $('.start-timer__btn').css('display', 'block');
+                        $('.pause-timer__btn').css('display', 'none');
+                        clearInterval(startInterval);
+                        // обнуляем куки
+                        statusCoockie = 'pause';
+                        timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
+                        writeCookie(`timer`, JSON.stringify(timer), 30);
+                        console.log(timer);
+                    });
+
+                    // стоп таймера
+                    $('.stop-timer__btn').unbind('click');
+                    $('.stop-timer__btn').bind('click', function () {
+                        $('.start-timer__btn').css('display', 'block');
+                        $('.pause-timer__btn').css('display', 'none');
+                        clearInterval(startInterval);
+                    });
                 });
+
+
 
 
 
