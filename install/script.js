@@ -29,7 +29,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             return matches ? decodeURIComponent(matches[1]) : undefined;
         }
 
-        // запуск таймера
+        // модалка таймера
         const modalTimer = function () {
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
@@ -259,85 +259,99 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 var input = $('.modal__input__link-task');
                 input.bind('input', () => { input.css('border-color', '#dbdedf') });
 
-                // старт таймера
-                const startTimer = function () {
-                    $('.start-timer__btn').css('display', 'none');
-                    $('.pause-timer__btn').css('display', 'block');
-                    $('.stop-timer__btn').css('display', 'block');
-
-                    // заносим время с таймара в new Date
-                    var date = new Date();
-                    $('.modal__timer__wrapper .timer').text(timeCoockie);
-                    var time = timeCoockie.split(':');
-                    date.setHours(time[0]);
-                    date.setMinutes(time[1]);
-                    date.setSeconds(time[2]);
-                    var minutes = time[1];
-
-                    // запуск интервала с таймером
-                    var startInterval = setInterval(() => {
-                        if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
-                            clearInterval(startInterval);
-                            return false;
-                        }
-
-                        // прибавляем ко времени по 1 сек каждую сек и выводим в модалку
-                        date.setSeconds(date.getSeconds() + 1);
-                        timeCoockie = date.toLocaleTimeString();
-                        $('.modal__timer__wrapper .timer').text(timeCoockie);
-
-                        // если прошла минута, пишем время в куки
-                        if (date.getMinutes() !== parseInt(minutes)) {
-                            timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
-                            writeCookie('timer', JSON.stringify(timer), 30);
-                            // обнуляем минуты для проверки
-                            minutes = date.getMinutes();
-                        }
-                    }, 10);
-
-                    // пауза таймера
-                    $('.pause-timer__btn').unbind('click');
-                    $('.pause-timer__btn').bind('click', function () {
-                        $('.start-timer__btn').css('display', 'block');
-                        $('.pause-timer__btn').css('display', 'none');
-                        clearInterval(startInterval);
-                        // обнуляем куки
-                        statusCoockie = 'pause';
-                        timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
-                        writeCookie('timer', JSON.stringify(timer), 30);
-                    });
-
-                    // стоп таймера
-                    $('.stop-timer__btn').unbind('click');
-                    $('.stop-timer__btn').bind('click', function () {
-                        // $('.start-timer__btn').css('display', 'block');
-                        // $('.pause-timer__btn').css('display', 'none');
-                        // clearInterval(startInterval);
-                    });
-                }
+                // // старт таймера
+                // const startTimer = function () {
+                //     $('.start-timer__btn').css('display', 'none');
+                //     $('.pause-timer__btn').css('display', 'block');
+                //     $('.stop-timer__btn').css('display', 'block');
+                //
+                //     // заносим время с таймара в new Date
+                //     var date = new Date();
+                //     $('.modal__timer__wrapper .timer').text(timeCoockie);
+                //     var time = timeCoockie.split(':');
+                //     date.setHours(time[0]);
+                //     date.setMinutes(time[1]);
+                //     date.setSeconds(time[2]);
+                //     var minutes = time[1];
+                //
+                //     // запуск интервала с таймером
+                //     var startInterval = setInterval(() => {
+                //         if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
+                //             clearInterval(startInterval);
+                //             return false;
+                //         }
+                //
+                //         // прибавляем ко времени по 1 сек каждую сек и выводим в модалку
+                //         date.setSeconds(date.getSeconds() + 1);
+                //         timeCoockie = date.toLocaleTimeString();
+                //         $('.modal__timer__wrapper .timer').text(timeCoockie);
+                //
+                //         // если прошла минута, пишем время в куки
+                //         if (date.getMinutes() !== parseInt(minutes)) {
+                //             timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
+                //             writeCookie('timer', JSON.stringify(timer), 30);
+                //             // обнуляем минуты для проверки
+                //             minutes = date.getMinutes();
+                //         }
+                //     }, 10);
+                //
+                //     // пауза таймера
+                //     $('.pause-timer__btn').unbind('click');
+                //     $('.pause-timer__btn').bind('click', function () {
+                //         $('.start-timer__btn').css('display', 'block');
+                //         $('.pause-timer__btn').css('display', 'none');
+                //         clearInterval(startInterval);
+                //         // обнуляем куки
+                //         statusCoockie = 'pause';
+                //         timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
+                //         writeCookie('timer', JSON.stringify(timer), 30);
+                //     });
+                //
+                //     // стоп таймера
+                //     $('.stop-timer__btn').unbind('click');
+                //     $('.stop-timer__btn').bind('click', function () {
+                //         // $('.start-timer__btn').css('display', 'block');
+                //         // $('.pause-timer__btn').css('display', 'none');
+                //         // clearInterval(startInterval);
+                //     });
+                // }
 
                 // запуск таймера
-                if (statusCoockie === 'start') startTimer();
-                else {
-                    $('.start-timer__btn').unbind('click');
-                    $('.start-timer__btn').bind('click', function () {
-                        // если ссылки на задачу нет, отключаем кнопку
-                        if (input.val().trim().length === 0) {
-                            input.css('border-color', '#f37575 ');
-                            input.val('');
-                            input.focus();
-                            return false;
-                        }
+                $('.start-timer__btn').unbind('click');
+                $('.start-timer__btn').bind('click', function () {
+                    // если ссылки на задачу нет, отключаем кнопку
+                    if (input.val().trim().length === 0) {
+                        input.css('border-color', '#f37575 ');
+                        input.val('');
+                        input.focus();
+                        return false;
+                    }
 
-                        statusCoockie = 'start';
-                        linkCoockie = input.val();
-                        timer[AMOCRM.data.current_card.id] = ['00:00:00', statusCoockie, linkCoockie];
-                        writeCookie('timer', JSON.stringify(timer), 30);
+                    // убираем кнопку старт и показываем паузу и стоп
+                    $('.pause-timer__btn').css('display', 'block');
+                    $('.start-timer__btn').css('display', 'none');
+                    $('.stop-timer__btn').css('display', 'block');
 
-                        startTimer();
-                    });
-                }
+                    // statusCoockie = 'start';
+                    // linkCoockie = input.val();
+                    // timer[AMOCRM.data.current_card.id] = ['00:00:00', statusCoockie, linkCoockie];
+                    // writeCookie('timer', JSON.stringify(timer), 30);
 
+                    // startTimer(timerID);
+
+                    statusCoockie = 'start';
+                    linkCoockie = input.val();
+                    timerInterval = setInterval(() => { console.log(timerID) }, 1000);
+
+                    timer[AMOCRM.data.current_card.id] = [timerInterval, '00:00:00', statusCoockie, linkCoockie];
+                    writeCookie('timer', JSON.stringify(timer), 30);
+                    console.log(timer);
+                });
+
+                // пауза таймера
+                $('.pause-timer__btn').bind('click', function () {
+                    clearInterval(bbb);
+                });
 
 
 
@@ -519,7 +533,20 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 return true;
             },
             render: function() {
-                writeCookie('timer', '', 0);
+                // writeCookie('timer', '', 0);
+                // в случае обновления страницы запускаем таймеры для продолжения
+                var timer, timerID, timerInterval, timeCoockie, statusCoockie, linkCoockie;
+                readCookie('timer') ? timer = JSON.parse(readCookie('timer')) : timer = {};
+
+                if (timer) {
+                    $.each(timer, function (key, value) {
+                        [timerInterval, timeCoockie, statusCoockie, linkCoockie] = value;
+                        timerID = key;
+
+                        setInterval(() => { timerInterval() }, 1000);
+                    });
+                }
+
                 // ссылка на запуск таймера
                 if ((AMOCRM.getBaseEntity() === 'customers' || AMOCRM.getBaseEntity() === 'leads')
                     && AMOCRM.isCard()) {
