@@ -337,6 +337,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 // пауза таймера
+                $('.pause-timer__btn').unbind('click');
                 $('.pause-timer__btn').bind('click', function () {
                     // убираем кнопку пауза и показываем старт и стоп
                     $('.pause-timer__btn').css('display', 'none');
@@ -346,13 +347,114 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     // останавливаем таймер
                     timeCoockie = $(`.modal__main-block[data-id="${ timerID }"] .timer`).text();
                     statusCoockie = 'pause';
-                    linkCoockie = input.val();
 
                     self.timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
                     writeCookie('timer', JSON.stringify(self.timer), 30);
                     resetIntervals();
                 });
 
+                // стоп таймера
+                $('.stop-timer__btn').unbind('click');
+                $('.stop-timer__btn').bind('click', function () {
+                    // если таймер не был запущен, пропускаем
+                    if (timeCoockie === '00:00:00') return;
+
+                    // убираем кнопку пауза и показываем старт и стоп
+                    $('.pause-timer__btn').css('display', 'none');
+                    $('.start-timer__btn').css('display', 'none');
+                    $('.stop-timer__btn').css('display', 'none');
+
+                    // останавливаем таймер
+                    timeCoockie = $(`.modal__main-block[data-id="${ timerID }"] .timer`).text();
+                    statusCoockie = 'stop';
+
+                    self.timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
+                    writeCookie('timer', JSON.stringify(self.timer), 30);
+                    resetIntervals();
+
+                    // выбор ответственного
+                    var managers = [];
+                    managers.push({ id: 'null', option: 'Выберите ответственного' });
+
+                    $.each(AMOCRM.constant('managers'), function () {
+                        if (!this.active) return;
+                        managers.push({ id: this.id, option: this.title });
+                    });
+
+                    var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                            items: managers,
+                            class_name: 'modal__select-managers'
+                        }),
+                        selectManagersWrapper = '<div class="modal__select-managers__wrapper" style="width: 100%; margin-top: 20px;"></div>';
+
+                    $('.modal-body__actions').before(selectManagersWrapper);
+                    $('.modal__select-managers__wrapper').append(selectManagers);
+                    $('.modal__select-managers .control--select--button').css('width', '100%');
+                    $('.modal__select-managers ul').css({
+                        'margin-left': '13px',
+                        'width': 'auto',
+                        'min-width': $('.modal__main-block').outerWidth() - 13
+                    });
+
+                    // имя клиента
+                    var inputClientName = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                        name: 'modal-input-client-name',
+                        class_name: 'modal__input__client-name',
+                        value: '',
+                        placeholder: 'введите имя клиента'
+                    });
+
+                    var inputClientNameWrapper = `<div class="modal__client-name__wrapper" style="width: 100%; margin-top: 10px;">
+                        <span style="width: 100%;">Имя клиента:</span><br/>
+                    </div>`;
+
+                    $('.modal-body__actions').before(inputClientNameWrapper);
+                    $('.modal__client-name__wrapper').append(inputClientName);
+                    $('.modal__input__client-name').css({ 'width': '100%', 'margin-top': '3px' });
+
+                    // выбор услуги
+                    var services = [];
+                    services.push({ id: 'null', option: 'Выберите оказанную услугу' });
+                    services.push({ id: '1', option: 'Работа в amoCRM' });
+                    services.push({ id: '2', option: 'Консультация в чате' });
+                    services.push({ id: '3', option: 'Выберите оказанную услугу' });
+                    services.push({ id: '4', option: 'Выберите оказанную услугу' });
+                    services.push({ id: '5', option: 'Выберите оказанную услугу' });
+                    services.push({ id: '6', option: 'Выберите оказанную услугу' });
+                    services.push({ id: '7', option: 'Выберите оказанную услугу' });
+
+                    // $.each(bb, function () { services.push({ id: this.id, option: this.title }) });
+
+                    var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                            items: services,
+                            class_name: 'modal__select-services'
+                        }),
+                        selectServicesWrapper = '<div class="modal__select-services__wrapper" style="width: 100%; margin-top: 20px;"></div>';
+
+                    $('.modal-body__actions').before(selectServicesWrapper);
+                    $('.modal__select-services__wrapper').append(selectServices);
+                    $('.modal__select-services .control--select--button').css('width', '100%');
+                    $('.modal__select-services ul').css({
+                        'margin-left': '13px',
+                        'width': 'auto',
+                        'min-width': $('.modal__main-block').outerWidth() - 13
+                    });
+
+                    // комментарий
+                    var textareaComment = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
+                        name: 'modal-textarea-comment',
+                        class_name: 'modal__textarea__comment',
+                        placeholder: 'введите комментарий'
+                    });
+
+                    var textareaCommentWrapper = `<div class="modal__textarea-comment__wrapper" style="width: 100%; margin-top: 10px;">
+                        <span style="width: 100%;">Комментарий:</span><br/>
+                    </div>`;
+
+                    $('.modal-body__actions').before(textareaCommentWrapper);
+                    $('.modal__textarea-comment__wrapper').append(textareaComment);
+                    $('.modal__textarea__comment').css({ 'width': '100%', 'margin-top': '3px' });
+                });
 
 
 
@@ -405,11 +507,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 name: 'modal-input-hystory-deposit',
                                 class_name: 'modal__input__hystory-deposit',
                                 value: deposit,
-                                placeholder: 'укажите депозит'
+                                placeholder: 'укажите сумму депозита'
                             });
 
                             var HystoryDepositWrapper = `<div class="modal__hystory-deposit__wrapper" style="width: 100%; margin-top: 20px;">
-                                <span >Депозит:</span>
+                                <span >Сумма депозита:</span>
                             </div>`;
 
                             $('.modal__hystory-block').append(HystoryDepositWrapper);
@@ -602,9 +704,4 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
     return CustomWidget_WidgetBilling;
 });
 
-
-
-// https://integratorgroup.k-on.ru/andreev/billing/token_get.ph
-
-
-
+// https://integratorgroup.k-on.ru/andreev/billing/token_get.php
