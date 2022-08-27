@@ -110,7 +110,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                                <div class="modal__main-block" data-id="${ timerID }" style="width: 100%; min-height: 250px;">
+                                <div class="modal__main-block" data-id="${ timerID }" style="width: 100%; min-height: 235px;">
                                     <h2 class="modal-body__caption head_2">Запуск таймера</h2>
                                 </div>
                             `)
@@ -236,7 +236,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     name: 'modal-input-link-task',
                     class_name: 'modal__input__link-task',
                     value: linkCoockie || '',
-                    placeholder: 'вставьте ссылку на задачу'
+                    placeholder: 'вставьте ссылку на задачу',
+                    disabled: linkCoockie ? true : ''
                 });
 
                 var linkTaskWrapper = `<div class="modal__link-task__wrapper" style="width: 100%; margin-top: 10px;">
@@ -250,6 +251,20 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     'width': '100%',
                     'margin-top': '3px'
                 });
+
+                // если ссылка уже есть (таймер был ранее запущен), показываем ссылку
+                if (linkCoockie) {
+                    var linkTask = `<a href="${ linkCoockie }" class="modal__link-task" style="
+                            margin-top: 3px;
+                            text-decoration: none;
+                            color: #1375ab;
+                            word-break: break-all;
+                        " target="_blank">
+                        ${ linkCoockie }
+                    </a>`;
+                    $('.modal__link-task__wrapper').append(linkTask);
+                    $('.modal__input__link-task').remove();
+                }
 
                 /* ############################################################### */
 
@@ -325,6 +340,21 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.pause-timer__btn').css('display', 'block');
                     $('.start-timer__btn').css('display', 'none');
                     $('.stop-timer__btn').css('display', 'block');
+
+                    // отключаем редактирование ссылки на задачу, и показываем только ссылку
+                    if (!$('.modal__link-task').length) {
+                        var linkTask = `<a href="${ $('.modal__input__link-task').val() }" class="modal__link-task" 
+                            style="
+                                margin-top: 3px;
+                                text-decoration: none;
+                                color: #1375ab;
+                                word-break: break-all;
+                            " target="_blank">
+                            ${ $('.modal__input__link-task').val() }
+                        </a>`;
+                        $('.modal__link-task__wrapper').append(linkTask);
+                        $('.modal__input__link-task').remove();
+                    }
 
                     // запускаем таймер
                     timeCoockie = $(`.modal__main-block[data-id="${ timerID }"] .timer`).text();
@@ -455,6 +485,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.modal__textarea-comment__wrapper').append(textareaComment);
                     $('.modal__textarea__comment').css({ 'width': '100%', 'margin-top': '3px' });
                 });
+
+
+
+
 
 
 
@@ -633,7 +667,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 return true;
             },
             render: function() {
-                // writeCookie('timer', '', 0);
+                writeCookie('timer', '', 0);
                 // в случае обновления страницы запускаем таймеры для продолжения
                 resetIntervals();
 
