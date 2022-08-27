@@ -551,7 +551,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // возвращаем естесственные цвета в случае изменения
                         manager.unbind('click');
                         manager.bind('click', function () { manager.css('border-color', '#d4d5d8') });
-                        client.unbind('input');
                         client.bind('input', function () { client.css('border-color', '#d4d5d8') });
                         service.unbind('click');
                         service.bind('click', function () { service.css('border-color', '#d4d5d8') });
