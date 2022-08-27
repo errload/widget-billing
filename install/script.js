@@ -128,7 +128,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     <a href="#" class="hystory__link" style="
                         text-decoration: none;
                         color: #1375ab;
-                        top: 0;
+                        top: 5px;
                         right: 0;
                         position: absolute;
                     ">История</a>
@@ -649,7 +649,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     $modal_body
                                         .trigger('modal:loaded')
                                         .html(`
-                                            <div class="modal__hystory-block" style="width: 100%; min-height: 550px;">
+                                            <div class="modal__hystory-block" style="width: 100%; height: 600px;">
                                                 <h2 class="modal-body__caption head_2">История</h2>
                                             </div>
                                         `)
@@ -658,6 +658,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 },
                                 destroy: function () {}
                             });
+                            $('.hystory__timer .modal-body').css('overflow', 'auto');
 
                             // депозит
                             var inputHystoryDeposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
@@ -708,30 +709,57 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
+                            var historyItem = `
+                                <div class="custom-scroll" style="
+                                    display: flex; 
+                                    flex-direction: row;
+                                    justify-content: space-between; 
+                                    width: calc(100% - 10px); 
+                                    margin-top: 10px; 
+                                    border: 1px solid #dbdedf;
+                                    background: #fcfcfc;
+                                    padding: 1px 5px;
+                                    cursor: pointer;
+                                    border-radius: 3px;
+                                    ">
+                                    <div>
+                                        <span style="color: #979797; font-size: 13px;">21.08.2013</span><br/>
+                                        Владислав Дубатовка INTEGRATOR bla bla
+                                    </div>
+                                    <div style="display: flex; align-items: center;">1000р.</div>
+                                </div>
+                            `;
+
+                            $('.modal__hystory-deposit__wrapper').append(historyItem);
+                            $('.modal__hystory-deposit__wrapper').append(historyItem);
+
 
 
 
 
 
                             // кнопка Закрыть
-                            var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                                    class_name: 'modal__cancelBtn-hystory',
-                                    text: 'Закрыть'
-                                }),
-                                btnWrapper = '<div class="modal-body__actions" style="width: 100%; text-align: right;"></div>';
-
-                            $('.modal__hystory-block').append(btnWrapper);
-                            $('.modal__hystory-block .modal-body__actions').append(cancelBtn);
-                            $('.modal__hystory-block .modal-body__actions').css('margin-top', '20px');
+                            // $('.modal__hystory-block').append(cancelBtn);
                             $('.modal__hystory-block').css('position', 'relative');
-                            $('.modal__hystory-block .modal-body__actions').css({
-                                'left': '0px',
-                                'bottom': '0px',
-                                'position': 'absolute'
+                            hystoryCancelBtn = `
+                                <a href="#" class="hystory__cancel__btn" style="
+                                    text-decoration: none;
+                                    color: #92989b;
+                                    font-size: 14px;
+                                    font-weight: bold;
+                                    top: 3px;
+                                    right: 0;
+                                    position: absolute;
+                                ">Закрыть</a>
+                            `;
+                            $('.modal__hystory-block').append(hystoryCancelBtn);
+                            $('.hystory__cancel__btn').bind('click', function (e) {
+                                e.preventDefault();
+                                $('.hystory__timer').remove();
                             });
 
                             // margin-bottom для отступа
-                            $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
+                            $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 30px; width: 100%"></div>');
                         }
                     });
                 });
