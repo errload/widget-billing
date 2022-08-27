@@ -7,6 +7,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         // активные таймеры
         this.timer = {};
+        this.history = null;
 
         // записываем отмеченных в настройках пользователей в массив managers
         const configToObject = function () {
@@ -640,6 +641,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         dataType: 'json',
                         success: function(data) {
                             var deposit = 0;
+                            self.history = null;
+                            self.history = data.history;
                             if (data.deposit) deposit = data.deposit;
 
                             new Modal({
@@ -707,31 +710,32 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 });
                             });
 
+                            if (self.history) {
+                                $.each(self.history, function () {
+                                    var historyItem = `
+                                        <div class="custom-scroll" style="
+                                            display: flex; 
+                                            flex-direction: row;
+                                            justify-content: space-between; 
+                                            width: calc(100% - 10px); 
+                                            margin-top: 10px; 
+                                            border: 1px solid #dbdedf;
+                                            background: #fcfcfc;
+                                            padding: 1px 5px;
+                                            cursor: pointer;
+                                            border-radius: 3px;
+                                            ">
+                                            <div>
+                                                <span style="color: #979797; font-size: 13px;">${ this.created_at }</span><br/>
+                                                ${ this.user }
+                                            </div>
+                                            <div style="display: flex; align-items: center;">${ this.price }р.</div>
+                                        </div>
+                                    `;
+                                    $('.modal__hystory-deposit__wrapper').append(historyItem);
+                                });
+                            }
 
-
-                            var historyItem = `
-                                <div class="custom-scroll" style="
-                                    display: flex; 
-                                    flex-direction: row;
-                                    justify-content: space-between; 
-                                    width: calc(100% - 10px); 
-                                    margin-top: 10px; 
-                                    border: 1px solid #dbdedf;
-                                    background: #fcfcfc;
-                                    padding: 1px 5px;
-                                    cursor: pointer;
-                                    border-radius: 3px;
-                                    ">
-                                    <div>
-                                        <span style="color: #979797; font-size: 13px;">21.08.2013</span><br/>
-                                        Владислав Дубатовка INTEGRATOR bla bla
-                                    </div>
-                                    <div style="display: flex; align-items: center;">1000р.</div>
-                                </div>
-                            `;
-
-                            $('.modal__hystory-deposit__wrapper').append(historyItem);
-                            $('.modal__hystory-deposit__wrapper').append(historyItem);
 
 
 
@@ -739,7 +743,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
                             // кнопка Закрыть
-                            // $('.modal__hystory-block').append(cancelBtn);
                             $('.modal__hystory-block').css('position', 'relative');
                             hystoryCancelBtn = `
                                 <a href="#" class="hystory__cancel__btn" style="

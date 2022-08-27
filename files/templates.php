@@ -71,6 +71,10 @@
             $response['deposit'] = $result['deposit'];
         }
 
+        if ($result = $mysqli->query('SELECT * FROM billing_timer WHERE essence_id="' . $essence_id . '"')) {
+            while ($row = $result->fetch_assoc()) $response['history'][] = $row;
+        }
+
         echo json_encode($response);
     }
 
