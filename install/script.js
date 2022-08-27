@@ -77,7 +77,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // если модалка открыта, отображаем текущее значение таймера
                         var modalTimer = $(`.modal__main-block[data-id="${ timerID }"]`);
                         if (modalTimer.length) modalTimer.find('.timer').text(timeCoockie);
-                    }, 1000);
+                    }, 10);
                 });
             }
         }
@@ -389,7 +389,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.stop-timer__btn').unbind('click');
                 $('.stop-timer__btn').bind('click', function () {
                     // если таймер не был запущен, пропускаем
-                    if (timeCoockie === '00:00:00') return;
+                    if (!linkCoockie) return;
 
                     // убираем кнопку пауза и показываем старт и стоп
                     $('.pause-timer__btn').css('display', 'none');
@@ -473,8 +473,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     services.push({ id: '6', option: 'Выберите оказанную услугу' });
                     services.push({ id: '7', option: 'Выберите оказанную услугу' });
 
-                    // $.each(bb, function () { services.push({ id: this.id, option: this.title }) });
-
                     var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
                             items: services,
                             class_name: 'modal__select-services'
@@ -525,6 +523,80 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.modal__main-block-stop').append(`
                         <div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>
                     `);
+
+                    // сохранение таймера в БД
+                    $('.modal__saveBtn-timer').unbind('click');
+                    $('.modal__saveBtn-timer').bind('click', function () {
+                        var manager = $('.modal__select-managers .control--select--button');
+                        var client = $('.modal__input__client-name');
+                        var service = $('.modal__select-services .control--select--button');
+                        var comment = $('.modal__textarea__comment');
+                        var error = false;
+
+                        // если необходимые поля не выбраны, красим в красный
+                        if (manager.text() === 'Выберите ответственного') {
+                            manager.css('border-color', '#f57d7d');
+                            error = true;
+                        }
+                        if (!client.val().trim().length) {
+                            client.css('border-color', '#f57d7d');
+                            client.val(client.val().trim());
+                            error = true;
+                        }
+                        if (service.text() === 'Выберите оказанную услугу') {
+                            service.css('border-color', '#f57d7d');
+                            error = true;
+                        }
+
+                        // возвращаем естесственные цвета в случае изменения
+                        manager.unbind('click');
+                        manager.bind('click', function () { manager.css('border-color', '#d4d5d8') });
+                        client.unbind('input');
+                        client.bind('input', function () { client.css('border-color', '#d4d5d8') });
+                        service.unbind('click');
+                        service.bind('click', function () { service.css('border-color', '#d4d5d8') });
+
+                        if (error) return;
+
+                        var price = 0;
+                        var time = timeCoockie.split(':');
+                        if (parseInt(time[0]) !== 0) price = parseInt(time[0]) * parseInt(time[1]);
+                        else price = parseInt(time[1]);
+
+                        var _data = {};
+                        _data['domain'] = document.domain;
+                        _data['method'] = 'save_timer';
+                        _data['essence_id'] = timerID;
+                        _data['user'] = manager.text();
+                        _data['client'] = client.val();
+                        _data['service'] = service.text();
+                        _data['comment'] = comment.val().trim();
+                        _data['price'] = price;
+                        _data['link_task'] = linkCoockie;
+
+                        $.ajax({
+                            url: url_link_t,
+                            method: 'post',
+                            data: _data,
+                            dataType: 'json',
+                            success: function (data) {}
+                        });
+
+                        // обнуляем таймер
+                        var resetTimer = {};
+                        $.each(self.timer, function (key, value) {
+                            if (parseInt(key) === timerID) return;
+                            resetTimer[key] = value;
+                            console.log(key, value);
+                        });
+                        self.timer = resetTimer;
+                        writeCookie('timer', JSON.stringify(self.timer), 30);
+                        resetIntervals();
+                        console.log(self.timer);
+
+                        $('.stop__timer').remove();
+                        $('.start__timer').remove();
+                    });
                 });
 
 

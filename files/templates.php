@@ -57,6 +57,7 @@
 
     $mysqli = new mysqli($hostname, $username, $password, $database);
     if ($mysqli->connect_errno) die($mysqli->connect_error);
+    mysqli_set_charset($mysqli, 'utf8');
 
 /* ##################################################################### */
 
@@ -109,7 +110,7 @@
     if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
         $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
         $update = 'UPDATE billing_deposit SET deposit="' . $_POST['deposit'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "")';
+        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", "' . $_POST['deposit'] . '", "")';
 
         // находим нужную запись
         $result = $mysqli->query($select);
@@ -121,4 +122,38 @@
         $result = $mysqli->query($select)->fetch_array();
 
         echo json_encode($result['deposit']);
+    }
+
+    // сохраняем таймер
+    if ($_POST['method'] == 'save_timer' && $Config->CheckToken()) {
+        $insert_timer = 'INSERT INTO billing_timer VALUES(
+             null, 
+             "' . $_POST['essence_id'] . '", 
+             "' . $_POST['user'] . '", 
+             "' . $_POST['client'] . '", 
+             "' . $_POST['service'] . '", 
+             "' . $_POST['comment'] . '", 
+             "' . $_POST['price'] . '", 
+             "' . $_POST['link_task'] . '"
+         )';
+        $insert_deposit = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "")';
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
+
+        // сохраняем таймер
+        $mysqli->query($insert_timer);
+
+        // обновляем депозит таймера
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) {
+            $mysqli->query($insert_deposit);
+            $result = $mysqli->query($select);
+        }
+        $result = $result->fetch_array();
+
+        $deposit = (int) $result['deposit'];
+        $price = (int) $_POST['price'];
+        $deposit = $deposit - $price;
+
+        $update = 'UPDATE billing_deposit SET deposit="' . $deposit . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $mysqli->query($update);
     }
