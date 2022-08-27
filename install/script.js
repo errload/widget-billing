@@ -585,14 +585,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // обнуляем таймер
                         var resetTimer = {};
                         $.each(self.timer, function (key, value) {
-                            if (parseInt(key) === timerID) return;
+                            if (parseInt(key) === AMOCRM.data.current_card.id) return;
                             resetTimer[key] = value;
-                            console.log(key, value);
                         });
                         self.timer = resetTimer;
                         writeCookie('timer', JSON.stringify(self.timer), 30);
                         resetIntervals();
-                        console.log(self.timer);
 
                         $('.stop__timer').remove();
                         $('.start__timer').remove();
