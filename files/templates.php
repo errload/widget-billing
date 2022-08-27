@@ -134,7 +134,8 @@
              "' . $_POST['service'] . '", 
              "' . $_POST['comment'] . '", 
              "' . $_POST['price'] . '", 
-             "' . $_POST['link_task'] . '"
+             "' . $_POST['link_task'] . '",
+             "' . date('d.m.Y') . '"
          )';
         $insert_deposit = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "")';
         $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';

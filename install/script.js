@@ -263,7 +263,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         ${ linkCoockie }
                     </a>`;
                     $('.modal__link-task__wrapper').append(linkTask);
-                    $('.modal__input__link-task').remove();
+                    $('.modal__input__link-task').css('display', 'none');
                 }
 
                 /* ############################################################### */
@@ -323,7 +323,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // восстанавливаем цвет ссылки задачи в случае ошибки
                 var input = $('.modal__input__link-task');
-                input.bind('input', () => { input.css('border-color', '#dbdedf') });
+                input.unbind('change');
+                input.bind('change', () => { input.css('border-color', '#dbdedf') });
 
                 // запуск таймера
                 $('.start-timer__btn').unbind('click');
@@ -355,7 +356,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             ${ $('.modal__input__link-task').val() }
                         </a>`;
                         $('.modal__link-task__wrapper').append(linkTask);
-                        $('.modal__input__link-task').remove();
+                        $('.modal__input__link-task').css('display', 'none');
                     }
 
                     // запускаем таймер
@@ -551,7 +552,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // возвращаем естесственные цвета в случае изменения
                         manager.unbind('click');
                         manager.bind('click', function () { manager.css('border-color', '#d4d5d8') });
-                        client.bind('input', function () { client.css('border-color', '#d4d5d8') });
+                        client.unbind('change');
+                        client.bind('change', function () { client.css('border-color', '#d4d5d8') });
                         service.unbind('click');
                         service.bind('click', function () { service.css('border-color', '#d4d5d8') });
 
@@ -592,7 +594,18 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         resetIntervals();
 
                         $('.stop__timer').remove();
-                        $('.start__timer').remove();
+
+                        timeCoockie = '00:00:00';
+                        statusCoockie = '';
+                        linkCoockie = '';
+
+                        $('.modal__link-task').remove();
+                        $('.modal__input__link-task').css('display', 'block');
+                        $('.modal__input__link-task').val('');
+                        $(`.modal__main-block[data-id="${ timerID }"] .timer`).text(timeCoockie);
+                        $('.pause-timer__btn').css('display', 'none');
+                        $('.start-timer__btn').css('display', 'block');
+                        $('.stop-timer__btn').css('display', 'block');
                     });
                 });
 
@@ -777,7 +790,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 return true;
             },
             render: function() {
-                // writeCookie('timer', '', 0);
                 // в случае обновления страницы запускаем таймеры для продолжения
                 resetIntervals();
 
