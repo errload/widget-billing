@@ -69,5 +69,5 @@
             // header('Location: ' . 'https://' . $apiClient->getAccountBaseDomain());
         }
 
-        header('Location: ' . 'https://' . $_GET['referer'] . '/settings/widgets/');
+        header('Location: ' . 'https://' . $_GET['referer'] . '/amo-market/#category-installed');
     }

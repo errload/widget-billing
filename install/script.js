@@ -327,6 +327,41 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 input.unbind('change');
                 input.bind('change', () => { input.css('border-color', '#dbdedf') });
 
+                /* ################## */
+
+                // проверка авторизации для запуска таймера
+                var _data = {};
+                _data["domain"] = document.domain;
+                _data["method"] = "isAuth";
+                $.ajax({
+                    url: url_link_t,
+                    method: 'post',
+                    data: _data,
+                    dataType: 'html',
+                    success: function(data) {
+                        var noIsAuth = `
+                            <div class="noIsAuth" style="
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                height: 150px;
+                            ">
+                                Виджет не авторизован<br/>
+                            </div>
+                        `;
+
+                        if (!data) {
+                            $('.hystory__link').css('display', 'none');
+                            $('.modal__link-project__wrapper').css('display', 'none');
+                            $('.modal__link-task__wrapper').css('display', 'none');
+                            $('.modal__timer__wrapper').css('display', 'none');
+                            $('.modal-body__actions').before(noIsAuth);
+                        }
+                    }
+                });
+
+                /* ################## */
+
                 // запуск таймера
                 $('.start-timer__btn').unbind('click');
                 $('.start-timer__btn').bind('click', function () {
@@ -562,8 +597,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         var price = 0;
                         var time = timeCoockie.split(':');
-                        if (parseInt(time[0]) !== 0) price = parseInt(time[0]) * parseInt(time[1]);
-                        else price = parseInt(time[1]);
+                        if (parseInt(time[0]) > 0) {
+                            price = (parseInt(time[0]) * 60) + parseInt(time[1]);
+                        } else price = parseInt(time[1]);
 
                         var _data = {};
                         _data['domain'] = document.domain;

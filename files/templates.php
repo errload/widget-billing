@@ -61,6 +61,12 @@
 
 /* ##################################################################### */
 
+    // проверка авторизации для запуска таймера
+    if ($_POST['method'] == 'isAuth') {
+        if ($Config->CheckToken()) echo true;
+        else echo false;
+    }
+
     // получаем данные истории таймера
     if ($_POST['method'] == 'hystory' && $Config->CheckToken()) {
         $essence_id = $_POST['essence_id'];
