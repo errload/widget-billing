@@ -764,7 +764,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                 $modal_body
                                                     .trigger('modal:loaded')
                                                     .html(`
-                                                        <div class="modal__hystory-details" style="width: 100%; min-height: 370px;">
+                                                        <div class="modal__hystory-details" style="width: 100%; min-height: 400px;">
                                                             <h2 class="modal-body__caption head_2">Детализация</h2>
                                                         </div>
                                                     `)
@@ -826,6 +826,25 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 `                                       );
                                         addHistoryItem('Цена за работу:', this.price + 'р.');
                                         addHistoryItem('Оказанная услуга:', this.service);
+
+                                        // кнопки Редактировать, Сохранить
+                                        var editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                                                class_name: 'modal__editBtn-history',
+                                                text: 'Редактировать'
+                                            }),
+                                            saveEditBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                                                class_name: 'modal__saveEditBtn-history',
+                                                text: 'Сохранить'
+                                            }),
+                                            editBtnWrapper = '<div class="modal-body__actions" style="width: 100%; text-align: right;"></div>';
+
+                                        $('.modal__hystory-details').append(editBtnWrapper);
+                                        $('.modal__hystory-details .modal-body__actions').append(editBtn);
+                                        $('.modal__hystory-details .modal-body__actions').append(saveEditBtn);
+                                        $('.modal__hystory-details .modal-body__actions').css('margin-top', '10px');
+
+                                        $('.modal__editBtn-history').unbind('click');
+                                        $('.modal__editBtn-history').bind('click', function () {});
                                     });
                                 }
 
