@@ -713,6 +713,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             $('.modal__hystory-block').append(HystoryDepositWrapper);
                             $('.modal__hystory-deposit__wrapper').append(inputHystoryDeposit);
+                            $('.modal__input__hystory-deposit').css('margin-bottom', '10px');
 
                             // редактирование депозита
                             var deposit = $('.modal__input__hystory-deposit');
@@ -747,19 +748,140 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             });
 
                             if (self.history) {
+                                // клик по конкретной истории таймера для детального просмотра
+                                const showDetails = function (e) {
+                                    var historyID = $(e.target).attr('data-id');
+
+                                    $.each(self.history, function () {
+                                        if (this.id !== historyID) return;
+                                        console.log(this);
+
+                                        new Modal({
+                                            class_name: 'hystory__details',
+                                            init: function ($modal_body) {
+                                                var $this = $(this);
+                                                $modal_body
+                                                    .trigger('modal:loaded')
+                                                    .html(`
+                                                        <div class="modal__hystory-details" style="width: 100%; min-height: 370px;">
+                                                            <h2 class="modal-body__caption head_2">Детализация</h2>
+                                                        </div>
+                                                    `)
+                                                    .trigger('modal:centrify')
+                                                    .append('');
+                                            },
+                                            destroy: function () {}
+                                        });
+
+                                        // кнопка Закрыть
+                                        $('.modal__hystory-details').css('position', 'relative');
+                                        detailsCancelBtn = `
+                                            <a href="#" class="details__cancel__btn" style="
+                                                text-decoration: none;
+                                                color: #92989b;
+                                                font-size: 14px;
+                                                font-weight: bold;
+                                                top: 3px;
+                                                right: 0;
+                                                position: absolute;
+                                            ">Закрыть</a>
+                                        `;
+                                        $('.modal__hystory-details').append(detailsCancelBtn);
+                                        $('.details__cancel__btn').bind('click', function (e) {
+                                            e.preventDefault();
+                                            $('.hystory__details').remove();
+                                        });
+
+                                        // добавляем элементы истории
+                                        const addHistoryItem = function (title, value) {
+                                            var historyItem = `
+                                                <div class="flex__history" style="
+                                                    display: flex;
+                                                    flex-direction: row;
+                                                    background: #fcfcfc;
+                                                    border-top: 1px solid #dbdedf;
+                                                    border-bottom: 1px solid #dbdedf;
+                                                    margin-bottom: 2px;
+                                                ">
+                                                    <div class="title" style="
+                                                        width: 30%;
+                                                        text-align: right;
+                                                        padding: 5px 0 5px 5px;
+                                                        color: #92989b;
+                                                    ">${ title }
+                                                    </div>
+                                                    <div class="value" style="
+                                                        width: 70%;
+                                                        padding: 5px;
+                                                    ">${ value }
+                                                    </div>
+                                                </div>
+                                            `;
+                                            $('.modal__hystory-details').append(historyItem);
+                                        }
+
+                                        addHistoryItem('Дата таймера', this.created_at + 'г.');
+                                        addHistoryItem('Имя клиента:', this.client);
+                                        addHistoryItem('Ответственный:', this.user);
+                                        addHistoryItem('Комментарий:', this.comment);
+                                        addHistoryItem('Ссылка на задачу:', `
+                                            <a href="${ this.link_task }" target="_blank" style="
+                                                text-decoration: none; color: #1375ab; word-break: break-all;
+                                            ">${ this.link_task }</a>
+`                                       );
+                                        addHistoryItem('Цена за работу:', this.price + 'р.');
+                                        addHistoryItem('Оказанная услуга:', this.service);
+
+
+
+
+
+
+
+                                        // имя клиента
+                                        // var inputClientHistory = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                                        //     name: 'modal-input-client-history',
+                                        //     class_name: 'modal__input__client-history',
+                                        //     value: this.client,
+                                        //     placeholder: 'введите имя клиента'
+                                        // });
+                                        //
+                                        // var linkClientHistoryWrapper = `<div class="modal__client-history__wrapper" style="width: 100%; margin-top: 10px;">
+                                        //     <span style="width: 100%;">Имя клиента:</span><br/>
+                                        // </div>`;
+                                        //
+                                        // $('.modal__hystory-details').append(linkClientHistoryWrapper);
+                                        // $('.modal__client-history__wrapper').append(inputClientHistory);
+                                        // $('.modal__input__link-task').css({
+                                        //     'width': '100%',
+                                        //     'margin-top': '3px'
+                                        // });
+
+
+
+
+
+
+
+
+
+                                    });
+                                }
+
+                                // добавляем историю таймеров (дата, ответственный, сумма)
                                 $.each(self.history, function () {
                                     var historyItem = `
-                                        <div class="custom-scroll" style="
+                                        <div data-id="${ this.id }" style="
                                             display: flex; 
                                             flex-direction: row;
                                             justify-content: space-between; 
-                                            width: calc(100% - 10px); 
-                                            margin-top: 10px; 
-                                            border: 1px solid #dbdedf;
+                                            width: calc(100% - 10px);  
+                                            border-top: 1px solid #dbdedf;
+                                            border-bottom: 1px solid #dbdedf;
+                                            margin-bottom: 2px;
                                             background: #fcfcfc;
                                             padding: 1px 5px;
                                             cursor: pointer;
-                                            border-radius: 3px;
                                             ">
                                             <div>
                                                 <span style="color: #979797; font-size: 13px;">${ this.created_at }</span><br/>
@@ -769,14 +891,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         </div>
                                     `;
                                     $('.modal__hystory-deposit__wrapper').append(historyItem);
+                                    $('.modal__hystory-deposit__wrapper').unbind('click');
+                                    $('.modal__hystory-deposit__wrapper').bind('click', showDetails);
                                 });
                             }
-
-
-
-
-
-
 
                             // кнопка Закрыть
                             $('.modal__hystory-block').css('position', 'relative');
@@ -809,6 +927,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
+                /* ############################################################### */
 
                 // кнопка Закрыть
                 var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
