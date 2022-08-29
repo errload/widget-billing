@@ -331,11 +331,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         const modalTimer = function () {
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
-                var rights = false,
+                var startInterval,
+                    rights = false,
                     priceManager = false,
                     userID = AMOCRM.constant('user').id,
                     essenseID = AMOCRM.data.current_card.id,
-                    timezone = AMOCRM.constant('account').timezone;;
+                    timezone = AMOCRM.constant('account').timezone;
 
                 // права доступа и стоимость сотрудника из настроек
                 self.getConfigSettings();
@@ -380,7 +381,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             .trigger('modal:centrify')
                             .append('');
                     },
-                    destroy: function () {}
+                    destroy: function () { clearInterval(startInterval) }
                 });
 
                 // проверка авторизации для запуска таймера
@@ -582,6 +583,53 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
+
+
+
+
+                // отображение таймера
+                $.ajax({
+                    url: url_link_t,
+                    method: 'post',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'timer',
+                        'essence_id': essenseID,
+                        'user_id': userID,
+                        'timezone': timezone
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        if (!data) console.log('not data');
+                        else {
+                            console.log(data);
+
+                            // устанавливаем время из массива
+                            var date = new Date();
+                            var time = data.time_work.split(':');
+                            date.setHours(time[0]);
+                            date.setMinutes(time[1]);
+                            date.setSeconds(time[2]);
+
+                            // отображаем интервал
+                            startInterval = setInterval(() => {
+                                // если прошли сутки, останавливаем таймер (максимальное время)
+                                if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
+                                    clearInterval(interval);
+                                    return false;
+                                }
+                                // увеличиваем на секунду
+                                date.setSeconds(date.getSeconds() + 1);
+                                // если модалка открыта, отображаем текущее значение таймера
+                                $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
+                            }, 1000);
+                        }
+                    }
+                });
+
+
+
+
                 // запуск таймера
                 $('.start__timer__btn').unbind('click');
                 $('.start__timer__btn').bind('click', function () {
@@ -605,7 +653,27 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         },
                         dataType: 'json',
                         success: function (data) {
-                            console.log(data)
+                            console.log(data);
+
+                            // устанавливаем время из массива
+                            var date = new Date();
+                            var time = data.time_work.split(':');
+                            date.setHours(time[0]);
+                            date.setMinutes(time[1]);
+                            date.setSeconds(time[2]);
+
+                            // отображаем интервал
+                            startInterval = setInterval(() => {
+                                // если прошли сутки, останавливаем таймер (максимальное время)
+                                if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
+                                    clearInterval(interval);
+                                    return false;
+                                }
+                                // увеличиваем на секунду
+                                date.setSeconds(date.getSeconds() + 1);
+                                // если модалка открыта, отображаем текущее значение таймера
+                                $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
+                            }, 1000);
                         }
                     });
 

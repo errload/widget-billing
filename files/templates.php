@@ -87,13 +87,9 @@
         $update = 'UPDATE billing_deposit SET link_project="' . $_POST['link_project'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
         $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "' . $_POST['link_project'] . '")';
 
-        // находим нужную запись
         $result = $mysqli->query($select);
-        // если не существует, создаем
         if (!$result->num_rows) $mysqli->query($insert);
-        // иначе обновляем
         else $mysqli->query($update);
-        // возвращаем актуальную ссылку
         $result = $mysqli->query($select)->fetch_array();
 
         echo json_encode($result['link_project']);
@@ -113,13 +109,46 @@
         echo json_encode($result);
     }
 
+    // данные таймера
+    if ($_POST['method'] == 'timer' && $Config->CheckToken()) {
+        // текущее время
+        $tz = $_POST['timezone'];
+        $timestamp = time();
+        $dt = new DateTime('now', new DateTimeZone($tz));
+        $dt->setTimestamp($timestamp);
+
+        $select = 'SELECT * FROM billing_timer WHERE user_id="' . $_POST['user_id'] . '" AND essence_id="' . $_POST['essence_id'] . '"';
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) echo false;
+        $result = $mysqli->query($select)->fetch_assoc();
+
+        // получаем разницу с момента старта таймера
+        $time_start = new DateTime($result['time_start'], new DateTimeZone($result['timezone']));
+        $time_now = new DateTime('now', new DateTimeZone($result['timezone']));
+        $time_work = $time_now->diff($time_start);
+        $time_work = $time_work->h . ':' . $time_work->i . ':' . $time_work->s;
+
+        // обновляем время и продолжаем таймер
+        $update = 'UPDATE billing_timer SET time_work="' . $time_work . '"
+            WHERE essence_id="' . $_POST['essence_id'] . '" AND user_id = "' . $_POST['user_id'] . '"';
+        $result = $mysqli->query($update);
+        $result = $mysqli->query($select)->fetch_assoc();
+
+        echo json_encode($result);
+    }
+
     // запускаем таймер
     if ($_POST['method'] == 'timer_start' && $Config->CheckToken()) {
+        $tz = $_POST['timezone'];
+        $timestamp = time();
+        $dt = new DateTime('now', new DateTimeZone($tz));
+        $dt->setTimestamp($timestamp);
+
         $select = 'SELECT * FROM billing_timer WHERE user_id="' . $_POST['user_id'] . '" AND essence_id="' . $_POST['essence_id'] . '"';
         $update = 'UPDATE billing_timer SET link_project="' . $_POST['link_project'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $insert = 'INSERT INTO billing_deposit VALUES(
-            null, 
-            "' . $_POST['essence_id'] . '", 
+        $insert = 'INSERT INTO billing_timer VALUES(
+            null,
+            "' . $_POST['essence_id'] . '",
             "' . $_POST['user_id'] . '",
             "",
             "",
@@ -127,29 +156,24 @@
             "",
             "",
             "' . $_POST['link_task'] . '",
-            "' . date('d.m.Y') . '",
-            "' . $_POST['timezone'] . '"
+            "' . $dt->format('d.m.Y H:i:s') . '",
+            "' . $_POST['timezone'] . '",
+            "' . $dt->format('d.m.Y H:i:s') . '",
+            "",
+            "00:00:00",
+            "start"
         )';
 
-//        // находим нужную запись
-//        $result = $mysqli->query($select);
-//        // если не существует, создаем
-//        if (!$result->num_rows) $mysqli->query($insert);
-//        // иначе обновляем
-//        else $mysqli->query($update);
-//        // возвращаем актуальную ссылку
-//        $result = $mysqli->query($select)->fetch_array();
-//
-//        echo json_encode($result['link_project']);
-//        $date = new DateTime();
-//        $date->setTime(00, 00, 00);
+        // находим нужную запись
+        $result = $mysqli->query($select);
+        // если не существует, создаем
+        if (!$result->num_rows) $mysqli->query($insert);
+        // иначе обновляем
+        else $mysqli->query($update);
+        // возвращаем актуальную ссылку
+        $result = $mysqli->query($select)->fetch_assoc();
 
-        $tz = 'Europe/Moscow';
-        $timestamp = time();
-        $dt = new DateTime('now', new DateTimeZone($tz));
-        $dt->setTime(00, 00, 00);
-        $dt->setTimestamp($timestamp);
-        echo json_encode($dt->format('d.m.Y, H:i:s'));
+        echo json_encode($result);
     }
 
 // получаем данные истории таймера
