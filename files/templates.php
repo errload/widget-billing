@@ -99,6 +99,20 @@
         echo json_encode($result['link_project']);
     }
 
+    // получаем ссылку на задачу
+    if ($_POST['method'] == 'link_task' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_timer WHERE user_id="' . $_POST['user_id'] . '" AND essence_id="' . $_POST['essence_id'] . '"';
+
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) $result = '';
+        else {
+            $result = $result->fetch_array();
+            $result = $result['link_task'];
+        }
+
+        echo json_encode($result);
+    }
+
 // получаем данные истории таймера
 //    if ($_POST['method'] == 'hystory' && $Config->CheckToken()) {
 //        $essence_id = $_POST['essence_id'];

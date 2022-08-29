@@ -373,7 +373,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             .trigger('modal:loaded')
                             .html(`
                                 <div class="modal__timer" style="width: 100%; min-height: 235px;">
-                                    <h2 class="modal-body__caption head_2">Таймер</h2>
+                                    <h2 class="modal__body__caption head_2">Таймер</h2>
                                 </div>
                             `)
                             .trigger('modal:centrify')
@@ -503,56 +503,80 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
 
-//
 
-//
 
-//
+                // ссылка на задачу
+                var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'modal-input-link-task',
+                    class_name: 'modal__input__link__task',
+                    value: '',
+                    placeholder: 'вставьте ссылку на задачу'
+                });
 
-//
-//                 // удаляем ссылку и вставляем поле ввода ссылки
-//                 const changeLink = function (e) {
+                var linkTaskWrapper = `<div class="modal__link-task__wrapper" style="width: 100%; margin-top: 10px;">
+                    <span style="width: 100%;">Ссылка на задачу:</span><br/>
+                    ${ inputLinkTask }
+                </div>`;
 
-//                 }
-//                 $('.change__link-project').bind('click', changeLink);
-//
-//                 /* ############################################################### */
-//
-//                 // ссылка на задачу
-//                 var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-//                     name: 'modal-input-link-task',
-//                     class_name: 'modal__input__link-task',
-//                     value: linkCoockie || '',
-//                     placeholder: 'вставьте ссылку на задачу',
-//                     disabled: linkCoockie ? true : ''
-//                 });
-//
-//                 var linkTaskWrapper = `<div class="modal__link-task__wrapper" style="width: 100%; margin-top: 10px;">
-//                     <span style="width: 100%;">Ссылка на задачу:</span><br/>
-//                 </div>`;
-//
-//                 // добавляем ссылку задачу
-//                 $('.modal__main-block').append(linkTaskWrapper);
-//                 $('.modal__link-task__wrapper').append(inputLinkTask);
-//                 $('.modal__input__link-task').css({
-//                     'width': '100%',
-//                     'margin-top': '3px'
-//                 });
-//
-//                 // если ссылка уже есть (таймер был ранее запущен), показываем ссылку
-//                 if (linkCoockie) {
-//                     var linkTask = `<a href="${ linkCoockie }" class="modal__link-task" style="
-//                             margin-top: 3px;
-//                             text-decoration: none;
-//                             color: #1375ab;
-//                             word-break: break-all;
-//                         " target="_blank">
-//                         ${ linkCoockie }
-//                     </a>`;
-//                     $('.modal__link-task__wrapper').append(linkTask);
-//                     $('.modal__input__link-task').css('display', 'none');
-//                 }
-//
+                $('.modal__timer').append(linkTaskWrapper);
+                $('.modal__input__link__task').css({ 'width': '100%', 'margin-top': '3px' });
+
+                // показываем актуальную ссылку на задачу, если таймер был ранее запущен
+                $.ajax({
+                    url: url_link_t,
+                    method: 'post',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'link_task',
+                        'essence_id': essenseID,
+                        'user_id': userID
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        if (!data) $('.modal__input__link__task').val('');
+                        else {
+                            $('.modal__input__link__task').css('display', 'none');
+                            $('.modal__link-task__wrapper').append(`<a href="${ data }" class="modal__link__task" style="
+                                    margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                                    ${ data }
+                                </a>
+                            `);
+                        }
+                    }
+                });
+
+
+
+
+
+
+
+
+
+
+
+
+
+                // кнопка Закрыть
+                var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                        class_name: 'modal__cancelBtn__timer',
+                        text: 'Закрыть'
+                    }),
+                    cancelBtnWrapper = `<div class="modal__body__actions" style="width: 100%;">
+                        ${ cancelBtn }
+                    </div>`;
+
+                $('.modal__timer').append(cancelBtnWrapper);
+                $('.modal__body__actions').css('margin-top', '20px');
+
+                // margin-bottom для отступа
+                $('.modal__timer').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
+
+
+
+
+
+
 //                 /* ############################################################### */
 //
 //                 // таймер
@@ -1169,19 +1193,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 /* ############################################################### */
 
-                // кнопка Закрыть
-                var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                        class_name: 'modal__cancelBtn-timer',
-                        text: 'Закрыть'
-                    }),
-                    btnWrapper = '<div class="modal-body__actions" style="width: 100%; text-align: right;"></div>';
 
-                $('.modal__main-block').append(btnWrapper);
-                $('.modal-body__actions').append(cancelBtn);
-                $('.modal-body__actions').css('margin-top', '20px');
-
-                // margin-bottom для отступа
-                $('.modal__main-block').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
             });
         }
 
