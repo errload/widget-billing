@@ -1170,10 +1170,43 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // очищаем перед запуском чекбоксы
                 $('.modal__rights__checkox__wrapper').remove();
+                $('.input__price__wrapper').remove();
                 if ($(this).find('span').text() === 'Выберите пользователя') {
                     $('.modal__rights__checkox__wrapper').remove();
+                    $('.input__price__wrapper').remove();
                     return;
                 }
+
+                // стоимость сотрудника
+                var inputPrice = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'input-price',
+                    class_name: 'input__price',
+                    value: '0',
+                    placeholder: 'введите стоимость сотрудника',
+                    max_length: 50
+                });
+
+                // вставляем и ровняем инпут type=number
+                $('.widget_settings_block__controls').before(`
+                    <div class="widget_settings_block__item_field input__price__wrapper" style="margin-top: 10px; width: 100%;">
+                        <div class="widget_settings_block__title_field" title="">
+                            Стоимость сотрудника в минуту (р.):
+                        </div>
+                    <div class="widget_settings_block__input_field" style="width: 100%;">${ inputPrice }</div>
+                    </div>
+                `);
+                $('.input__price').attr('type', 'number');
+                $('.input__price').css('width', '100%');
+
+                $('.input__price').unbind('change');
+                $('.input__price').bind('change', function () {
+                    var priceManager = parseInt($(this).val()) || 0;
+
+                    if (!self.config_settings.priceManager) self.config_settings.priceManager = {};
+                    self.config_settings.priceManager[managerID] = priceManager;
+                    self.saveConfigSettings();
+                    $(this).val(priceManager);
+                });
 
                 // ддобавление чекбокса
                 const addCheckbox = function (value, dataValue) {
@@ -1194,13 +1227,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.widget_settings_block__controls').before(checkboxWrapper);
 
                 // ссылка в сущности
-                var isEditLink = addCheckbox('Ссылка в сущности', 'isEditLink');
+                var isEditLink = addCheckbox('Редактирование ссылки в сущности', 'isEditLink');
                 $('.modal__rights__checkox__wrapper').append(isEditLink);
                 // список в форме на выбор услуги
-                var isEditServices = addCheckbox('Список в форме на выбор услуги', 'isEditServices');
+                var isEditServices = addCheckbox('Редактирование списка в форме на выбор услуги', 'isEditServices');
                 $('.modal__rights__checkox__wrapper').append(isEditServices);
                 // смотреть историю выполненных задач в сущности
-                var isShowHistory = addCheckbox('Смотреть историю выполненных задач в сущности', 'isShowHistory');
+                var isShowHistory = addCheckbox('Просмотр истории выполненных задач в сущности', 'isShowHistory');
                 $('.modal__rights__checkox__wrapper').append(isShowHistory);
                 // редактирование истории
                 var isEditHistory = addCheckbox('Редактирование истории', 'isEditHistory');
@@ -1208,7 +1241,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // редактирование депозита
                 var isEditDeposit = addCheckbox('Редактирование депозита', 'isEditDeposit');
                 $('.modal__rights__checkox__wrapper').append(isEditDeposit);
-
                 // выравниваем чекбоксы
                 $('.modal__rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
 
@@ -1225,6 +1257,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 $(this).trigger('click');
                             }
                         });
+                    });
+                }
+
+                if (self.config_settings.priceManager) {
+                    $.each(self.config_settings.priceManager, function (key, value) {
+                        if (key !== managerID) return;
+                        $('.input__price').val(value);
                     });
                 }
 
