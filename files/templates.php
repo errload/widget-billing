@@ -113,6 +113,45 @@
         echo json_encode($result);
     }
 
+    // запускаем таймер
+    if ($_POST['method'] == 'timer_start' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_timer WHERE user_id="' . $_POST['user_id'] . '" AND essence_id="' . $_POST['essence_id'] . '"';
+        $update = 'UPDATE billing_timer SET link_project="' . $_POST['link_project'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $insert = 'INSERT INTO billing_deposit VALUES(
+            null, 
+            "' . $_POST['essence_id'] . '", 
+            "' . $_POST['user_id'] . '",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "' . $_POST['link_task'] . '",
+            "' . date('d.m.Y') . '",
+            "' . $_POST['timezone'] . '"
+        )';
+
+//        // находим нужную запись
+//        $result = $mysqli->query($select);
+//        // если не существует, создаем
+//        if (!$result->num_rows) $mysqli->query($insert);
+//        // иначе обновляем
+//        else $mysqli->query($update);
+//        // возвращаем актуальную ссылку
+//        $result = $mysqli->query($select)->fetch_array();
+//
+//        echo json_encode($result['link_project']);
+//        $date = new DateTime();
+//        $date->setTime(00, 00, 00);
+
+        $tz = 'Europe/Moscow';
+        $timestamp = time();
+        $dt = new DateTime('now', new DateTimeZone($tz));
+        $dt->setTime(00, 00, 00);
+        $dt->setTimestamp($timestamp);
+        echo json_encode($dt->format('d.m.Y, H:i:s'));
+    }
+
 // получаем данные истории таймера
 //    if ($_POST['method'] == 'hystory' && $Config->CheckToken()) {
 //        $essence_id = $_POST['essence_id'];
