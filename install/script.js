@@ -24,183 +24,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             $(`#${ self.get_settings().widget_code }_custom`).trigger('change');
         }
 
-        // настройка прав доступа в разделе Настройки и редактирование услуги
-        this.accessRight = function () {
-            self.getConfigSettings();
 
-            // выбор оказанных услуги
-            const addSelectServices = function () {
-                var managers = [];
-                managers.push({ option: 'Выберите оказанную услугу' });
-                if (self.config_settings.services) {
-                    $.each(self.config_settings.services, function () {
-                        managers.push({ option: this });
-                    });
-                }
-
-                var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-                    items: managers,
-                    class_name: 'select__services'
-                });
-
-                return selectServices;
-            }
-
-
-            var selectServices = addSelectServices(),
-                editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                    class_name: 'editBtn__services',
-                    text: 'Редактировать'
-                });
-
-            var selectServicesWrapper = `
-                <div class="widget_settings_block__item_field select__services__wrapper" style="margin-top: 10px;">
-                    <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
-                        Список выбора оказанных услуг:
-                    </div>
-                    <div class="widget_settings_block__input_field" style="display: flex; flex-direction: row;">
-                        <div class="select" style="width: 75%;">${ selectServices }</div>
-                        <div class="buttonEdit" style="width: 25%; text-align: right;">${ editBtn }</div>
-                    </div>
-                </div> 
-            `;
-
-            $('.widget_settings_block__controls').before(selectServicesWrapper);
-            $('.select__services__wrapper .select ul').css({
-                'margin-left': '13px',
-                'width': 'auto',
-                'min-width': $('.select__services__wrapper .select').outerWidth() - 13
-            });
-
-            $('.editBtn__services').unbind('click');
-            $('.editBtn__services').bind('click', function () {
-                new Modal({
-                    class_name: 'edit__services',
-                    init: function ($modal_body) {
-                        var $this = $(this);
-                        $modal_body
-                            .trigger('modal:loaded')
-                            .html(`
-                                <div class="modal__edit__services" style="width: 100%; min-height: 450px;">
-                                    <h2 class="modal-body__caption head_2">Редактирование оказанных услуг</h2>
-                                </div>
-                            `)
-                            .trigger('modal:centrify')
-                            .append('');
-                    },
-                    destroy: function () {}
-                });
-
-                // add link service
-                linkAddService = `
-                    <a href="" class="modal__link__add__service" style="
-                        text-decoration: none;
-                        color: #1375ab;
-                        margin-top: 10px;
-                    ">Добавить</a>
-                `;
-                $('.modal__edit__services').append(linkAddService);
-
-                // add input
-                const addInput = function (option = '') {
-                    var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                        name: 'modal-input-edit-service',
-                        class_name: 'modal_input__edit__service',
-                        value: option,
-                        placeholder: 'Вариант',
-                        max_length: 50
-                    });
-
-                    // вставляем и ровняем инпут и кнопку удаления
-                    $('.modal__link__add__service').before(`
-                        <div class="widget_settings_block__input_field select__enums__item" style="
-                            margin-bottom: 4px;
-                            width: 100%;
-                            position: relative;
-                        ">
-                            <div class="cf-field-enum__remove" title="Удалить" style="width: auto;">
-                                <svg class="svg-icon svg-common--trash-dims"><use xlink:href="#common--trash"></use></svg>
-                            </div>
-                            ${ input }
-                        </div>
-                    `);
-
-                    $('.modal_input__edit__service').css({ 'padding-right': '25px', 'width': '100%' });
-                    $('.cf-field-enum__remove').css({
-                        'position': 'absolute',
-                        'top': '10px',
-                        'left': $('.modal_input__edit__service').outerWidth() - 20,
-                        'cursor': 'pointer'
-                    });
-
-                    // удаление инпута
-                    $('.cf-field-enum__remove').unbind('click');
-                    $('.cf-field-enum__remove').bind('click', function (e) {
-                        $(e.target).closest('.select__enums__item').remove();
-                    });
-                }
-
-                // выводим ранее сохраненные варианты
-                if (self.config_settings.services) {
-                    $.each(self.config_settings.services, function () { addInput(this) });
-                }
-                $('.modal__link__add__service').before(addInput());
-
-                // добавление инпута
-                $('.modal__link__add__service').unbind('click');
-                $('.modal__link__add__service').bind('click', function (e) {
-                    e.preventDefault();
-                    if (!$('.modal_input__edit__service').length) addInput();
-                    else {
-                        var isEmptyInput = false;
-                        $.each($('.modal_input__edit__service'), function () {
-                            if (!$(this).val().trim().length) {
-                                $(this).val('').focus();
-                                isEmptyInput = true;
-                                return false;
-                            }
-                        });
-                        if (!isEmptyInput) addInput();
-                    }
-                });
-
-                // кнопки Сохранить и Закрыть
-                var saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                        class_name: 'modal__saveBtn-services',
-                        text: 'Сохранить'
-                    }),
-                    cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                        class_name: 'modal__cancelBtn-services',
-                        text: 'Закрыть'
-                    }),
-                    btnWrapper = '<div class="modal-body__actions" style="width: 100%;"></div>';
-
-                $('.modal__edit__services').append(btnWrapper);
-                $('.modal-body__actions').append(saveBtn);
-                $('.modal-body__actions').append(cancelBtn);
-                $('.modal-body__actions').css('margin-top', '20px');
-
-                $('.modal__saveBtn-services').unbind('click');
-                $('.modal__saveBtn-services').bind('click', function () {
-                    var services = [];
-                    $.each($('.modal_input__edit__service'), function () {
-                        if (!$(this).val().trim().length) return;
-                        services.push($(this).val().trim());
-                    });
-                    self.config_settings['services'] = services;
-                    self.saveConfigSettings();
-                    $('.edit__services').remove();
-
-                    // пересобираем селект
-                    $('.select__services__wrapper .select .select__services').remove();
-                    selectServices = addSelectServices()
-                    $('.select__services__wrapper .select').append(selectServices);
-                });
-
-                // margin-bottom для отступа
-                $('.modal__edit__services').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%;"></div>');
-            });
-        }
 
 
 
@@ -1119,6 +943,312 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 //             });
 //         }
 
+
+
+
+
+
+
+
+        /* ####################################################################################### */
+
+        // настройка прав доступа
+        this.accessRight = function () {
+            self.getConfigSettings();
+
+            // выбор оказанных услуги
+            // const addSelectServices = function () {
+            //     var services = [];
+            //     services.push({ option: 'Выберите оказанную услугу' });
+            //     if (self.config_settings.services) {
+            //         $.each(self.config_settings.services, function () {
+            //             services.push({ option: this });
+            //         });
+            //     }
+            //
+            //     var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+            //         items: services,
+            //         class_name: 'select__services'
+            //     });
+            //
+            //     return selectServices;
+            // }
+            //
+            // var selectServices = addSelectServices(),
+            //     editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+            //         class_name: 'editBtn__services',
+            //         text: 'Редактировать'
+            //     });
+            //
+            // var selectServicesWrapper = `
+            //     <div class="widget_settings_block__item_field select__services__wrapper" style="margin-top: 10px;">
+            //         <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+            //             Список выбора оказанных услуг:
+            //         </div>
+            //         <div class="widget_settings_block__input_field" style="display: flex; flex-direction: row;">
+            //             <div class="select" style="width: 75%;">${ selectServices }</div>
+            //             <div class="buttonEdit" style="width: 25%; text-align: right;">${ editBtn }</div>
+            //         </div>
+            //     </div>
+            // `;
+            //
+            // $('.widget_settings_block__controls').before(selectServicesWrapper);
+            // $('.select__services__wrapper .select ul').css({
+            //     'margin-left': '13px',
+            //     'width': 'auto',
+            //     'min-width': $('.select__services__wrapper .select').outerWidth() - 13
+            // });
+            //
+            // $('.editBtn__services').unbind('click');
+            // $('.editBtn__services').bind('click', function () {
+            //     new Modal({
+            //         class_name: 'edit__services',
+            //         init: function ($modal_body) {
+            //             var $this = $(this);
+            //             $modal_body
+            //                 .trigger('modal:loaded')
+            //                 .html(`
+            //                     <div class="modal__edit__services" style="width: 100%; min-height: 450px;">
+            //                         <h2 class="modal-body__caption head_2">Редактирование оказанных услуг</h2>
+            //                     </div>
+            //                 `)
+            //                 .trigger('modal:centrify')
+            //                 .append('');
+            //         },
+            //         destroy: function () {}
+            //     });
+            //
+            //     // add link service
+            //     linkAddService = `
+            //         <a href="" class="modal__link__add__service" style="
+            //             text-decoration: none;
+            //             color: #1375ab;
+            //             margin-top: 10px;
+            //         ">Добавить</a>
+            //     `;
+            //     $('.modal__edit__services').append(linkAddService);
+            //
+            //     // add input
+            //     const addInput = function (option = '') {
+            //         var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+            //             name: 'modal-input-edit-service',
+            //             class_name: 'modal_input__edit__service',
+            //             value: option,
+            //             placeholder: 'Вариант',
+            //             max_length: 50
+            //         });
+            //
+            //         // вставляем и ровняем инпут и кнопку удаления
+            //         $('.modal__link__add__service').before(`
+            //             <div class="widget_settings_block__input_field select__enums__item" style="
+            //                 margin-bottom: 4px;
+            //                 width: 100%;
+            //                 position: relative;
+            //             ">
+            //                 <div class="cf-field-enum__remove" title="Удалить" style="width: auto;">
+            //                     <svg class="svg-icon svg-common--trash-dims"><use xlink:href="#common--trash"></use></svg>
+            //                 </div>
+            //                 ${ input }
+            //             </div>
+            //         `);
+            //
+            //         $('.modal_input__edit__service').css({ 'padding-right': '25px', 'width': '100%' });
+            //         $('.cf-field-enum__remove').css({
+            //             'position': 'absolute',
+            //             'top': '10px',
+            //             'left': $('.modal_input__edit__service').outerWidth() - 20,
+            //             'cursor': 'pointer'
+            //         });
+            //
+            //         // удаление инпута
+            //         $('.cf-field-enum__remove').unbind('click');
+            //         $('.cf-field-enum__remove').bind('click', function (e) {
+            //             $(e.target).closest('.select__enums__item').remove();
+            //         });
+            //     }
+            //
+            //     // выводим ранее сохраненные варианты
+            //     if (self.config_settings.services) {
+            //         $.each(self.config_settings.services, function () { addInput(this) });
+            //     }
+            //     $('.modal__link__add__service').before(addInput());
+            //
+            //     // добавление инпута
+            //     $('.modal__link__add__service').unbind('click');
+            //     $('.modal__link__add__service').bind('click', function (e) {
+            //         e.preventDefault();
+            //         if (!$('.modal_input__edit__service').length) addInput();
+            //         else {
+            //             var isEmptyInput = false;
+            //             $.each($('.modal_input__edit__service'), function () {
+            //                 if (!$(this).val().trim().length) {
+            //                     $(this).val('').focus();
+            //                     isEmptyInput = true;
+            //                     return false;
+            //                 }
+            //             });
+            //             if (!isEmptyInput) addInput();
+            //         }
+            //     });
+            //
+            //     // кнопки Сохранить и Закрыть
+            //     var saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+            //             class_name: 'modal__saveBtn-services',
+            //             text: 'Сохранить'
+            //         }),
+            //         cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+            //             class_name: 'modal__cancelBtn-services',
+            //             text: 'Закрыть'
+            //         }),
+            //         btnWrapper = '<div class="modal-body__actions" style="width: 100%;"></div>';
+            //
+            //     $('.modal__edit__services').append(btnWrapper);
+            //     $('.modal-body__actions').append(saveBtn);
+            //     $('.modal-body__actions').append(cancelBtn);
+            //     $('.modal-body__actions').css('margin-top', '20px');
+            //
+            //     $('.modal__saveBtn-services').unbind('click');
+            //     $('.modal__saveBtn-services').bind('click', function () {
+            //         var services = [];
+            //         $.each($('.modal_input__edit__service'), function () {
+            //             if (!$(this).val().trim().length) return;
+            //             services.push($(this).val().trim());
+            //         });
+            //         self.config_settings['services'] = services;
+            //         self.saveConfigSettings();
+            //         $('.edit__services').remove();
+            //
+            //         // пересобираем селект
+            //         $('.select__services__wrapper .select .select__services').remove();
+            //         selectServices = addSelectServices()
+            //         $('.select__services__wrapper .select').append(selectServices);
+            //     });
+            //
+            //     // margin-bottom для отступа
+            //     $('.modal__edit__services').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%;"></div>');
+            // });
+
+
+
+
+            // список активных пользователей
+            var managers = [], checkbox;
+            managers.push({ option: 'Выберите пользователя' });
+            $.each(AMOCRM.constant('managers'), function () {
+                if (!this.active) return;
+                managers.push({ id: this.id, option: this.title });
+            });
+
+            // селект с пользователями
+            var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                items: managers,
+                class_name: 'select__managers'
+            });
+            var selectManagersWrapper = `
+                <div class="widget_settings_block__item_field select__managers__wrapper" style="margin-top: 10px;">
+                    <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+                        Настройка прав пользователей:
+                    </div>
+                    <div class="widget_settings_block__input_field" style="width: 100%;">
+                        ${ selectManagers }
+                    </div>
+                </div> 
+            `;
+
+            $('.widget_settings_block__controls').before(selectManagersWrapper);
+            $('.select__managers__wrapper .control--select--button').css('width', '100%');
+            $('.select__managers__wrapper ul').css({
+                'margin-left': '13px',
+                'width': '100%',
+                'min-width': $('.select__managers__wrapper').outerWidth() - 13
+            });
+
+            // выбор пользователя
+            $('.select__managers__wrapper ul li').unbind('click');
+            $('.select__managers__wrapper ul li').bind('click', function () {
+                var managerID = $(this).attr('data-value');
+
+                // очищаем перед запуском чекбоксы
+                $('.modal__rights__checkox__wrapper').remove();
+                if ($(this).find('span').text() === 'Выберите пользователя') {
+                    $('.modal__rights__checkox__wrapper').remove();
+                    return;
+                }
+
+                // ддобавление чекбокса
+                const addCheckbox = function (value, dataValue) {
+                    checkbox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
+                        class_name: 'modal__rights__checkox',
+                        checked: false,
+                        value: value,
+                        input_class_name: 'modal__rights__checkox__item',
+                        name: 'modal-rights--checkox',
+                        text: value,
+                        dataValue: dataValue
+                    });
+
+                    return checkbox;
+                }
+
+                checkboxWrapper = '<div class="modal__rights__checkox__wrapper" style="width: 100%; margin-top: 10px;"></div>';
+                $('.widget_settings_block__controls').before(checkboxWrapper);
+
+                // ссылка в сущности
+                var isEditLink = addCheckbox('Ссылка в сущности', 'isEditLink');
+                $('.modal__rights__checkox__wrapper').append(isEditLink);
+                // список в форме на выбор услуги
+                var isEditServices = addCheckbox('Список в форме на выбор услуги', 'isEditServices');
+                $('.modal__rights__checkox__wrapper').append(isEditServices);
+                // смотреть историю выполненных задач в сущности
+                var isShowHistory = addCheckbox('Смотреть историю выполненных задач в сущности', 'isShowHistory');
+                $('.modal__rights__checkox__wrapper').append(isShowHistory);
+                // редактирование истории
+                var isEditHistory = addCheckbox('Редактирование истории', 'isEditHistory');
+                $('.modal__rights__checkox__wrapper').append(isEditHistory);
+                // редактирование депозита
+                var isEditDeposit = addCheckbox('Редактирование депозита', 'isEditDeposit');
+                $('.modal__rights__checkox__wrapper').append(isEditDeposit);
+
+                // выравниваем чекбоксы
+                $('.modal__rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
+
+                // если ранее были отмечены, отображаем
+                if (self.config_settings.rights) {
+                    $.each(self.config_settings.rights, function (key, value) {
+                        if (key !== managerID) return;
+                        var rights = self.config_settings.rights[managerID];
+
+                        $.each($('.modal__rights__checkox'), function () {
+                            var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
+                            if (rights.includes(value)) {
+                                $(this).addClass('is-checked');
+                                $(this).trigger('click');
+                            }
+                        });
+                    });
+                }
+
+                // обновляем права пользователя
+                $('.modal__rights__checkox').unbind('change');
+                $('.modal__rights__checkox').bind('change', function () {
+                    // если ранее не был отмечен, создаем
+                    if (!self.config_settings.rights) self.config_settings.rights = {};
+                    var rights = [];
+
+                    // обновляем список выбранных вариантов
+                    $.each($('.modal__rights__checkox'), function () {
+                        var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
+                        if ($(this).hasClass('is-checked')) rights.push(value);
+                    });
+
+                    self.config_settings.rights[managerID] = rights;
+                    self.saveConfigSettings();
+                });
+            });
+        }
+
+        /* ####################################################################################### */
+
         this.callbacks = {
             settings: function() {
                 self.accessRight();
@@ -1159,8 +1289,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // ссылка на запуск таймера
                 if ((AMOCRM.getBaseEntity() === 'customers' || AMOCRM.getBaseEntity() === 'leads')
                     && AMOCRM.isCard()) {
-                    // обновляем данные из системной переменной
-                    self.getConfigSettings();
 
                     self.render_template({
                         body: '',
