@@ -260,14 +260,8 @@
         $mysqli->query($update);
     }
 
-    // пауза таймера
+    // timer pause
     if ($_POST['method'] == 'timer_pause' && $Config->CheckToken()) {
-        // текущее время
-        $tz = $_POST['timezone'];
-        $timestamp = time();
-        $dt = new DateTime('now', new DateTimeZone($tz));
-        $dt->setTimestamp($timestamp);
-
         $select = '
             SELECT * 
             FROM billing_timer 
@@ -284,30 +278,26 @@
 
         // добавляем разницу к таймеру
         $time_work = new DateTime($result['time_work']);
-        $interval = 'PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S';
-        $dateInterval = new DateInterval($interval);
-        $time_work->add($dateInterval)->format('d.m.H H:i:s');
+        $dateInterval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
+        $time_work->add($dateInterval)->format('d.m.Y H:i:s');
 
-        // если прошли сутки, дату ставим 23:59:59 как максимальную
+        // если разница больше суток, дату ставим 23:59:59 как максимальную
         if ($time_work->format('d.m.Y') !== '01.01.2000') {
-            $time_work = (new DateTime('01.01.2000 23:59:59'));
+            $time_work = new DateTime('01.01.2000 23:59:59');
         }
-        $time_work = $time_work->format('d.m.Y H:i:s');
 
         // обновляем значение в таблице
         $update = '
             UPDATE billing_timer
             SET time_start = "",
                 status = "pause",
-                time_work = "' . $time_work . '"
+                time_work = "' . $time_work->format('d.m.Y H:i:s') . '"
             WHERE essence_id = "' . $_POST['essence_id'] . '"
                 AND user_id = "' . $_POST['user_id'] . '"
                 AND status != "finish"
         ';
 
-        $result = $mysqli->query($update);
-        $result = $mysqli->query($select)->fetch_assoc();
-        return json_encode($result);
+        $mysqli->query($update);
     }
 
 
