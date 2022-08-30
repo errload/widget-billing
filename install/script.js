@@ -24,6 +24,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             $(`#${ self.get_settings().widget_code }_custom`).trigger('change');
         }
 
+        // очищаем интервалы
+        this.clearIntervals = function () {
+            var maxInterval = setInterval(() => {}, 1);
+            for (var i = 0; i < maxInterval; i++) clearInterval(i);
+        }
+
+        /* ###################################################################### */
+
 
 
 
@@ -268,69 +276,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 //                     });
 //
 //                     // margin-bottom для отступа
-//                     $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 30px; width: 100%"></div>');
+//                     $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 30px; width: 100%;"></div>');
 //                 }
 //             });
 //         });
 
 
 
-
-
-//         // перезапуск интервалов
-//         const resetIntervals = function () {
-//             // останавливаем все таймеры
-//             var maxInterval = setInterval(() => {}, 1);
-//             for (var i = 0; i < maxInterval; i++) clearInterval(i);
-//
-//             // берем значения из куки
-//             var timerID, timeCoockie, statusCoockie, linkCoockie;
-//             readCookie('timer') ? self.timer = JSON.parse(readCookie('timer')) : self.timer = {};
-//
-//             if (self.timer) {
-//                 // перебираем полученный массив
-//                 $.each(self.timer, function (key, value) {
-//                     // и для каждого запускаем таймер
-//                     var interval = setInterval(() => {
-//                         timerID = key;
-//                         [timeCoockie, statusCoockie, linkCoockie] = self.timer[timerID];
-//
-//                         // если таймер не запущен, пропускаем
-//                         if (statusCoockie !== 'start') return;
-//
-//                         // устанавливаем время из массива
-//                         var date = new Date();
-//                         var time = timeCoockie.split(':');
-//                         date.setHours(time[0]);
-//                         date.setMinutes(time[1]);
-//                         date.setSeconds(time[2]);
-//
-//                         // если прошли сутки, останавливаем таймер (максимальное время)
-//                         if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
-//                             clearInterval(interval);
-//                             return false;
-//                         }
-//
-//                         // увеличиваем на секунду
-//                         date.setSeconds(date.getSeconds() + 1);
-//                         timeCoockie = date.toLocaleTimeString();
-//                         // обновляем массив
-//                         self.timer[timerID] = [timeCoockie, statusCoockie, linkCoockie];
-//                         // пишем новое значение в куки
-//                         writeCookie('timer', JSON.stringify(self.timer), 30);
-//
-//                         // если модалка открыта, отображаем текущее значение таймера
-//                         var modalTimer = $(`.modal__main-block[data-id="${ timerID }"]`);
-//                         if (modalTimer.length) modalTimer.find('.timer').text(timeCoockie);
-//                     }, 10);
-//                 });
-//             }
-//         }
-
         // модалка таймера
         const modalTimer = function () {
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
+                self.clearIntervals();
+
                 var interval,
                     rights = false,
                     priceManager = false,
@@ -348,23 +306,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 }
                 console.log(priceManager, rights);
 
-
-
-
-                // достаем данные из куки в локальной переменной
-                // var timerID, timeCoockie, statusCoockie, linkCoockie;
-                // if (self.timer) {
-                //     $.each(self.timer, function (key, value) {
-                //         if (parseInt(key) !== AMOCRM.data.current_card.id) return;
-                //         [timeCoockie, statusCoockie, linkCoockie] = value;
-                //         timerID = key;
-                //     });
-                // }
-
-                // if (!timerID) timerID = AMOCRM.data.current_card.id;
-                // if (!timeCoockie) timeCoockie = '00:00:00';
-                // if (!statusCoockie) statusCoockie = '';
-                // if (!linkCoockie) linkCoockie = '';
+                /* ###################################################################### */
 
                 // запуск модалки
                 new Modal({
@@ -381,8 +323,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             .trigger('modal:centrify')
                             .append('');
                     },
-                    destroy: function () { clearInterval(interval) }
+                    destroy: function () {}
                 });
+
+                /* ###################################################################### */
 
                 // проверка авторизации для запуска таймера
                 $.ajax({
@@ -406,6 +350,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     }
                 });
 
+                /* ###################################################################### */
+
                 // история
                 $('.modal__timer').css('position', 'relative');
                 hystoryLink = `
@@ -414,6 +360,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     ">История</a>
                 `;
                 if (rights && rights.includes('isShowHistory')) $('.modal__timer').append(hystoryLink);
+
+                /* ###################################################################### */
 
                 // ссылка на проект
                 var linkProjectWrapper = `<div class="modal__link__project__wrapper" style="width: 100%;">
@@ -500,6 +448,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     }
                 });
 
+                /* ###################################################################### */
+
                 // ссылка на задачу
                 var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
                     name: 'modal-input-link-task',
@@ -508,7 +458,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     placeholder: 'вставьте ссылку на задачу'
                 });
 
-                var linkTaskWrapper = `<div class="modal__link-task__wrapper" style="width: 100%; margin-top: 10px;">
+                var linkTaskWrapper = `<div class="modal__link__task__wrapper" style="width: 100%; margin-top: 10px;">
                     <span style="width: 100%;">Ссылка на задачу:</span><br/>
                     ${ inputLinkTask }
                 </div>`;
@@ -538,7 +488,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         else {
                             $('.modal__input__link__task').val(data);
                             $('.modal__input__link__task').css('display', 'none');
-                            $('.modal__link-task__wrapper').append(`<a href="${ data }" class="modal__link__task" style="
+                            $('.modal__link__task__wrapper').append(`<a href="${ data }" class="modal__link__task" style="
                                     margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
                                     ${ data }
                                 </a>
@@ -546,6 +496,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         }
                     }
                 });
+
+                /* ###################################################################### */
 
                 // таймер
                 var startTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
@@ -571,15 +523,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 </div>`;
 
                 $('.modal__timer').append(timerWrapper);
-                $('.start__timer__btn').css({
-                    'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
-                });
-                $('.pause__timer__btn').css({
-                    'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
-                });
-                $('.stop__timer__btn').css({
-                    'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
-                });
+                $('.start__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
+                $('.pause__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
+                $('.stop__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
 
 
 
@@ -602,7 +548,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     },
                     dataType: 'json',
                     success: function (data) {
-                        console.log(data);
+                        self.clearIntervals();
 
                         // если запись не найдена, отображаем старт времени
                         if (!data) {
@@ -614,7 +560,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         else {
                             var time_work = data['time_work'];
                             var status = data['status'];
-                            console.log(time_work, status);
+
                             // иначе получаем время таймера
                             var date = new Date();
                             var time = time_work.split(' ');
@@ -686,9 +632,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
-                // запуск таймера
+                // timer start
                 $('.start__timer__btn').unbind('click');
                 $('.start__timer__btn').bind('click', function () {
+                    self.clearIntervals();
+
                     // если ссылки на задачу нет, отключаем кнопку
                     if ($('.modal__input__link__task').val().trim().length === 0) {
                         $('.modal__input__link__task').css('border-color', '#f37575');
@@ -709,8 +657,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         },
                         dataType: 'json',
                         success: function (data) {
-                            console.log(data);
-
                             // показываем кнопки паузы и стоп
                             $('.start__timer__btn').css('display', 'none');
                             $('.pause__timer__btn').css('display', 'block');
@@ -766,11 +712,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
-                // пауза таймера
+                // timer pause
                 $('.pause__timer__btn').unbind('click');
                 $('.pause__timer__btn').bind('click', function () {
-                    // останавливаем таймер
-                    clearInterval(interval);
+                    self.clearIntervals();
+
                     // показываем кнопки старт и стоп
                     $('.start__timer__btn').css('display', 'block');
                     $('.pause__timer__btn').css('display', 'none');
@@ -797,6 +743,241 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
+                // timer stop
+                $('.stop__timer__btn').unbind('click');
+                $('.stop__timer__btn').bind('click', function () {
+                    self.clearIntervals();
+
+                    // показываем кнопку сохранить
+                    $('.start__timer__btn').css('display', 'none');
+                    $('.pause__timer__btn').css('display', 'none');
+                    $('.stop__timer__btn').css('display', 'block');
+                    $('.stop__timer__btn').text('Сохранить');
+
+                    // обновляем значение таймера на сервере
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'post',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'timer_stop',
+                            'essence_id': essenseID,
+                            'user_id': userID
+                        },
+                        dataType: 'json',
+                        success: function (data) {}
+                    });
+
+                    /* ###################################################################### */
+
+                    // запуск модалки завершения
+                    new Modal({
+                        class_name: 'timer__stop',
+                        init: function ($modal_body) {
+                            var $this = $(this);
+                            $modal_body
+                                .trigger('modal:loaded')
+                                .html(`
+                                    <div class="modal__timer__stop" style="width: 100%; min-height: 385px;">
+                                        <h2 class="modal__body__caption head_2">Сохранение таймера</h2>
+                                    </div>
+                                `)
+                                .trigger('modal:centrify')
+                                .append('');
+                        },
+                        destroy: function () {}
+                    });
+
+                    /* ###################################################################### */
+
+                    // выбор ответственного
+                    var managers = [];
+                    managers.push({ id: 'null', option: 'Выберите ответственного' });
+
+                    $.each(AMOCRM.constant('managers'), function () {
+                        if (!this.active) return;
+                        managers.push({ id: this.id, option: this.title });
+                    });
+
+                    var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                            items: managers,
+                            class_name: 'modal__select__managers'
+                        }),
+                        selectManagersWrapper = `<div class="modal__select__managers__wrapper" style="width: 100%; margin-top: 20px;">
+                            <span style="width: 100%;">Выбор ответственного:</span><br/>
+                            ${ selectManagers }
+                        </div>`;
+
+                    $('.modal__timer__stop').append(selectManagersWrapper);
+                    $('.modal__select__managers').css('margin-top', '3px');
+                    $('.modal__select__managers .control--select--button').css('width', '100%');
+                    $('.modal__select__managers ul').css({
+                        'margin-left': '13px',
+                        'width': 'auto',
+                        'min-width': $('.modal__timer__stop').outerWidth() - 13
+                    });
+
+                    /* ###################################################################### */
+
+                    // имя клиента
+                    var inputClientName = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                        name: 'modal-input-client-name',
+                        class_name: 'modal__input__client__name',
+                        value: '',
+                        placeholder: 'введите имя клиента'
+                    });
+
+                    var inputClientNameWrapper = `<div class="modal__client__name__wrapper" style="width: 100%; margin-top: 10px;">
+                        <span style="width: 100%;">Имя клиента:</span><br/>
+                        ${ inputClientName }
+                    </div>`;
+
+                    $('.modal__timer__stop').append(inputClientNameWrapper);
+                    $('.modal__input__client__name').css({ 'width': '100%', 'margin-top': '3px' });
+
+                    /* ###################################################################### */
+
+                    // выбор услуги
+                    var services = [];
+                    services.push({ id: 'null', option: 'Выберите оказанную услугу' });
+                    services.push({ id: '1', option: 'Работа в amoCRM' });
+                    services.push({ id: '2', option: 'Консультация в чате' });
+
+                    var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                            items: services,
+                            class_name: 'modal__select__services'
+                        }),
+                        selectServicesWrapper = `<div class="modal__select__services__wrapper" style="width: 100%; margin-top: 10px;">
+                            <span style="width: 100%;">Список оказанных услуг:</span><br/>
+                            ${ selectServices }
+                        </div>`;
+
+                    $('.modal__timer__stop').append(selectServicesWrapper);
+                    $('.modal__select__services').css('margin-top', '3px');
+                    $('.modal__select__services .control--select--button').css('width', '100%');
+                    $('.modal__select__services ul').css({
+                        'margin-left': '13px',
+                        'width': 'auto',
+                        'min-width': $('.modal__timer__stop').outerWidth() - 13
+                    });
+
+                    /* ###################################################################### */
+
+                    // комментарий
+                    var textareaComment = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
+                            name: 'modal-textarea-comment',
+                            class_name: 'modal__textarea__comment',
+                            placeholder: 'введите комментарий'
+                        }),
+                        textareaCommentWrapper = `<div class="modal__textarea__comment__wrapper" style="width: 100%; margin-top: 10px;">
+                            <span style="width: 100%;">Комментарий:</span><br/>
+                            ${ textareaComment }
+                        </div>`;
+
+                    $('.modal__timer__stop').append(textareaCommentWrapper);
+                    $('.modal__textarea__comment').css({ 'width': '100%', 'margin-top': '3px' });
+
+                    /* ###################################################################### */
+
+                    // кнопки Сохранить и Закрыть
+                    var saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                            class_name: 'modal__saveBtn__timer',
+                            text: 'Сохранить'
+                        }),
+                        cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                            class_name: 'modal__cancelBtn__timer',
+                            text: 'Закрыть'
+                        }),
+                        btnWrapper = `<div class="modal__body__actions__stop" style="width: 100%;">
+                            ${ saveBtn } ${ cancelBtn }
+                        </div>`;
+
+                    $('.modal__timer__stop').append(btnWrapper);
+                    $('.modal__body__actions__stop').css('margin-top', '20px');
+
+                    // margin-bottom для отступа
+                    $('.modal__timer__stop').append(`
+                        <div class="modal__bottom" style="position: absolute; height: 70px; width: 100%;"></div>
+                    `);
+
+                    /* ###################################################################### */
+
+                    // сохранение таймера в БД
+                    $('.modal__saveBtn__timer').unbind('click');
+                    $('.modal__saveBtn__timer').bind('click', function () {
+                        // если необходимые поля не выбраны, красим в красный
+                        var manager = $('.modal__select__managers .control--select--button');
+                        var client = $('.modal__input__client__name');
+                        var service = $('.modal__select__services .control--select--button');
+                        var comment = $('.modal__textarea__comment');
+                        var error = false;
+
+                        if (manager.text() === 'Выберите ответственного') {
+                            manager.css('border-color', '#f57d7d');
+                            error = true;
+                        }
+
+                        if (!client.val().trim().length) {
+                            client.css('border-color', '#f57d7d');
+                            client.val(client.val().trim());
+                            error = true;
+                        }
+
+                        if (service.text() === 'Выберите оказанную услугу') {
+                            service.css('border-color', '#f57d7d');
+                            error = true;
+                        }
+
+                        // возвращаем естесственные цвета в случае изменения
+                        manager.unbind('click');
+                        manager.bind('click', function () { manager.css('border-color', '#d4d5d8') });
+                        client.unbind('change');
+                        client.bind('change', function () { client.css('border-color', '#d4d5d8') });
+                        service.unbind('click');
+                        service.bind('click', function () { service.css('border-color', '#d4d5d8') });
+
+                        if (error) return false;
+
+                        /* ###################################################################### */
+
+                        // сохраняем результат в БД
+                        $.ajax({
+                            url: url_link_t,
+                            method: 'post',
+                            data: {
+                                'domain': document.domain,
+                                'method': 'timer_save',
+                                'essence_id': essenseID,
+                                'user_id': userID,
+                                'priceManager': priceManager,
+                                'user': manager.text(),
+                                'client': client.val().trim(),
+                                'service': service.text(),
+                                'comment': $('.modal__textarea__comment').val().trim()
+                            },
+                            dataType: 'json',
+                            success: function (data) {}
+                        });
+
+                        // возвращаем значения по умолчанию для старта таймера
+                        $('.timer__stop').remove();
+                        $('.modal__link__task').remove();
+                        $('.modal__input__link__task').css('display', 'block');
+                        $('.modal__input__link__task').val('');
+                        $(`.modal__timer__wrapper .time__timer`).text('00:00:00');
+                        $('.start__timer__btn').css('display', 'block');
+                        $('.pause__timer__btn').css('display', 'none');
+                        $('.stop__timer__btn').css('display', 'none');
+                        $('.stop__timer__btn').text('Стоп');
+                    });
+                });
+
+
+
+
+
+
+
 
 
 
@@ -813,247 +994,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.modal__body__actions').css('margin-top', '20px');
 
                 // margin-bottom для отступа
-                $('.modal__timer').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>');
+                $('.modal__timer').append('<div class="modal__bottom" style="position: absolute; height: 70px; width: 100%;"></div>');
 
 
 
 
 
-
-//                 /* ############################################################### */
-//
-
-//
-//                 // если таймер не оставновлен, показываем кнопки пауза и стоп
-//                 if (statusCoockie == 'start') {
-//                     $('.start-timer__btn').css('display', 'none');
-//                     $('.pause-timer__btn').css('display', 'block');
-//                     $('.stop-timer__btn').css('display', 'block');
-//                 }
-//
-//                 // если таймер на паузе, показываем кнопки старт и стоп
-//                 if (statusCoockie == 'pause' || !statusCoockie) {
-//                     $('.pause-timer__btn').css('display', 'none');
-//                     $('.start-timer__btn').css('display', 'block');
-//                     $('.stop-timer__btn').css('display', 'block');
-//                 }
-//
-//                 // если таймер оставновлен, прячем кнопки старт и пауза
-//                 if (statusCoockie == 'stop') {
-//                     $('.pause-timer__btn').css('display', 'none');
-//                     $('.start-timer__btn').css('display', 'none');
-//                     $('.stop-timer__btn').css('display', 'block');
-//                 }
-//
-//                 // восстанавливаем цвет ссылки задачи в случае ошибки
-//                 var input = $('.modal__input__link-task');
-//                 input.unbind('change');
-//                 input.bind('change', () => { input.css('border-color', '#dbdedf') });
-//
-//                 /* ################## */
-//
-
-//
-//                 /* ################## */
-//
-//                 // запуск таймера
-//                 $('.start-timer__btn').unbind('click');
-//                 $('.start-timer__btn').bind('click', function () {
-//                     // если ссылки на задачу нет, отключаем кнопку
-//                     if (input.length) {
-//                         if (input.val().trim().length === 0) {
-//                             input.css('border-color', '#f37575 ');
-//                             input.val('');
-//                             input.focus();
-//                             return false;
-//                         }
-//                     }
-//
-//                     // убираем кнопку старт и показываем паузу и стоп
-//                     $('.pause-timer__btn').css('display', 'block');
-//                     $('.start-timer__btn').css('display', 'none');
-//                     $('.stop-timer__btn').css('display', 'block');
-//
-//                     // отключаем редактирование ссылки на задачу, и показываем только ссылку
-//                     if (!$('.modal__link-task').length) {
-//                         var linkTask = `<a href="${ $('.modal__input__link-task').val() }" class="modal__link-task"
-//                             style="
-//                                 margin-top: 3px;
-//                                 text-decoration: none;
-//                                 color: #1375ab;
-//                                 word-break: break-all;
-//                             " target="_blank">
-//                             ${ $('.modal__input__link-task').val() }
-//                         </a>`;
-//                         $('.modal__link-task__wrapper').append(linkTask);
-//                         $('.modal__input__link-task').css('display', 'none');
-//                     }
-//
-//                     // запускаем таймер
-//                     timeCoockie = $(`.modal__main-block[data-id="${ timerID }"] .timer`).text();
-//                     statusCoockie = 'start';
-//                     if (!linkCoockie) linkCoockie = input.val();
-//
-//                     self.timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
-//                     writeCookie('timer', JSON.stringify(self.timer), 30);
-//                     resetIntervals();
-//                 });
-//
-//                 // пауза таймера
-//                 $('.pause-timer__btn').unbind('click');
-//                 $('.pause-timer__btn').bind('click', function () {
-//                     // убираем кнопку пауза и показываем старт и стоп
-//                     $('.pause-timer__btn').css('display', 'none');
-//                     $('.start-timer__btn').css('display', 'block');
-//                     $('.stop-timer__btn').css('display', 'block');
-//
-//                     // останавливаем таймер
-//                     timeCoockie = $(`.modal__main-block[data-id="${ timerID }"] .timer`).text();
-//                     statusCoockie = 'pause';
-//
-//                     self.timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
-//                     writeCookie('timer', JSON.stringify(self.timer), 30);
-//                     resetIntervals();
-//                 });
-//
-//                 // стоп таймера
-//                 $('.stop-timer__btn').unbind('click');
-//                 $('.stop-timer__btn').bind('click', function () {
-//                     // если таймер не был запущен, пропускаем
-//                     if (!linkCoockie) return;
-//
-//                     // убираем кнопку пауза и показываем старт и стоп
-//                     $('.pause-timer__btn').css('display', 'none');
-//                     $('.start-timer__btn').css('display', 'none');
-//                     $('.stop-timer__btn').css('display', 'block');
-//
-//                     // останавливаем таймер
-//                     timeCoockie = $(`.modal__main-block[data-id="${ timerID }"] .timer`).text();
-//                     statusCoockie = 'stop';
-//
-//                     self.timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
-//                     writeCookie('timer', JSON.stringify(self.timer), 30);
-//                     resetIntervals();
-//
-//                     // запуск модалки завершения таймера
-//                     new Modal({
-//                         class_name: 'stop__timer',
-//                         init: function ($modal_body) {
-//                             var $this = $(this);
-//                             $modal_body
-//                                 .trigger('modal:loaded')
-//                                 .html(`
-//                                     <div class="modal__main-block-stop" style="width: 100%; min-height: 360px;">
-//                                         <h2 class="modal-body__caption head_2">Сохранение таймера</h2>
-//                                     </div>
-//                                 `)
-//                                 .trigger('modal:centrify')
-//                                 .append('');
-//                         },
-//                         destroy: function () {}
-//                     });
-//
-//                     // выбор ответственного
-//                     var managers = [];
-//                     managers.push({ id: 'null', option: 'Выберите ответственного' });
-//
-//                     $.each(AMOCRM.constant('managers'), function () {
-//                         if (!this.active) return;
-//                         managers.push({ id: this.id, option: this.title });
-//                     });
-//
-//                     var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-//                             items: managers,
-//                             class_name: 'modal__select-managers'
-//                         }),
-//                         selectManagersWrapper = '<div class="modal__select-managers__wrapper" style="width: 100%; margin-top: 20px;"></div>';
-//
-//                     $('.modal__main-block-stop').append(selectManagersWrapper);
-//                     $('.modal__select-managers__wrapper').append(selectManagers);
-//                     $('.modal__select-managers .control--select--button').css('width', '100%');
-//                     $('.modal__select-managers ul').css({
-//                         'margin-left': '13px',
-//                         'width': 'auto',
-//                         'min-width': $('.modal__main-block-stop').outerWidth() - 13
-//                     });
-//
-//                     // имя клиента
-//                     var inputClientName = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-//                         name: 'modal-input-client-name',
-//                         class_name: 'modal__input__client-name',
-//                         value: '',
-//                         placeholder: 'введите имя клиента'
-//                     });
-//
-//                     var inputClientNameWrapper = `<div class="modal__client-name__wrapper" style="width: 100%; margin-top: 10px;">
-//                         <span style="width: 100%;">Имя клиента:</span><br/>
-//                     </div>`;
-//
-//                     $('.modal__main-block-stop').append(inputClientNameWrapper);
-//                     $('.modal__client-name__wrapper').append(inputClientName);
-//                     $('.modal__input__client-name').css({ 'width': '100%', 'margin-top': '3px' });
-//
-//                     // выбор услуги
-//                     var services = [];
-//                     services.push({ id: 'null', option: 'Выберите оказанную услугу' });
-//                     services.push({ id: '1', option: 'Работа в amoCRM' });
-//                     services.push({ id: '2', option: 'Консультация в чате' });
-//                     services.push({ id: '3', option: 'Выберите оказанную услугу' });
-//                     services.push({ id: '4', option: 'Выберите оказанную услугу' });
-//                     services.push({ id: '5', option: 'Выберите оказанную услугу' });
-//                     services.push({ id: '6', option: 'Выберите оказанную услугу' });
-//                     services.push({ id: '7', option: 'Выберите оказанную услугу' });
-//
-//                     var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-//                             items: services,
-//                             class_name: 'modal__select-services'
-//                         }),
-//                         selectServicesWrapper = '<div class="modal__select-services__wrapper" style="width: 100%; margin-top: 20px;"></div>';
-//
-//                     $('.modal__main-block-stop').append(selectServicesWrapper);
-//                     $('.modal__select-services__wrapper').append(selectServices);
-//                     $('.modal__select-services .control--select--button').css('width', '100%');
-//                     $('.modal__select-services ul').css({
-//                         'margin-left': '13px',
-//                         'width': 'auto',
-//                         'min-width': $('.modal__main-block').outerWidth() - 13
-//                     });
-//
-//                     // комментарий
-//                     var textareaComment = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
-//                         name: 'modal-textarea-comment',
-//                         class_name: 'modal__textarea__comment',
-//                         placeholder: 'введите комментарий'
-//                     });
-//
-//                     var textareaCommentWrapper = `<div class="modal__textarea-comment__wrapper" style="width: 100%; margin-top: 10px;">
-//                         <span style="width: 100%;">Комментарий:</span><br/>
-//                     </div>`;
-//
-//                     $('.modal__main-block-stop').append(textareaCommentWrapper);
-//                     $('.modal__textarea-comment__wrapper').append(textareaComment);
-//                     $('.modal__textarea__comment').css({ 'width': '100%', 'margin-top': '3px' });
-//
-//                     // кнопки Сохранить и Закрыть
-//                     var saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-//                             class_name: 'modal__saveBtn-timer',
-//                             text: 'Сохранить'
-//                         }),
-//                         cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-//                             class_name: 'modal__cancelBtn-timer',
-//                             text: 'Закрыть'
-//                         }),
-//                         btnWrapper = '<div class="modal-body__actions-stop" style="width: 100%;"></div>';
-//
-//                     $('.modal__main-block-stop').append(btnWrapper);
-//                     $('.modal-body__actions-stop').append(saveBtn);
-//                     $('.modal-body__actions-stop').append(cancelBtn);
-//                     $('.modal-body__actions-stop').css('margin-top', '20px');
-//
-//                     // margin-bottom для отступа
-//                     $('.modal__main-block-stop').append(`
-//                         <div class="modal__bottom" style="position: absolute; height: 70px; width: 100%"></div>
-//                     `);
 //
 //                     // сохранение таймера в БД
 //                     $('.modal__saveBtn-timer').unbind('click');
@@ -1393,7 +1339,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 //                             });
 //
 //                             // margin-bottom для отступа
-//                             $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 30px; width: 100%"></div>');
+//                             $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 30px; width: 100%;"></div>');
 //                         }
 //                     });
 //                 });
