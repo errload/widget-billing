@@ -63,13 +63,17 @@
 
     // проверка авторизации для запуска таймера
     if ($_POST['method'] == 'isAuth') {
-        if ($Config->CheckToken()) echo true;
-        else echo false;
+        if ($Config->CheckToken()) echo json_encode(true);
+        else echo json_encode(false);
     }
 
     // получаем ссылку на проект
     if ($_POST['method'] == 'link_project' && $Config->CheckToken()) {
-        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
+        $select = '
+            SELECT * 
+            FROM billing_deposit 
+            WHERE essence_id="' . $_POST['essence_id'] . '"
+        ';
 
         $result = $mysqli->query($select);
         if (!$result->num_rows) $result = '';
@@ -83,9 +87,25 @@
 
     // обновляем ссылку на проект
     if ($_POST['method'] == 'change_link_project' && $Config->CheckToken()) {
-        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $update = 'UPDATE billing_deposit SET link_project="' . $_POST['link_project'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "' . $_POST['link_project'] . '")';
+        $select = '
+            SELECT * 
+            FROM billing_deposit 
+            WHERE essence_id="' . $_POST['essence_id'] . '"
+        ';
+        $update = '
+            UPDATE billing_deposit 
+            SET link_project="' . $_POST['link_project'] . '" 
+            WHERE essence_id="' . $_POST['essence_id'] . '"
+        ';
+        $insert = '
+            INSERT INTO billing_deposit 
+            VALUES(
+                   null, 
+                   "' . $_POST['essence_id'] . '", 
+                   0, 
+                   "' . $_POST['link_project'] . '"
+            )
+        ';
 
         $result = $mysqli->query($select);
         if (!$result->num_rows) $mysqli->query($insert);
@@ -97,7 +117,12 @@
 
     // получаем ссылку на задачу
     if ($_POST['method'] == 'link_task' && $Config->CheckToken()) {
-        $select = 'SELECT * FROM billing_timer WHERE user_id="' . $_POST['user_id'] . '" AND essence_id="' . $_POST['essence_id'] . '"';
+        $select = '
+            SELECT * 
+            FROM billing_timer 
+            WHERE user_id="' . $_POST['user_id'] . '" 
+            AND essence_id="' . $_POST['essence_id'] . '"
+        ';
 
         $result = $mysqli->query($select);
         if (!$result->num_rows) $result = '';
@@ -117,9 +142,19 @@
         $dt = new DateTime('now', new DateTimeZone($tz));
         $dt->setTimestamp($timestamp);
 
-        $select = 'SELECT * FROM billing_timer WHERE user_id="' . $_POST['user_id'] . '" AND essence_id="' . $_POST['essence_id'] . '"';
+        $select = '
+            SELECT * 
+            FROM billing_timer 
+            WHERE user_id = "' . $_POST['user_id'] . '" 
+            AND essence_id = "' . $_POST['essence_id'] . '"
+            AND status != "finish"
+        ';
+
         $result = $mysqli->query($select);
-        if (!$result->num_rows) echo false;
+        if (!$result->num_rows) {
+            echo json_encode(false);
+            return false;
+        }
         $result = $mysqli->query($select)->fetch_assoc();
 
         // получаем разницу с момента старта таймера
@@ -129,8 +164,13 @@
         $time_work = $time_work->h . ':' . $time_work->i . ':' . $time_work->s;
 
         // обновляем время и продолжаем таймер
-        $update = 'UPDATE billing_timer SET time_work="' . $time_work . '"
-            WHERE essence_id="' . $_POST['essence_id'] . '" AND user_id = "' . $_POST['user_id'] . '"';
+        $update = '
+            UPDATE billing_timer 
+            SET time_work="' . $time_work . '"
+            WHERE essence_id="' . $_POST['essence_id'] . '" 
+            AND user_id = "' . $_POST['user_id'] . '"
+        ';
+
         $result = $mysqli->query($update);
         $result = $mysqli->query($select)->fetch_assoc();
 
@@ -139,38 +179,47 @@
 
     // запускаем таймер
     if ($_POST['method'] == 'timer_start' && $Config->CheckToken()) {
+        // текущее время
         $tz = $_POST['timezone'];
         $timestamp = time();
         $dt = new DateTime('now', new DateTimeZone($tz));
         $dt->setTimestamp($timestamp);
 
-        $select = 'SELECT * FROM billing_timer WHERE user_id="' . $_POST['user_id'] . '" AND essence_id="' . $_POST['essence_id'] . '"';
-        $update = 'UPDATE billing_timer SET link_project="' . $_POST['link_project'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-        $insert = 'INSERT INTO billing_timer VALUES(
-            null,
-            "' . $_POST['essence_id'] . '",
-            "' . $_POST['user_id'] . '",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "' . $_POST['link_task'] . '",
-            "' . $dt->format('d.m.Y H:i:s') . '",
-            "' . $_POST['timezone'] . '",
-            "' . $dt->format('d.m.Y H:i:s') . '",
-            "",
-            "00:00:00",
-            "start"
-        )';
+        $select = '
+            SELECT * 
+            FROM billing_timer 
+            WHERE user_id = "' . $_POST['user_id'] . '" 
+            AND essence_id = "' . $_POST['essence_id'] . '"
+            AND status != "finish"
+        ';
+        $update = '
+            UPDATE billing_timer 
+            SET link_project="' . $_POST['link_project'] . '" 
+            WHERE essence_id="' . $_POST['essence_id'] . '"
+        ';
+        $insert = '
+            INSERT INTO billing_timer 
+            VALUES(
+                   null,
+                   "' . $_POST['essence_id'] . '",
+                   "' . $_POST['user_id'] . '",
+                   "",
+                   "",
+                   "",
+                   "",
+                   "",
+                   "' . $_POST['link_task'] . '",
+                   "' . $dt->format('d.m.Y H:i:s') . '",
+                   "' . $_POST['timezone'] . '",
+                   "' . $dt->format('d.m.Y H:i:s') . '",
+                   "00:00:00",
+                   "start"
+            )
+        ';
 
-        // находим нужную запись
         $result = $mysqli->query($select);
-        // если не существует, создаем
         if (!$result->num_rows) $mysqli->query($insert);
-        // иначе обновляем
         else $mysqli->query($update);
-        // возвращаем актуальную ссылку
         $result = $mysqli->query($select)->fetch_assoc();
 
         echo json_encode($result);

@@ -331,7 +331,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         const modalTimer = function () {
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
-                var startInterval,
+                var interval,
                     rights = false,
                     priceManager = false,
                     userID = AMOCRM.constant('user').id,
@@ -381,7 +381,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             .trigger('modal:centrify')
                             .append('');
                     },
-                    destroy: function () { clearInterval(startInterval) }
+                    destroy: function () { clearInterval(interval) }
                 });
 
                 // проверка авторизации для запуска таймера
@@ -410,11 +410,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.modal__timer').css('position', 'relative');
                 hystoryLink = `
                     <a href="#" class="hystory__link" style="
-                        text-decoration: none;
-                        color: #1375ab;
-                        top: 5px;
-                        right: 0;
-                        position: absolute;
+                        text-decoration: none; color: #1375ab; top: 5px; right: 0; position: absolute;
                     ">История</a>
                 `;
                 if (rights && rights.includes('isShowHistory')) $('.modal__timer').append(hystoryLink);
@@ -575,9 +571,17 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 </div>`;
 
                 $('.modal__timer').append(timerWrapper);
-                $('.start__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '80px' });
-                $('.pause__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '80px' });
-                $('.stop__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '80px' });
+                $('.start__timer__btn').css({
+                    'margin-left': '5px', 'margin-top': '-2px', 'width': '80px', 'display': 'block'
+                });
+                $('.pause__timer__btn').css({
+                    'margin-left': '5px', 'margin-top': '-2px', 'width': '80px', 'display': 'block'
+                });
+                $('.stop__timer__btn').css({
+                    'margin-left': '5px', 'margin-top': '-2px', 'width': '80px', 'display': 'block'
+                });
+
+
 
 
 
@@ -600,33 +604,34 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     },
                     dataType: 'json',
                     success: function (data) {
-                        if (!data) console.log('not data');
+                        // если запись не найдена, отображаем старт времени
+                        if (!data) $('.modal__timer__wrapper .time__timer').text('00:00:00');
                         else {
-                            console.log(data);
-
-                            // устанавливаем время из массива
+                            // иначе получаем время таймера
                             var date = new Date();
                             var time = data.time_work.split(':');
                             date.setHours(time[0]);
                             date.setMinutes(time[1]);
                             date.setSeconds(time[2]);
 
-                            // отображаем интервал
-                            startInterval = setInterval(() => {
-                                // если прошли сутки, останавливаем таймер (максимальное время)
-                                if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
-                                    clearInterval(interval);
-                                    return false;
-                                }
-                                // увеличиваем на секунду
-                                date.setSeconds(date.getSeconds() + 1);
-                                // если модалка открыта, отображаем текущее значение таймера
-                                $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
-                            }, 1000);
+                            // если таймер запущен, запускаем интервал
+                            if (data.status === 'start') {
+                                interval = setInterval(() => {
+                                    date.setSeconds(date.getSeconds() + 1);
+                                    $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
+                                }, 1000);
+                            }
                         }
                     }
                 });
 
+
+
+                // start (13:00:00)    time_work = 00:00:00    time_start = 13:00:00 (start)
+                // pause (13:03:00)    time_work = now(13:03:00) - time_start(13:00:00) = 00:03:00 (pause)
+                // start (13:10:00)    time_start = 13:10:00 (start)
+                // pause (13:14:00)    time_work = (now(13:16:00) - time_start(13:14:00)) + time_work(00:03:00) = 00:05:00
+                // stop (13:17:00)     time_work = (now(13:17:00) - time_start(13:14:00)) + time_work(00:03:00) = 00:06:00
 
 
 
@@ -655,25 +660,18 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         success: function (data) {
                             console.log(data);
 
-                            // устанавливаем время из массива
-                            var date = new Date();
-                            var time = data.time_work.split(':');
-                            date.setHours(time[0]);
-                            date.setMinutes(time[1]);
-                            date.setSeconds(time[2]);
-
-                            // отображаем интервал
-                            startInterval = setInterval(() => {
-                                // если прошли сутки, останавливаем таймер (максимальное время)
-                                if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
-                                    clearInterval(interval);
-                                    return false;
-                                }
-                                // увеличиваем на секунду
-                                date.setSeconds(date.getSeconds() + 1);
-                                // если модалка открыта, отображаем текущее значение таймера
-                                $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
-                            }, 1000);
+                            // получаем время таймера
+                            // var date = new Date();
+                            // var time = data.time_work.split(':');
+                            // date.setHours(time[0]);
+                            // date.setMinutes(time[1]);
+                            // date.setSeconds(time[2]);
+                            //
+                            // // запускаем интервал
+                            // interval = setInterval(() => {
+                            //     date.setSeconds(date.getSeconds() + 1);
+                            //     $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
+                            // }, 1000);
                         }
                     });
 
