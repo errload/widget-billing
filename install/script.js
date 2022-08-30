@@ -572,16 +572,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 $('.modal__timer').append(timerWrapper);
                 $('.start__timer__btn').css({
-                    'margin-left': '5px', 'margin-top': '-2px', 'width': '80px', 'display': 'block'
+                    'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
                 });
                 $('.pause__timer__btn').css({
-                    'margin-left': '5px', 'margin-top': '-2px', 'width': '80px', 'display': 'block'
+                    'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
                 });
                 $('.stop__timer__btn').css({
-                    'margin-left': '5px', 'margin-top': '-2px', 'width': '80px', 'display': 'block'
+                    'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
                 });
-
-
 
 
 
@@ -604,19 +602,53 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     },
                     dataType: 'json',
                     success: function (data) {
+                        console.log(data);
+
                         // если запись не найдена, отображаем старт времени
-                        if (!data) $('.modal__timer__wrapper .time__timer').text('00:00:00');
+                        if (!data) {
+                            $('.modal__timer__wrapper .time__timer').text('00:00:00');
+                            $('.start__timer__btn').css('display', 'block');
+                            $('.pause__timer__btn').css('display', 'none');
+                            $('.stop__timer__btn').css('display', 'none');
+                        }
                         else {
                             // иначе получаем время таймера
                             var date = new Date();
-                            var time = data.time_work.split(':');
+                            var time = data.time_work.split(' ');
+                            time = time[1].split(':');
                             date.setHours(time[0]);
                             date.setMinutes(time[1]);
                             date.setSeconds(time[2]);
+                            $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
+
+                            if (data.status === 'pause') {
+                                $('.start__timer__btn').css('display', 'block');
+                                $('.pause__timer__btn').css('display', 'none');
+                                $('.stop__timer__btn').css('display', 'block');
+                            }
+
+                            if (data.status === 'stop') {
+                                $('.start__timer__btn').css('display', 'none');
+                                $('.pause__timer__btn').css('display', 'none');
+                                $('.stop__timer__btn').css('display', 'block');
+                                $('.stop__timer__btn').text('Сохранить');
+                            }
 
                             // если таймер запущен, запускаем интервал
                             if (data.status === 'start') {
+                                $('.start__timer__btn').css('display', 'none');
+                                $('.pause__timer__btn').css('display', 'block');
+                                $('.stop__timer__btn').css('display', 'block');
+
                                 interval = setInterval(() => {
+                                    if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
+                                        clearInterval(interval);
+                                        $('.start__timer__btn').css('display', 'none');
+                                        $('.pause__timer__btn').css('display', 'none');
+                                        $('.stop__timer__btn').css('display', 'block');
+                                        return false;
+                                    }
+
                                     date.setSeconds(date.getSeconds() + 1);
                                     $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
                                 }, 1000);
@@ -627,11 +659,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
-                // start (13:00:00)    time_work = 00:00:00    time_start = 13:00:00 (start)
-                // pause (13:03:00)    time_work = now(13:03:00) - time_start(13:00:00) = 00:03:00 (pause)
-                // start (13:10:00)    time_start = 13:10:00 (start)
-                // pause (13:14:00)    time_work = (now(13:16:00) - time_start(13:14:00)) + time_work(00:03:00) = 00:05:00
-                // stop (13:17:00)     time_work = (now(13:17:00) - time_start(13:14:00)) + time_work(00:03:00) = 00:06:00
+
+
 
 
 
@@ -660,6 +689,83 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         success: function (data) {
                             console.log(data);
 
+                            $('.start__timer__btn').css('display', 'none');
+                            $('.pause__timer__btn').css('display', 'block');
+                            $('.stop__timer__btn').css('display', 'block');
+
+                            // получаем время таймера
+                            var date = new Date();
+                            var time = data.time_work.split(' ');
+                            time = time[1].split(':');
+                            date.setHours(time[0]);
+                            date.setMinutes(time[1]);
+                            date.setSeconds(time[2]);
+
+                            // запускаем интервал
+                            interval = setInterval(() => {
+                                if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
+                                    clearInterval(interval);
+                                    $('.start__timer__btn').css('display', 'none');
+                                    $('.pause__timer__btn').css('display', 'none');
+                                    $('.stop__timer__btn').css('display', 'block');
+                                    $('.stop__timer__btn').text('Сохранить');
+
+                                    // ппишем максимальное значение в текущий таймер и останавливаем
+                                    $.ajax({
+                                        url: url_link_t,
+                                        method: 'post',
+                                        data: {
+                                            'domain': document.domain,
+                                            'method': 'stop_auto_stop',
+                                            'essence_id': essenseID,
+                                            'user_id': userID,
+                                        },
+                                        dataType: 'json',
+                                        success: function (data) {}
+                                    });
+
+                                    return false;
+                                }
+
+                                date.setSeconds(date.getSeconds() + 1);
+                                $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
+                            }, 1000);
+                        }
+                    });
+                });
+
+
+
+
+
+
+
+                // пауза таймера
+                $('.pause__timer__btn').unbind('click');
+                $('.pause__timer__btn').bind('click', function () {
+                    clearInterval(interval);
+
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'post',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'timer_pause',
+                            'essence_id': essenseID,
+                            'user_id': userID,
+                            'timezone': timezone
+                        },
+                        dataType: 'json',
+                        success: function (data) {
+                            console.log(data);
+
+                            $('.start__timer__btn').css('display', 'block');
+                            $('.pause__timer__btn').css('display', 'none');
+                            $('.stop__timer__btn').css('display', 'block');
+
+                            // var endInterval = setInterval(() => {}, 1);
+                            // for (var i = 0; i < endInterval; i++) clearInterval(i);
+
                             // получаем время таймера
                             // var date = new Date();
                             // var time = data.time_work.split(':');
@@ -675,40 +781,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         }
                     });
 
-
-                    // // убираем кнопку старт и показываем паузу и стоп
-                    // $('.pause-timer__btn').css('display', 'block');
-                    // $('.start-timer__btn').css('display', 'none');
+                    // убираем кнопку пауза и показываем старт и стоп
+                    // $('.pause-timer__btn').css('display', 'none');
+                    // $('.start-timer__btn').css('display', 'block');
                     // $('.stop-timer__btn').css('display', 'block');
                     //
-                    // // отключаем редактирование ссылки на задачу, и показываем только ссылку
-                    // if (!$('.modal__link-task').length) {
-                    //     var linkTask = `<a href="${ $('.modal__input__link-task').val() }" class="modal__link-task"
-                    //         style="
-                    //             margin-top: 3px;
-                    //             text-decoration: none;
-                    //             color: #1375ab;
-                    //             word-break: break-all;
-                    //         " target="_blank">
-                    //         ${ $('.modal__input__link-task').val() }
-                    //     </a>`;
-                    //     $('.modal__link-task__wrapper').append(linkTask);
-                    //     $('.modal__input__link-task').css('display', 'none');
-                    // }
-                    //
-                    // // запускаем таймер
+                    // // останавливаем таймер
                     // timeCoockie = $(`.modal__main-block[data-id="${ timerID }"] .timer`).text();
-                    // statusCoockie = 'start';
-                    // if (!linkCoockie) linkCoockie = input.val();
+                    // statusCoockie = 'pause';
                     //
                     // self.timer[AMOCRM.data.current_card.id] = [timeCoockie, statusCoockie, linkCoockie];
                     // writeCookie('timer', JSON.stringify(self.timer), 30);
                     // resetIntervals();
                 });
-
-
-
-
 
 
 
