@@ -612,22 +612,25 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.stop__timer__btn').css('display', 'none');
                         }
                         else {
+                            var time_work = data['time_work'];
+                            var status = data['status'];
+                            console.log(time_work, status);
                             // иначе получаем время таймера
                             var date = new Date();
-                            var time = data.time_work.split(' ');
+                            var time = time_work.split(' ');
                             time = time[1].split(':');
                             date.setHours(time[0]);
                             date.setMinutes(time[1]);
                             date.setSeconds(time[2]);
                             $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
 
-                            if (data.status === 'pause') {
+                            if (status === 'pause') {
                                 $('.start__timer__btn').css('display', 'block');
                                 $('.pause__timer__btn').css('display', 'none');
                                 $('.stop__timer__btn').css('display', 'block');
                             }
 
-                            if (data.status === 'stop') {
+                            if (status === 'stop') {
                                 $('.start__timer__btn').css('display', 'none');
                                 $('.pause__timer__btn').css('display', 'none');
                                 $('.stop__timer__btn').css('display', 'block');
@@ -635,20 +638,39 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             }
 
                             // если таймер запущен, запускаем интервал
-                            if (data.status === 'start') {
+                            if (status === 'start') {
                                 $('.start__timer__btn').css('display', 'none');
                                 $('.pause__timer__btn').css('display', 'block');
                                 $('.stop__timer__btn').css('display', 'block');
 
                                 interval = setInterval(() => {
-                                    if (date.getSeconds() === 59 && date.getMinutes() === 59 && date.getHours() === 23) {
+                                    // если время максимальное, останавливаем таймер
+                                    if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
                                         clearInterval(interval);
+                                        // показываем кнопку сохранить
                                         $('.start__timer__btn').css('display', 'none');
                                         $('.pause__timer__btn').css('display', 'none');
                                         $('.stop__timer__btn').css('display', 'block');
+                                        $('.stop__timer__btn').text('Сохранить');
+
+                                        // обновляем время на сервере на максимальное
+                                        $.ajax({
+                                            url: url_link_t,
+                                            method: 'post',
+                                            data: {
+                                                'domain': document.domain,
+                                                'method': 'stop_auto_stop',
+                                                'essence_id': essenseID,
+                                                'user_id': userID,
+                                            },
+                                            dataType: 'json',
+                                            success: function (data) {}
+                                        });
+
                                         return false;
                                     }
 
+                                    // +1 сек к времени в интервале
                                     date.setSeconds(date.getSeconds() + 1);
                                     $('.modal__timer__wrapper .time__timer').text(date.toLocaleTimeString());
                                 }, 1000);
@@ -747,11 +769,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // пауза таймера
                 $('.pause__timer__btn').unbind('click');
                 $('.pause__timer__btn').bind('click', function () {
+                    // останавливаем таймер
                     clearInterval(interval);
+                    // показываем кнопки старт и стоп
                     $('.start__timer__btn').css('display', 'block');
                     $('.pause__timer__btn').css('display', 'none');
                     $('.stop__timer__btn').css('display', 'block');
 
+                    // обновляем значение таймера на сервере
                     $.ajax({
                         url: url_link_t,
                         method: 'post',
