@@ -375,79 +375,70 @@
                 AND user_id = "' . $_POST['user_id'] . '"
                 AND status != "finish"
         ';
+        $mysqli->query($update);
 
+        // обновляем депозит
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
+        $insert = '
+                INSERT INTO billing_deposit 
+                VALUES(
+                null, 
+                    "' . $_POST['essence_id'] . '", 
+                    0, 
+                    ""
+            )
+        ';
+
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) {
+            $mysqli->query($insert);
+            $result = $mysqli->query($select);
+        }
+
+        $result = $result->fetch_assoc();
+        $deposit = (int) $result['deposit'] - $price;
+
+        $update = '
+            UPDATE billing_deposit 
+            SET deposit = "' . $deposit . '" 
+            WHERE essence_id = "' . $_POST['essence_id'] . '"
+        ';
         $mysqli->query($update);
     }
 
+    // извлекаем список услуг
+    if ($_POST['method'] == 'show_services' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_services';
+        $result = $mysqli->query($select);
+        $services = [];
+        while ($row = $result->fetch_assoc()) $services[] = [$row['id'], $row['title']];
+        echo json_encode($services);
+    }
 
+    // обновляем список услуг
+    if ($_POST['method'] == 'edit_services' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_services';
 
+        $result = $mysqli->query($select);
+        $services = [];
+        while ($row = $result->fetch_assoc()) $services[] = $row['title'];
 
-// получаем данные истории таймера
-//    if ($_POST['method'] == 'hystory' && $Config->CheckToken()) {
-//        $essence_id = $_POST['essence_id'];
-//        $response = [];
-//
-//        if ($result = $mysqli->query('SELECT * FROM billing_deposit WHERE essence_id="' . $essence_id . '"')) {
-//            $result = $result->fetch_array();
-//            $response['deposit'] = $result['deposit'];
-//        }
-//
-//        if ($result = $mysqli->query('SELECT * FROM billing_timer WHERE essence_id="' . $essence_id . '"')) {
-//            while ($row = $result->fetch_assoc()) $response['history'][] = $row;
-//        }
-//
-//        echo json_encode($response);
-//    }
+        // если нет полученной записи, добавляем
+        foreach ($_POST['services'] as $service) {
+            if (in_array($service, $services)) continue;
+            $insert = 'INSERT INTO billing_services VALUES(null, "' . $service . '")';
+            $mysqli->query($insert);
+        }
 
-    // обновляем сумму депозита
-//    if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
-//        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
-//        $update = 'UPDATE billing_deposit SET deposit="' . $_POST['deposit'] . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-//        $insert = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", "' . $_POST['deposit'] . '", "")';
-//
-//        // находим нужную запись
-//        $result = $mysqli->query($select);
-//        // если не существует, создаем
-//        if (!$result->num_rows) $mysqli->query($insert);
-//        // иначе обновляем
-//        else $mysqli->query($update);
-//        // возвращаем актуальный депозит
-//        $result = $mysqli->query($select)->fetch_array();
-//
-//        echo json_encode($result['deposit']);
-//    }
+        // если нет существующей записи, удаляем
+        foreach ($services as $service) {
+            if (in_array($service, $_POST['services'])) continue;
+            $delete = 'DELETE FROM billing_services WHERE title = "' . $service . '"';
+            $mysqli->query($delete);
+        }
 
-    // сохраняем таймер
-//    if ($_POST['method'] == 'save_timer' && $Config->CheckToken()) {
-//        $insert_timer = 'INSERT INTO billing_timer VALUES(
-//             null,
-//             "' . $_POST['essence_id'] . '",
-//             "' . $_POST['user'] . '",
-//             "' . $_POST['client'] . '",
-//             "' . $_POST['service'] . '",
-//             "' . $_POST['comment'] . '",
-//             "' . $_POST['price'] . '",
-//             "' . $_POST['link_task'] . '",
-//             "' . date('d.m.Y') . '"
-//         )';
-//        $insert_deposit = 'INSERT INTO billing_deposit VALUES(null, "' . $_POST['essence_id'] . '", 0, "")';
-//        $select = 'SELECT * FROM billing_deposit WHERE essence_id="' . $_POST['essence_id'] . '"';
-//
-//        // сохраняем таймер
-//        $mysqli->query($insert_timer);
-//
-//        // обновляем депозит таймера
-//        $result = $mysqli->query($select);
-//        if (!$result->num_rows) {
-//            $mysqli->query($insert_deposit);
-//            $result = $mysqli->query($select);
-//        }
-//        $result = $result->fetch_array();
-//
-//        $deposit = (int) $result['deposit'];
-//        $price = (int) $_POST['price'];
-//        $deposit = $deposit - $price;
-//
-//        $update = 'UPDATE billing_deposit SET deposit="' . $deposit . '" WHERE essence_id="' . $_POST['essence_id'] . '"';
-//        $mysqli->query($update);
-//    }
+        $result = $mysqli->query($select);
+        $services = [];
+        while ($row = $result->fetch_assoc()) $services[] = [$row['id'], $row['title']];
+        echo json_encode($services);
+    }
