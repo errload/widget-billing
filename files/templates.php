@@ -552,9 +552,7 @@
         // обновляем сумму депозита
         $select_deposit = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
         $result = $mysqli->query($select_deposit)->fetch_assoc();
-
-        if ($new_price >= 0) $new_deposit = (int) $result['deposit'] + $new_price;
-        else $new_deposit = (int) $result['deposit'] - $new_price;
+        $new_deposit = (int) $result['deposit'] + $new_price;
 
         $update = '
             UPDATE billing_deposit
