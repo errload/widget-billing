@@ -254,27 +254,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 //                         });
 //                     }
 //
-//                     // кнопка Закрыть
-//                     $('.modal__hystory-block').css('position', 'relative');
-//                     hystoryCancelBtn = `
-//                         <a href="#" class="hystory__cancel__btn" style="
-//                             text-decoration: none;
-//                             color: #92989b;
-//                             font-size: 14px;
-//                             font-weight: bold;
-//                             top: 3px;
-//                             right: 0;
-//                             position: absolute;
-//                         ">Закрыть</a>
-//                     `;
-//                     $('.modal__hystory-block').append(hystoryCancelBtn);
-//                     $('.hystory__cancel__btn').bind('click', function (e) {
-//                         e.preventDefault();
-//                         $('.hystory__timer').remove();
-//                     });
-//
-//                     // margin-bottom для отступа
-//                     $('.modal__hystory-block').append('<div class="modal__bottom" style="position: absolute; height: 30px; width: 100%;"></div>');
 //                 }
 //             });
 //         });
@@ -285,9 +264,214 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         // история таймеров
         const modalHistory = function (e) {
             e.preventDefault();
+            var essenseID = AMOCRM.data.current_card.id;
 
-            console.log('bb');
+            // права доступа
+            self.getConfigSettings();
+            if (self.config_settings.rights && self.config_settings.rights[userID]) {
+                rights = self.config_settings.rights[userID];
+            }
+            console.log(rights);
+
+            // запуск модалки истории
+            new Modal({
+                class_name: 'timer__history',
+                init: function ($modal_body) {
+                    var $this = $(this);
+                    $modal_body
+                        .trigger('modal:loaded')
+                        .html(`
+                            <div class="modal__timer__history" style="width: 100%; min-height: 600px;">
+                                <h2 class="modal__body__caption head_2">История таймеров</h2>
+                            </div>
+                        `)
+                        .trigger('modal:centrify')
+                        .append('');
+                },
+                destroy: function () {}
+            });
+
+            /* ###################################################################### */
+
+            // сумма депозита
+            var inputHistoryDeposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'modal-input-history-deposit',
+                    class_name: 'modal__input__history__deposit',
+                    value: 0,
+                    placeholder: 'укажите сумму депозита'
+                }),
+                editHistoryBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                    class_name: 'modal__editBtn__history',
+                    text: 'Редактировать историю'
+                }),
+                historyDepositWrapper = `<div class="modal__history__deposit__wrapper" style="width: 100%; margin-top: 20px;">
+                    <div class="history__wrapper__flex" style="display: flex; flex-direction: row;">
+                        <div class="deposit" style="width: 100%; display: flex; flex-direction: row;">
+                            <span>Сумма депозита:</span>
+                            <div>${ inputHistoryDeposit }</div>
+                        </div>
+                    </div>
+                </div>`;
+
+            // <div className="buttonEdit" style="width: 40%; text-align: right;">${editHistoryBtn}</div>
+
+            $('.modal__timer__history').append(historyDepositWrapper);
+            $('.modal__input__history__deposit').css({ 'margin-bottom': '10px', 'width': '150px' });
+            $('.history__wrapper__flex .deposit span').css('margin-top', '8px');
+            $('.history__wrapper__flex .deposit div').css('margin-left', '5px');
+            $('.modal__input__history__deposit').attr('type', 'number');
+
+            // получаем сумму депозита
+            $.ajax({
+                url: url_link_t,
+                method: 'post',
+                data: {
+                    'domain': document.domain,
+                    'method': 'get_deposit',
+                    'essence_id': essenseID
+                },
+                dataType: 'json',
+                success: function (data) {
+                    $('.modal__input__history__deposit').val(data)
+
+                    if (!rights || !rights.includes('isEditDeposit')) {
+                        $('.modal__input__history__deposit').css('display', 'none');
+                        $('.history__wrapper__flex .deposit div').text(data + 'р.');
+                        $('.history__wrapper__flex .deposit div').css({
+                            'margin-left': '5px',
+                            'margin-top': '8px'
+                        });
+                    }
+                }
+            });
+
+            // редактирование депозита
+            var deposit = $('.modal__input__history__deposit');
+            deposit.bind('input', () => deposit.css('border-color', '#dbdedf'));
+
+            deposit.unbind('change');
+            deposit.bind('change', function () {
+                $.ajax({
+                    url: url_link_t,
+                    method: 'post',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'change_deposit',
+                        'essence_id': essenseID,
+                        'deposit': deposit.val()
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        // обновляем значение депозита
+                        deposit.val(data);
+
+                        // красим поле в зеленый цвет
+                        deposit.css({ 'transition-duration': '0s', 'border-color': '#2bd153' });
+                        setTimeout(() => {
+                            deposit.css({ 'transition-duration': '1s', 'border-color': '#dbdedf' });
+                        }, 1000);
+                    }
+                });
+            });
+
+            /* ###################################################################### */
+
+
+
+
+
+
+
+
+
+            // получаем данные
+            $.ajax({
+                url: url_link_t,
+                method: 'post',
+                data: {
+                    'domain': document.domain,
+                    'method': 'hystory',
+                    'essence_id': essenseID
+                },
+                dataType: 'json',
+                success: function (data) {
+                    console.log(data);
+
+
+
+                    // добавляем историю таймеров (дата, ответственный, сумма)
+                    // $.each(self.history, function () {
+                    //     var historyItem = `
+                    //         <div class="link-details" data-id="${ this.id }" style="
+                    //             display: flex;
+                    //             flex-direction: row;
+                    //             justify-content: space-between;
+                    //             width: calc(100% - 10px);
+                    //             border-top: 1px solid #dbdedf;
+                    //             border-bottom: 1px solid #dbdedf;
+                    //             margin-bottom: 2px;
+                    //             background: #fcfcfc;
+                    //             padding: 1px 5px;
+                    //             cursor: pointer;
+                    //             ">
+                    //             <div>
+                    //                 <span style="color: #979797; font-size: 13px;">${ this.created_at }</span><br/>
+                    //                 ${ this.user }
+                    //             </div>
+                    //             <div style="display: flex; align-items: center;">${ this.price }р.</div>
+                    //         </div>
+                    //     `;
+                    //     $('.modal__hystory-deposit__wrapper').append(historyItem);
+                    //     $('.link-details').unbind('click');
+                    //     $('.link-details').bind('click', showDetails);
+                    //     // $('.link-details').bind('click', function (e) {
+                    //     //     console.log(e.target);
+                    //     // });
+                    // });
+
+
+                }
+            });
+
+
+
+
+
+
+
+
+
+            /* ###################################################################### */
+
+            // кнопка Закрыть
+            $('.modal__timer__history').css('position', 'relative');
+            hystoryCancelBtn = `
+                <a href="#" class="hystory__cancel__btn" style="
+                    text-decoration: none;
+                    color: #92989b;
+                    font-size: 14px;
+                    font-weight: bold;
+                    top: 3px;
+                    right: 0;
+                    position: absolute;
+                ">Закрыть</a>
+            `;
+
+            $('.modal__timer__history').append(hystoryCancelBtn);
+            $('.hystory__cancel__btn').bind('click', function (e) {
+                e.preventDefault();
+                $('.timer__history').remove();
+            });
+
+            // margin-bottom для отступа
+            $('.modal__timer__history').append(`
+                <div class="modal__bottom" style="position: absolute; height: 30px; width: 100%;"></div>
+            `);
         }
+
+
+
+
 
 
 
@@ -316,7 +500,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 if (self.config_settings.priceManager && self.config_settings.priceManager[userID]) {
                     priceManager = self.config_settings.priceManager[userID];
                 }
-                console.log(priceManager, rights);
 
                 /* ###################################################################### */
 

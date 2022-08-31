@@ -59,13 +59,15 @@
     if ($mysqli->connect_errno) die($mysqli->connect_error);
     mysqli_set_charset($mysqli, 'utf8');
 
-/* ##################################################################### */
+    /* ##################################################################### */
 
     // проверка авторизации для запуска таймера
     if ($_POST['method'] == 'isAuth') {
         if ($Config->CheckToken()) echo json_encode(true);
         else echo json_encode(false);
     }
+
+    /* ##################################################################### */
 
     // получаем ссылку на проект
     if ($_POST['method'] == 'link_project' && $Config->CheckToken()) {
@@ -115,6 +117,8 @@
         echo json_encode($result['link_project']);
     }
 
+    /* ##################################################################### */
+
     // получаем ссылку на задачу
     if ($_POST['method'] == 'link_task' && $Config->CheckToken()) {
         $select = '
@@ -134,6 +138,8 @@
 
         echo json_encode($result);
     }
+
+    /* ##################################################################### */
 
     // данные таймера
     if ($_POST['method'] == 'timer' && $Config->CheckToken()) {
@@ -406,6 +412,8 @@
         $mysqli->query($update);
     }
 
+    /* ##################################################################### */
+
     // извлекаем список услуг
     if ($_POST['method'] == 'show_services' && $Config->CheckToken()) {
         $select = 'SELECT * FROM billing_services';
@@ -441,4 +449,70 @@
         $services = [];
         while ($row = $result->fetch_assoc()) $services[] = [$row['id'], $row['title']];
         echo json_encode($services);
+    }
+
+    /* ##################################################################### */
+
+    // получаем сумму депозита
+    if ($_POST['method'] == 'get_deposit' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
+
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) $deposit = 0;
+        else {
+            $result = $result->fetch_assoc();
+            $deposit = $result['deposit'];
+        }
+
+        echo json_encode($deposit);
+    }
+
+    // обновляем депозит
+    if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
+        $update = '
+            UPDATE billing_deposit 
+            SET deposit = "' . $_POST['deposit'] . '" 
+            WHERE essence_id = "' . $_POST['essence_id'] . '"
+        ';
+        $insert = '
+            INSERT INTO billing_deposit 
+            VALUES(
+                null, 
+                "' . $_POST['essence_id'] . '", 
+                "' . $_POST['deposit'] . '", 
+                ""
+            )
+        ';
+
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) $mysqli->query($insert);
+        else $mysqli->query($update);
+        $result = $mysqli->query($select)->fetch_array();
+
+        echo json_encode($result['deposit']);
+    }
+
+    /* ##################################################################### */
+
+    // получаем историю законченных таймеров
+    if ($_POST['method'] == 'hystory' && $Config->CheckToken()) {
+        $select = '
+            SELECT * 
+            FROM billing_timer 
+            WHERE essence_id = "' . $_POST['essence_id'] . '"
+                AND status = "finish"
+        ';
+
+        $result = $mysqli->query($select);
+        $history = [];
+
+        if (!$result->num_rows) {
+            echo $history = false;
+            return false;
+        } else while ($row = $result->fetch_assoc()) $history[] = [
+            $row['created_at'], $row['user'], $row['price']
+        ];
+
+        echo json_encode($history);
     }
