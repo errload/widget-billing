@@ -40,7 +40,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             if (self.config_settings.rights && self.config_settings.rights[userID]) {
                 rights = self.config_settings.rights[userID];
             }
-            console.log(rights);
 
             // запуск модалки истории
             new Modal({
@@ -223,7 +222,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 },
                                 dataType: 'json',
                                 success: function (data) {
-                                    console.log(data)
                                     addHistoryItem('Дата таймера', data.created_at.split(' ')[0] + 'г.');
                                     addHistoryItem('Ответственный', data.user, 'user__details__item');
                                     addHistoryItem('Имя клиента', data.client, 'client__details__item');
@@ -433,7 +431,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                 success: function (data) {
                                                     var timer = data[0];
                                                     var deposit = data[1];
-                                                    console.log(timer, deposit);
 
                                                     // обновляем сумму депозита
                                                     if (!rights || !rights.includes('isEditDeposit')) {
