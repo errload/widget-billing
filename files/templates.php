@@ -516,3 +516,10 @@
 
         echo json_encode($history);
     }
+
+    // получаем историю по ID
+    if ($_POST['method'] == 'history_details' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_timer WHERE id = "' . $_POST['history_id'] . '"';
+        $result = $mysqli->query($select)->fetch_assoc();
+        echo json_encode($result);
+    }

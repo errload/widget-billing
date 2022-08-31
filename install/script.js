@@ -407,9 +407,261 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             history_user = this[2],
                             history_price = this[3];
 
-                        const showDetails = function () {
-                            console.log('bb');
+
+
+
+
+
+
+
+
+
+
+                        // детальный просмотр истории таймера
+                        const showDetails = function (e) {
+                            var historyID = $(e.target).attr('data-id');
+                            if (!historyID) historyID = $(e.target).closest('.link__details').attr('data-id');
+
+                            new Modal({
+                                class_name: 'hystory__details',
+                                init: function ($modal_body) {
+                                    var $this = $(this);
+                                    $modal_body
+                                        .trigger('modal:loaded')
+                                        .html(`
+                                            <div class="modal__hystory__details" style="width: 100%; min-height: 510px;">
+                                                <h2 class="modal-body__caption head_2">Детализация</h2>
+                                            </div>
+                                        `)
+                                        .trigger('modal:centrify')
+                                        .append('');
+                                },
+                                destroy: function () {}
+                            });
+
+                            // добавляем элементы истории
+                            const addHistoryItem = function (title, value) {
+                                var historyItem = `
+                                    <div class="flex__history" style="
+                                        display: flex;
+                                        flex-direction: row;
+                                        background: #fcfcfc;
+                                        border-top: 1px solid #dbdedf;
+                                        border-bottom: 1px solid #dbdedf;
+                                        margin-bottom: 2px;
+                                    ">
+                                        <div class="title" style="
+                                            width: 30%; text-align: right; padding: 10px 0 10px 10px; color: #92989b;">
+                                            ${ title }
+                                        </div>
+                                        <div class="value" style=" width: 70%; padding: 10px;">
+                                            ${ value }
+                                        </div>
+                                    </div>
+                                `;
+                                $('.modal__hystory__details').append(historyItem);
+                            }
+
+                            $.ajax({
+                                url: url_link_t,
+                                method: 'post',
+                                data: {
+                                    'domain': document.domain,
+                                    'method': 'history_details',
+                                    'history_id': historyID
+                                },
+                                dataType: 'json',
+                                success: function (data) {
+                                    addHistoryItem('Дата таймера', data.created_at.split(' ')[0] + 'г.');
+                                    addHistoryItem('Ответственный', data.user);
+                                    addHistoryItem('Имя клиента', data.client);
+                                    addHistoryItem('Оказанная услуга', data.service);
+                                    addHistoryItem('Комментарий', data.comment);
+                                    addHistoryItem('Стоимость работы', data.price + 'р.');
+                                    addHistoryItem('Ссылка на задачу', `
+                                        <a href="${ data.link_task }" target="_blank" style="
+                                            text-decoration: none; color: #1375ab; word-break: break-all;
+                                        ">${ data.link_task }</a>                                    
+                                    `);
+                                    addHistoryItem('Время работы', data.time_work);
+
+
+
+
+
+
+                                    // права на редактирование истории
+                                    if (rights && rights.includes('isEditHistory')) {
+                                        // кнопки Редактировать, Сохранить
+                                        var editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                                                class_name: 'modal__editBtn__details',
+                                                text: 'Редактировать'
+                                            }),
+                                            saveEditBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                                                class_name: 'modal__saveEditBtn__details',
+                                                text: 'Сохранить'
+                                            }),
+                                            editBtnWrapper = `<div class="modal__body__actions__details" style="width: 100%;"></div>`;
+
+                                        $('.modal__hystory__details').append(editBtnWrapper);
+                                        $('.modal__body__actions__details').append(editBtn);
+                                        $('.modal__body__actions__details').append(saveEditBtn);
+                                        $('.modal__saveEditBtn__details').css('display', 'none');
+                                        $('.modal__body__actions__details').css('margin-top', '10px');
+
+                                        // редактирование истории
+                                        $('.modal__editBtn__details').unbind('click');
+                                        $('.modal__editBtn__details').bind('click', function () {
+                                            $('.modal__editBtn__details').css('display', 'none');
+                                            $('.modal__saveEditBtn__details').css('display', 'block');
+                                        });
+
+                                        // сохранение истории
+                                        $('.modal__saveEditBtn__details').unbind('click');
+                                        $('.modal__saveEditBtn__details').bind('click', function () {
+                                            $('.modal__editBtn__details').css('display', 'block');
+                                            $('.modal__saveEditBtn__details').css('display', 'none');
+                                        });
+                                    }
+                                }
+                            });
+
+
+
+
+
+
+
+
+
+
+
+                            // кнопка Закрыть
+                            $('.modal__hystory__details').css('position', 'relative');
+                            var cancelBtn = `
+                                <a href="#" class="modal__cancelBtn__details" style="
+                                    text-decoration: none;
+                                    color: #92989b;
+                                    font-size: 14px;
+                                    font-weight: bold;
+                                    top: 3px;
+                                    right: 0;
+                                    position: absolute;
+                                ">Закрыть</a>
+                            `;
+                            $('.modal__hystory__details').append(cancelBtn);
+                            $('.modal__cancelBtn__details').bind('click', function (e) {
+                                e.preventDefault();
+                                $('.hystory__details').remove();
+                            });
+
+
+
+//                             $.each(self.history, function () {
+//                                 if (this.id !== historyID) return;
+//                                 console.log(this);
+//
+//                                 new Modal({
+//                                     class_name: 'hystory__details',
+//                                     init: function ($modal_body) {
+//                                         var $this = $(this);
+//                                         $modal_body
+//                                             .trigger('modal:loaded')
+//                                             .html(`
+//                                                 <div class="modal__hystory-details" style="width: 100%; min-height: 400px;">
+//                                                     <h2 class="modal-body__caption head_2">Детализация</h2>
+//                                                 </div>
+//                                             `)
+//                                             .trigger('modal:centrify')
+//                                             .append('');
+//                                     },
+//                                     destroy: function () {}
+//                                 });
+//
+//                                 // кнопка Закрыть
+//                                 $('.modal__hystory-details').css('position', 'relative');
+//                                 detailsCancelBtn = `
+//                                     <a href="#" class="details__cancel__btn" style="
+//                                         text-decoration: none;
+//                                         color: #92989b;
+//                                         font-size: 14px;
+//                                         font-weight: bold;
+//                                         top: 3px;
+//                                         right: 0;
+//                                         position: absolute;
+//                                     ">Закрыть</a>
+//                                 `;
+//                                 $('.modal__hystory-details').append(detailsCancelBtn);
+//                                 $('.details__cancel__btn').bind('click', function (e) {
+//                                     e.preventDefault();
+//                                     $('.hystory__details').remove();
+//                                 });
+//
+//                                 // добавляем элементы истории
+//                                 const addHistoryItem = function (title, value) {
+//                                     var historyItem = `
+//                                         <div class="flex__history" style="
+//                                             display: flex;
+//                                             flex-direction: row;
+//                                             background: #fcfcfc;
+//                                             border-top: 1px solid #dbdedf;
+//                                             border-bottom: 1px solid #dbdedf;
+//                                             margin-bottom: 2px;
+//                                         ">
+//                                             <div class="title" style="width: 30%; text-align: right; padding: 5px 0 5px 5px; color: #92989b;">
+//                                                 ${ title }
+//                                             </div>
+//                                             <div class="value" style=" width: 70%; padding: 5px;">
+//                                                 ${ value }
+//                                             </div>
+//                                         </div>
+//                                     `;
+//                                     $('.modal__hystory-details').append(historyItem);
+//                                 }
+//
+//                                 addHistoryItem('Дата таймера', this.created_at + 'г.');
+//                                 addHistoryItem('Имя клиента:', this.client);
+//                                 addHistoryItem('Ответственный:', this.user);
+//                                 addHistoryItem('Комментарий:', this.comment);
+//                                 addHistoryItem('Ссылка на задачу:', `
+//                                     <a href="${ this.link_task }" target="_blank" style="
+//                                         text-decoration: none; color: #1375ab; word-break: break-all;
+//                                     ">${ this.link_task }</a>
+// `                                       );
+//                                 addHistoryItem('Цена за работу:', this.price + 'р.');
+//                                 addHistoryItem('Оказанная услуга:', this.service);
+//
+//                                 // кнопки Редактировать, Сохранить
+//                                 var editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+//                                         class_name: 'modal__editBtn-history',
+//                                         text: 'Редактировать'
+//                                     }),
+//                                     saveEditBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+//                                         class_name: 'modal__saveEditBtn-history',
+//                                         text: 'Сохранить'
+//                                     }),
+//                                     editBtnWrapper = '<div class="modal-body__actions" style="width: 100%; text-align: right;"></div>';
+//
+//                                 $('.modal__hystory-details').append(editBtnWrapper);
+//                                 $('.modal__hystory-details .modal-body__actions').append(editBtn);
+//                                 $('.modal__hystory-details .modal-body__actions').append(saveEditBtn);
+//                                 $('.modal__hystory-details .modal-body__actions').css('margin-top', '10px');
+//
+//                                 $('.modal__editBtn-history').unbind('click');
+//                                 $('.modal__editBtn-history').bind('click', function () {});
+//                             });
                         }
+
+
+
+
+
+
+
+
+
+
+
 
                         var historyItem = `
                             <div class="link__details" data-id="${ history_id }" style="
