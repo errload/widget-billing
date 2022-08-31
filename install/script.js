@@ -429,7 +429,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     $modal_body
                                         .trigger('modal:loaded')
                                         .html(`
-                                            <div class="modal__hystory__details" style="width: 100%; min-height: 510px;">
+                                            <div class="modal__hystory__details" data-id="${ historyID }" style="width: 100%; min-height: 550px;">
                                                 <h2 class="modal-body__caption head_2">Детализация</h2>
                                             </div>
                                         `)
@@ -440,9 +440,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             });
 
                             // добавляем элементы истории
-                            const addHistoryItem = function (title, value) {
+                            const addHistoryItem = function (title, value, class_item = '') {
                                 var historyItem = `
-                                    <div class="flex__history" style="
+                                    <div class="flex__history}" style="
                                         display: flex;
                                         flex-direction: row;
                                         background: #fcfcfc;
@@ -450,11 +450,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         border-bottom: 1px solid #dbdedf;
                                         margin-bottom: 2px;
                                     ">
-                                        <div class="title" style="
-                                            width: 30%; text-align: right; padding: 10px 0 10px 10px; color: #92989b;">
+                                        <div class="title title__${ class_item }" style="
+                                            width: 200px; text-align: right; padding: 10px; color: #92989b;">
                                             ${ title }
                                         </div>
-                                        <div class="value" style=" width: 70%; padding: 10px;">
+                                        <div class="value ${ class_item }" style="width: 100%; padding: 10px 10px 10px 0;">
                                             ${ value }
                                         </div>
                                     </div>
@@ -473,16 +473,16 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 dataType: 'json',
                                 success: function (data) {
                                     addHistoryItem('Дата таймера', data.created_at.split(' ')[0] + 'г.');
-                                    addHistoryItem('Ответственный', data.user);
-                                    addHistoryItem('Имя клиента', data.client);
-                                    addHistoryItem('Оказанная услуга', data.service);
-                                    addHistoryItem('Комментарий', data.comment);
-                                    addHistoryItem('Стоимость работы', data.price + 'р.');
+                                    addHistoryItem('Ответственный', data.user, 'user__details__item');
+                                    addHistoryItem('Имя клиента', data.client, 'client__details__item');
+                                    addHistoryItem('Оказанная услуга', data.service, 'service__details__item');
+                                    addHistoryItem('Комментарий', data.comment, 'comment__details__item');
+                                    addHistoryItem('Стоимость работы', data.price + 'р.', 'price__details__item');
                                     addHistoryItem('Ссылка на задачу', `
                                         <a href="${ data.link_task }" target="_blank" style="
                                             text-decoration: none; color: #1375ab; word-break: break-all;
                                         ">${ data.link_task }</a>                                    
-                                    `);
+                                    `, 'link__task__details__item');
                                     addHistoryItem('Время работы', data.time_work);
 
 
@@ -514,11 +514,181 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         $('.modal__editBtn__details').bind('click', function () {
                                             $('.modal__editBtn__details').css('display', 'none');
                                             $('.modal__saveEditBtn__details').css('display', 'block');
+
+                                            const toEdit = function (class_text, class_input, name_input, value, placeholder) {
+                                                var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                                                    name: name_input,
+                                                    class_name: class_input,
+                                                    value: '',
+                                                    placeholder: placeholder
+                                                });
+
+                                                $(`.${ class_text }`).text('');
+                                                $(`.${ class_text }`).append(input);
+                                                $(`.${ class_input }`).val(value);
+                                                $(`.${ class_input }`).css('width', '100%');
+                                                $(`.title__${ class_text }`).css('padding-top', '19px');
+                                            }
+
+                                            // ответственный
+                                            toEdit(
+                                                'user__details__item',
+                                                'modal__input__user__edit__details',
+                                                'modal-input-client-edit-details',
+                                                $('.user__details__item').text().trim(),
+                                                'введите имя ответственного',
+
+                                            );
+
+                                            // имя клиента
+                                            toEdit(
+                                                'client__details__item',
+                                                'modal__input__client__edit__details',
+                                                'modal-input-client-edit-details',
+                                                $('.client__details__item').text().trim(),
+                                                'введите имя клиента'
+                                            );
+
+                                            // оказанная услуга
+                                            toEdit(
+                                                'service__details__item',
+                                                'modal__input__service__edit__details',
+                                                'modal-input-service-edit-details',
+                                                $('.service__details__item').text().trim(),
+                                                'введите оказанную услугу'
+                                            );
+
+                                            var textarea = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
+                                                name: 'modal-textarea-comment-edit-details',
+                                                class_name: 'modal__textarea__comment__edit__details',
+                                                placeholder: 'введите комментарий'
+                                            });
+                                            var text = $('.comment__details__item').text().trim();
+                                            $('.comment__details__item').text('');
+                                            $('.comment__details__item').append(textarea);
+                                            $('.modal__textarea__comment__edit__details').val(text);
+                                            $('.modal__textarea__comment__edit__details').css('width', '100%');
+                                            $('.title__comment__details__item').css('padding-top', '19px');
+
+                                            // стоимость работы
+                                            toEdit(
+                                                'price__details__item',
+                                                'modal__input__price__edit__details',
+                                                'modal-input-price-edit-details',
+                                                $('.price__details__item').text().trim().slice(0, -2),
+                                                'введите стоимость работы'
+                                            );
+                                            $('.modal__input__price__edit__details').attr('type', 'number');
+
+                                            // ссылка на задачу
+                                            toEdit(
+                                                'link__task__details__item',
+                                                'modal__input__link__task__edit__details',
+                                                'modal-input-link__task-edit-details',
+                                                $('.link__task__details__item').text().trim(),
+                                                'введите ссылку на задачу'
+                                            );
                                         });
 
                                         // сохранение истории
                                         $('.modal__saveEditBtn__details').unbind('click');
                                         $('.modal__saveEditBtn__details').bind('click', function () {
+                                            var user = $('.modal__input__user__edit__details');
+                                            var client = $('.modal__input__client__edit__details');
+                                            var service = $('.modal__input__service__edit__details');
+                                            var comment = $('.modal__textarea__comment__edit__details');
+                                            var price = $('.modal__input__price__edit__details');
+                                            var link_task = $('.modal__input__link__task__edit__details');
+                                            var isError = false;
+
+                                            // красим поля в случае ошибки
+                                            if (!link_task.val().trim().length) {
+                                                link_task.val('').focus();
+                                                isError = true;
+                                                $('.modal__input__link__task__edit__details').css('border-color', '#f37575');
+                                            }
+                                            // возвращаем естесственные цвета
+                                            $('.modal__input__link__task__edit__details').unbind('change');
+                                            $('.modal__input__link__task__edit__details').bind('change', function () {
+                                                $('.modal__input__link__task__edit__details').css('border-color', '#dbdedf');
+                                            });
+
+                                            if (!price.val().trim().length) {
+                                                price.val('').focus();
+                                                isError = true;
+                                                $('.modal__input__price__edit__details').css('border-color', '#f37575');
+                                            }
+                                            // возвращаем естесственные цвета
+                                            $('.modal__input__price__edit__details').unbind('change');
+                                            $('.modal__input__price__edit__details').bind('change', function () {
+                                                $('.modal__input__price__edit__details').css('border-color', '#dbdedf');
+                                            });
+
+                                            if (!service.val().trim().length) {
+                                                service.val('').focus();
+                                                isError = true;
+                                                $('.modal__input__service__edit__details').css('border-color', '#f37575');
+                                            }
+                                            // возвращаем естесственные цвета
+                                            $('.modal__input__service__edit__details').unbind('change');
+                                            $('.modal__input__service__edit__details').bind('change', function () {
+                                                $('.modal__input__service__edit__details').css('border-color', '#dbdedf');
+                                            });
+
+                                            if (!client.val().trim().length) {
+                                                client.val('').focus();
+                                                isError = true;
+                                                $('.modal__input__client__edit__details').css('border-color', '#f37575');
+                                            }
+                                            // возвращаем естесственные цвета
+                                            $('.modal__input__client__edit__details').unbind('change');
+                                            $('.modal__input__client__edit__details').bind('change', function () {
+                                                $('.modal__input__client__edit__details').css('border-color', '#dbdedf');
+                                            });
+
+                                            if (!user.val().trim().length) {
+                                                user.val('').focus();
+                                                isError = true;
+                                                $('.modal__input__user__edit__details').css('border-color', '#f37575');
+                                            }
+                                            // возвращаем естесственные цвета
+                                            $('.modal__input__user__edit__details').unbind('change');
+                                            $('.modal__input__user__edit__details').bind('change', function () {
+                                                $('.modal__input__user__edit__details').css('border-color', '#dbdedf');
+                                            });
+
+                                            if (isError) return false;
+
+                                            // обновляем данные в БД
+                                            $.ajax({
+                                                url: url_link_t,
+                                                method: 'post',
+                                                data: {
+                                                    'domain': document.domain,
+                                                    'method': 'edit_history_details',
+                                                    'history_id': historyID,
+                                                    'essence_id': essenseID,
+                                                    'user': $('.modal__input__user__edit__details').val(),
+                                                    'client': $('.modal__input__client__edit__details').val(),
+                                                    'service': $('.modal__input__service__edit__details').val(),
+                                                    'price': parseInt($('.modal__input__price__edit__details').val()) || 0,
+                                                    'link_task': $('.modal__input__link__task__edit__details').val(),
+                                                    'comment': $('.modal__textarea__comment__edit__details').val().trim()
+                                                },
+                                                dataType: 'json',
+                                                success: function (data) {
+                                                    var timer = data[0];
+                                                    var deposit = data[1];
+                                                    console.log(timer, deposit);
+
+                                                    // обновляем сумму депозита
+                                                    if (!rights || !rights.includes('isEditDeposit')) {
+                                                        $('.history__wrapper__flex .deposit div').text(deposit + 'р.');
+                                                        $('.modal__input__history__deposit').val(deposit);
+                                                    } else $('.modal__input__history__deposit').val(deposit);
+                                                }
+                                            });
+
                                             $('.modal__editBtn__details').css('display', 'block');
                                             $('.modal__saveEditBtn__details').css('display', 'none');
                                         });

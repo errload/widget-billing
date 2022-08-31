@@ -523,3 +523,48 @@
         $result = $mysqli->query($select)->fetch_assoc();
         echo json_encode($result);
     }
+
+    // обновление истории по ID
+    if ($_POST['method'] == 'edit_history_details' && $Config->CheckToken()) {
+        $select_timer = 'SELECT * FROM billing_timer WHERE id = "' . $_POST['history_id'] . '"';
+        $result = $mysqli->query($select_timer)->fetch_assoc();
+
+        $new_price = 0;
+        if ((int) $result['price'] > (int) $_POST['price']) {
+            $new_price += (int) $result['price'] - (int) $_POST['price'];
+        } elseif ((int) $result['price'] < (int) $_POST['price']) {
+            $new_price -= (int) $_POST['price'] - (int) $result['price'];
+        } else $new_price = 0;
+
+        // обновляем историю
+        $update = '
+            UPDATE billing_timer
+            SET user = "' . $_POST['user'] . '",
+                client = "' . $_POST['client'] . '",
+                service = "' . $_POST['service'] . '",
+                comment = "' . $_POST['comment'] . '",
+                link_task = "' . $_POST['link_task'] . '",
+                price = "' . $_POST['price'] . '"
+            WHERE id = "' . $_POST['history_id'] . '"
+        ';
+        $mysqli->query($update);
+
+        // обновляем сумму депозита
+        $select_deposit = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
+        $result = $mysqli->query($select_deposit)->fetch_assoc();
+
+        if ($new_price >= 0) $new_deposit = (int) $result['deposit'] + $new_price;
+        else $new_deposit = (int) $result['deposit'] - $new_price;
+
+        $update = '
+            UPDATE billing_deposit
+            SET deposit = "' . $new_deposit . '"
+            WHERE essence_id = "' . $_POST['essence_id'] . '"
+        ';
+        $mysqli->query($update);
+
+        // возвращаем обновленную историю
+        $result_timer = $mysqli->query($select_timer)->fetch_assoc();
+        $result_deposit = $mysqli->query($select_deposit)->fetch_assoc();
+        echo json_encode([$result_timer, $result_deposit['deposit']]);
+    }
