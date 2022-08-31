@@ -281,7 +281,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $modal_body
                         .trigger('modal:loaded')
                         .html(`
-                            <div class="modal__timer__history" style="width: 100%; min-height: 600px;">
+                            <div class="modal__timer__history" style="width: 100%; height: 600px;">
                                 <h2 class="modal__body__caption head_2">История таймеров</h2>
                             </div>
                         `)
@@ -290,6 +290,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 },
                 destroy: function () {}
             });
+            $('.timer__history .modal-body').css('overflow', 'auto');
+            $('.modal__timer__history').css('position', 'relative');
 
             /* ###################################################################### */
 
@@ -398,36 +400,44 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     console.log(data);
 
 
-
                     // добавляем историю таймеров (дата, ответственный, сумма)
-                    // $.each(self.history, function () {
-                    //     var historyItem = `
-                    //         <div class="link-details" data-id="${ this.id }" style="
-                    //             display: flex;
-                    //             flex-direction: row;
-                    //             justify-content: space-between;
-                    //             width: calc(100% - 10px);
-                    //             border-top: 1px solid #dbdedf;
-                    //             border-bottom: 1px solid #dbdedf;
-                    //             margin-bottom: 2px;
-                    //             background: #fcfcfc;
-                    //             padding: 1px 5px;
-                    //             cursor: pointer;
-                    //             ">
-                    //             <div>
-                    //                 <span style="color: #979797; font-size: 13px;">${ this.created_at }</span><br/>
-                    //                 ${ this.user }
-                    //             </div>
-                    //             <div style="display: flex; align-items: center;">${ this.price }р.</div>
-                    //         </div>
-                    //     `;
-                    //     $('.modal__hystory-deposit__wrapper').append(historyItem);
-                    //     $('.link-details').unbind('click');
-                    //     $('.link-details').bind('click', showDetails);
-                    //     // $('.link-details').bind('click', function (e) {
-                    //     //     console.log(e.target);
-                    //     // });
-                    // });
+                    $.each(data, function () {
+                        var history_id = this[0],
+                            history_created_at = this[1],
+                            history_user = this[2],
+                            history_price = this[3];
+
+                        const showDetails = function () {
+                            console.log('bb');
+                        }
+
+                        var historyItem = `
+                            <div class="link__details" data-id="${ history_id }" style="
+                                display: flex;
+                                flex-direction: row;
+                                justify-content: space-between;
+                                width: calc(100% - 10px);
+                                border-top: 1px solid #dbdedf;
+                                border-bottom: 1px solid #dbdedf;
+                                margin-bottom: 2px;
+                                background: #fcfcfc;
+                                padding: 1px 10px;
+                                cursor: pointer;
+                                ">
+                                <div>
+                                    <span style="color: #979797; font-size: 13px;">${ history_created_at }</span><br/>
+                                    ${ history_user }
+                                </div>
+                                <div style="display: flex; align-items: center;">${ history_price }р.</div>
+                            </div>
+                        `;
+                        $('.modal__timer__history').append(historyItem);
+                        $('.link__details').unbind('click');
+                        $('.link__details').bind('click', showDetails);
+                    });
+
+                    // отступ снизу
+                    $('.modal__timer__history').append('<div style="height: 30px;"></div>');
 
 
                 }
@@ -444,7 +454,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             /* ###################################################################### */
 
             // кнопка Закрыть
-            $('.modal__timer__history').css('position', 'relative');
             hystoryCancelBtn = `
                 <a href="#" class="hystory__cancel__btn" style="
                     text-decoration: none;
@@ -462,11 +471,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 e.preventDefault();
                 $('.timer__history').remove();
             });
-
-            // margin-bottom для отступа
-            $('.modal__timer__history').append(`
-                <div class="modal__bottom" style="position: absolute; height: 30px; width: 100%;"></div>
-            `);
         }
 
 

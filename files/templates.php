@@ -511,7 +511,7 @@
             echo $history = false;
             return false;
         } else while ($row = $result->fetch_assoc()) $history[] = [
-            $row['created_at'], $row['user'], $row['price']
+            $row['id'], $row['created_at'], $row['user'], $row['price']
         ];
 
         echo json_encode($history);
