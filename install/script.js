@@ -464,8 +464,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                     $(`.title__service__details__item`).css('padding-top', '10px');
                                                     $(`.title__comment__details__item`).css('padding-top', '10px');
                                                     $(`.title__price__details__item`).css('padding-top', '10px');
-                                                    $(`.link__task__details__item`).css('padding-top', '10px');
-
+                                                    $(`.title__link__task__details__item`).css('padding-top', '10px');
                                                 }
                                             });
 
@@ -1657,6 +1656,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             margin-top: 10px;
                         ">Открыть таймер</a>`
                     });
+
+                    // выравниваем картинку с блоком
+                    $('.widget__billing .card-widgets__widget__caption__logo_min').css('padding', '0')
+                    $('.widget__billing .card-widgets__widget__caption__logo_min').css('width', '100%')
+                    $('.widget__billing .card-widgets__widget__caption__logo_min').css('height', '36px')
+                    $('.widget__billing').next().css('padding', '10px 10px 0 10px');
+                    $('.widget__billing .card-widgets__widget__caption__logo').css('margin', '0');
+                    $('.widget__billing .card-widgets__widget__caption__logo').css('width', '100%');
 
                     // запускаем модалку с таймером
                     modalTimer();
