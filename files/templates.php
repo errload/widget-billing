@@ -509,7 +509,7 @@
         $history = [];
 
         if (!$result->num_rows) {
-            echo $history = false;
+            echo json_encode(false);
             return false;
         } else while ($row = $result->fetch_assoc()) $history[] = [
             $row['id'], $row['created_at'], $row['user'], $row['price']
@@ -566,6 +566,26 @@
         $result_timer = $mysqli->query($select_timer)->fetch_assoc();
         $result_deposit = $mysqli->query($select_deposit)->fetch_assoc();
         echo json_encode([$result_timer, $result_deposit['deposit']]);
+    }
+
+    // получаем историю по фильтру
+    if ($_POST['method'] == 'filter_history' && $Config->CheckToken()) {
+        $select = 'SELECT * FROM billing_timer WHERE essence_id = "' . $_POST['essence_id'] . '"';
+        $result = $mysqli->query($select);
+        if (!$result->num_rows) {
+            echo json_encode(false);
+            return false;
+        }
+
+        $response = [];
+        while ($row = $result->fetch_assoc()) {
+            $date_from = date($_POST['from']);
+            $created_at = date(explode(' ', $row['created_at'])[0]);
+            if (strtotime($date_from) > strtotime($created_at)) $response[] = 'b';
+            else $response[] = 'm';
+        }
+
+        echo json_encode($response);
     }
 
     /* ##################################################################### */

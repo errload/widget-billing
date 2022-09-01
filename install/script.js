@@ -99,9 +99,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 }),
                 historyDepositWrapper = `<div class="modal__history__deposit__wrapper" style="width: 100%; margin-top: 20px;">
                     <div class="history__wrapper__flex" style="display: flex; flex-direction: row;">
-                        <div class="deposit" style="width: 100%; display: flex; flex-direction: row;">
+                        <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
                             <span>Сумма депозита:</span>
                             <div>${ inputHistoryDeposit }</div>
+                        </div>
+                        <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
+                            <a href="" class="link__filter" style="
+                                text-decoration: none; color: #1375ab; word-break: break-all;">Фильтр
+                            </a>
                         </div>
                     </div>
                 </div>`;
@@ -165,6 +170,123 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     }
                 });
             });
+
+
+
+
+
+
+
+
+
+
+            // фильтр поиска
+            $('.link__filter').unbind('click');
+            $('.link__filter').bind('click', function (e) {
+                e.preventDefault();
+
+                new Modal({
+                    class_name: 'timer__filter',
+                    init: function ($modal_body) {
+                        var $this = $(this);
+                        $modal_body
+                            .trigger('modal:loaded')
+                            .html(`
+                            <div class="modal__history__filter" style="width: 100%; height: 175px;">
+                                <h2 class="modal__body__caption__filter head_2">Фильтр поиска</h2>
+                            </div>
+                        `)
+                            .trigger('modal:centrify')
+                            .append('');
+                    },
+                    destroy: function () {}
+                });
+
+                // даты от - до
+                var modalInputFrom = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
+                        class_name: 'modal__filter__input__from',
+                        input_class: 'input__modal__filter__input__from',
+                        value: '',
+                        placeholder: 'введите значение от:'
+                    }),
+                    modalInputTo = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
+                        class_name: 'modal__filter__input__to',
+                        input_class: 'input__modal__filter__input__to',
+                        value: '',
+                        placeholder: 'введите значение до:'
+                    }),
+                    linkFilterWrapper = `<div class="modal__filter__input__wrapper" style="width: 100%; margin-top: 20px;">
+                        <span style="width: 100%;">Введите дату поиска (от - до):</span><br/>
+                        <div class="modal__filter__input__flex" style="
+                            display: flex;
+                            flex-direction: row;
+                            width: 100%;
+                            margin-top: 3px;
+                        ">
+                            <div class="date_from">${ modalInputFrom }</div>
+                            <div style="padding: 8px 10px 0; color: #dbdedf;">-</div>
+                            <div class="date_to">${ modalInputTo }</div>
+                        </div>
+                    </div>`;
+                $('.modal__history__filter').append(linkFilterWrapper);
+
+                // кнопки Показать, Закрыть
+                var showBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                        class_name: 'modal__showBtn__filter',
+                        text: 'Показать'
+                    }),
+                    cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                        class_name: 'modal__cancelBtn__filter',
+                        text: 'Закрыть'
+                    }),
+                    actionBtnWrapper = `<div class="modal__body__actions__filter" style="
+                        width: 100%; margin-top: 20px;">
+                        ${ showBtn } ${ cancelBtn }
+                    </div>`;
+
+                $('.modal__history__filter').append(actionBtnWrapper);
+                $('.modal__body__caption__filter').css('margin-top', '20px');
+
+
+
+
+
+
+
+
+                // показ интервала истории
+                $('.modal__showBtn__filter').unbind('click');
+                $('.modal__showBtn__filter').bind('click', function () {
+
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'post',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'filter_history',
+                            'essence_id': essenseID,
+                            'from': $('.input__modal__filter__input__from').val(),
+                            'to': $('.input__modal__filter__input__to').val(),
+                        },
+                        dataType: 'json',
+                        success: function (data) {
+                            console.log(data);
+                        }
+                    });
+
+                });
+            });
+
+
+
+
+
+
+
+
+
+
+
 
             /* ###################################################################### */
 
@@ -488,12 +610,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                     $(`.title__comment__details__item`).css('padding-top', '10px');
                                                     $(`.title__price__details__item`).css('padding-top', '10px');
                                                     $(`.title__link__task__details__item`).css('padding-top', '10px');
+
+                                                    // меняем итоговую сумму внизу истории
+                                                    resultSum();
                                                 }
                                             });
 
-                                            // меняем итоговую сумму внизу истории
-                                            resultSum();
-                                            // возвращаем кнопку редактировать
                                             $('.modal__editBtn__details').css('display', 'block');
                                             $('.modal__saveEditBtn__details').css('display', 'none');
                                         });
