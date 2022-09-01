@@ -927,6 +927,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.pause__timer__btn').css('display', 'block');
                             $('.stop__timer__btn').css('display', 'block');
 
+                            // обновляем ссылку на задачу
+                            $('.modal__input__link__task').val(data.link_task);
+                            $('.modal__input__link__task').css('display', 'none');
+                            $('.modal__link__task__wrapper').append(`<a href="${ data.link_task }" class="modal__link__task" style="
+                                    margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                                    ${ data.link_task }
+                                </a>
+                            `);
+
                             // получаем время таймера
                             var date = new Date();
                             var time = data.time_work.split(' ');
