@@ -577,14 +577,19 @@
             return false;
         }
 
+        // соответствие дат добавляем в результирующий массив массив
         $response = [];
         while ($row = $result->fetch_assoc()) {
-            $date_from = date($_POST['from']);
-            $created_at = date(explode(' ', $row['created_at'])[0]);
-            if (strtotime($date_from) > strtotime($created_at)) $response[] = 'b';
-            else $response[] = 'm';
+            $date_from = strtotime(date($_POST['from']));
+            $date_to = strtotime(date($_POST['to']));
+            $created_at = strtotime(date(explode(' ', $row['created_at'])[0]));
+
+            if ($created_at >= $date_from && $created_at <= $date_to) $response[] = [
+                $row['id'], $row['created_at'], $row['user'], $row['price'], $row['price']
+            ];
         }
 
+        if (!count($response)) $response = false;
         echo json_encode($response);
     }
 
@@ -595,7 +600,8 @@
         $select = '
             SELECT SUM(price) AS result__sum 
             FROM billing_timer 
-            WHERE essence_id = "' . $_POST['essence_id'] . '"';
+            WHERE essence_id = "' . $_POST['essence_id'] . '"
+        ';
 
         $result = $mysqli->query($select)->fetch_assoc();
         echo json_encode($result['result__sum']);
