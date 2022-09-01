@@ -609,6 +609,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         success: function (data) {
                             // очищаем прежний вывод
                             $.each($('.link__details'), function () { this.remove(); });
+                            if ($('.filter__no__result').length) $('.filter__no__result').remove();
+
                             // добавляем надпись фильтра дат
                             if ($('.filter__timers__title').length) $('.filter__timers__title').remove();
                             $('.modal__history__deposit__wrapper').after(`
@@ -620,7 +622,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             if (!data) {
                                 $('.result__sum').text('Итого: 0р.');
-                                if ($('.filter__no__result').length) $('.filter__no__result').remove();
                                 $('.filter__timers__title').after(`
                                     <div class="filter__no__result" style="
                                         width: 100%; text-align: center; padding: 30px 0 10px;">
