@@ -567,3 +567,16 @@
         $result_deposit = $mysqli->query($select_deposit)->fetch_assoc();
         echo json_encode([$result_timer, $result_deposit['deposit']]);
     }
+
+    /* ##################################################################### */
+
+    // получаем сумму таймеров сущности
+    if ($_POST['method'] == 'get_sum' && $Config->CheckToken()) {
+        $select = '
+            SELECT SUM(price) AS result__sum 
+            FROM billing_timer 
+            WHERE essence_id = "' . $_POST['essence_id'] . '"';
+
+        $result = $mysqli->query($select)->fetch_assoc();
+        echo json_encode($result['result__sum']);
+    }

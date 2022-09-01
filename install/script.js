@@ -41,6 +41,29 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 rights = self.config_settings.rights[userID];
             }
 
+            // итоговая сумма истории
+            const resultSum = function () {
+                $.ajax({
+                    url: url_link_t,
+                    method: 'post',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'get_sum',
+                        'essence_id': essenseID
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        if ($('.result__sum').length) $('.result__sum').remove();
+                        $('.x__bottom').before(`<div class="result__sum">Итого: ${ data }р.</div>`);
+                        $('.result__sum').css({
+                            'width': '100%',
+                            'padding': '20px 20px 10px 0',
+                            'text-align': 'right'
+                        });
+                    }
+                });
+            }
+
             // запуск модалки истории
             new Modal({
                 class_name: 'timer__history',
@@ -468,6 +491,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                 }
                                             });
 
+                                            // меняем итоговую сумму внизу истории
+                                            resultSum();
+                                            // возвращаем кнопку редактировать
                                             $('.modal__editBtn__details').css('display', 'block');
                                             $('.modal__saveEditBtn__details').css('display', 'none');
                                         });
@@ -521,10 +547,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 <div class="user__price" style="display: flex; align-items: center;">${ history_price }р.</div>
                             </div>
                         `;
+
                         $('.modal__timer__history').append(historyItem);
                         $('.link__details').unbind('click');
                         $('.link__details').bind('click', showDetails);
                     });
+
+                    // итоговая сумма истории
+                    $('.modal__timer__history').append(`<div class="x__bottom"></div>`);
+                    resultSum();
 
                     // отступ снизу
                     $('.modal__timer__history').append('<div style="height: 30px;"></div>');
@@ -588,7 +619,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                                <div class="modal__timer" style="width: 100%; min-height: 235px;">
+                                <div class="modal__timer" style="width: 100%; min-height: 220px;">
                                     <h2 class="modal__body__caption head_2">Таймер</h2>
                                 </div>
                             `)
