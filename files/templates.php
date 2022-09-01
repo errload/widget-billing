@@ -570,7 +570,12 @@
 
     // получаем историю по фильтру
     if ($_POST['method'] == 'filter_history' && $Config->CheckToken()) {
-        $select = 'SELECT * FROM billing_timer WHERE essence_id = "' . $_POST['essence_id'] . '"';
+        $select = '
+            SELECT * 
+            FROM billing_timer 
+            WHERE essence_id = "' . $_POST['essence_id'] . '"
+            ORDER BY id DESC
+        ';
         $result = $mysqli->query($select);
         if (!$result->num_rows) {
             echo json_encode(false);

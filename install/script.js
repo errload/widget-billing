@@ -303,7 +303,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                                     // обновляем историю
                                     $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
-                                    $(`.link__details[data-id="${ timer.id }"] .user__price`).text(timer.price + 'р.');
+                                    $(`.link__details[data-id="${ timer.id }"] .user__price .user__sum`).text(timer.price);
 
                                     // обновляем детализацию
                                     $('.modal__input__user__edit__details').remove();
@@ -319,10 +319,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     $('.comment__details__item').text(timer.comment);
                                     $('.price__details__item').text(timer.price + 'р.');
                                     $('.link__task__details__item').html(`
-                                                <a href="${ timer.link_task }" target="_blank" style="
-                                                    text-decoration: none; color: #1375ab; word-break: break-all;
-                                                ">${ timer.link_task }</a> 
-                                            `);
+                                        <a href="${ timer.link_task }" target="_blank" style="
+                                            text-decoration: none; color: #1375ab; word-break: break-all;
+                                        ">${ timer.link_task }</a> 
+                                    `);
 
                                     $(`.title__user__details__item`).css('padding-top', '10px');
                                     $(`.title__client__details__item`).css('padding-top', '10px');
@@ -332,7 +332,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     $(`.title__link__task__details__item`).css('padding-top', '10px');
 
                                     // меняем итоговую сумму внизу истории
-                                    self.resultSum();
+                                    var price = 0;
+                                    $.each($('.user__price .user__sum'), function () {
+                                        price += parseInt($(this).text());
+                                    });
+                                    $('.result__sum .result__price').text(price);
                                 }
                             });
 
@@ -381,7 +385,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 success: function (data) {
                     if (!data) data = 0;
                     if ($('.result__sum').length) $('.result__sum').remove();
-                    $('.x__bottom').before(`<div class="result__sum">Итого: ${ sum ? sum : data }р.</div>`);
+                    $('.x__bottom').before(`
+                        <div class="result__sum" style="display: flex; flex-direction: row; justify-content: flex-end;">
+                            Итого: &nbsp<div class="result__price">${ sum ? sum : data }</div>р.
+                        </div>`);
                     $('.result__sum').css({
                         'width': '100%',
                         'padding': '20px 20px 10px 0',
@@ -585,6 +592,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // показ интервала истории
                 $('.modal__showBtn__filter').unbind('click');
                 $('.modal__showBtn__filter').bind('click', function () {
+                    var filter_from = $('.input__modal__filter__input__from').val();
+                    var filter_to = $('.input__modal__filter__input__to').val();
+
                     $.ajax({
                         url: url_link_t,
                         method: 'post',
@@ -592,8 +602,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             'domain': document.domain,
                             'method': 'filter_history',
                             'essence_id': essenseID,
-                            'from': $('.input__modal__filter__input__from').val(),
-                            'to': $('.input__modal__filter__input__to').val(),
+                            'from': filter_from,
+                            'to': filter_to,
                         },
                         dataType: 'json',
                         success: function (data) {
@@ -608,7 +618,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             var result_sum = 0;
                             $.each(data, function () {
                                 var history_id = this[0],
-                                    history_created_at = this[1],
+                                    history_created_at = this[1].split(' ')[0],
                                     history_user = this[2],
                                     history_price = this[3],
                                     history_sum = this[4];
@@ -632,7 +642,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                             </span><br/>
                                             <div class="user__title">${ history_user }</div>
                                         </div>
-                                        <div class="user__price" style="display: flex; align-items: center;">${ history_price }р.</div>
+                                        <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
+                                            <div class="user__sum">${ history_price }</div>
+                                            <div class="user_valute">р.</div>
+                                        </div>
                                     </div>
                                 `;
 
@@ -644,6 +657,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             // меняем итоговую сумму внизу истории
                             self.resultSum(result_sum);
+
+                            // добавляем надпись фильтра дат
+                            if ($('.filter__timers__title').length) $('.filter__timers__title').remove();
+                            $('.modal__history__deposit__wrapper').after(`
+                                <div class="filter__timers__title" style="
+                                    width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
+                                    Фильтр таймеров с ${ filter_from }г. по ${ filter_to }г.:
+                                </div>
+                            `);
                         }
                     });
 
@@ -667,7 +689,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     // добавляем историю таймеров (дата, ответственный, сумма)
                     $.each(data, function () {
                         var history_id = this[0],
-                            history_created_at = this[1],
+                            history_created_at = this[1].split(' ')[0],
                             history_user = this[2],
                             history_price = this[3];
 
@@ -690,7 +712,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     </span><br/>
                                     <div class="user__title">${ history_user }</div>
                                 </div>
-                                <div class="user__price" style="display: flex; align-items: center;">${ history_price }р.</div>
+                                <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
+                                    <div class="user__sum">${ history_price }</div>
+                                    <div class="user_valute">р.</div>
+                                </div>
                             </div>
                         `;
 
