@@ -609,8 +609,24 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         success: function (data) {
                             // очищаем прежний вывод
                             $.each($('.link__details'), function () { this.remove(); });
+                            // добавляем надпись фильтра дат
+                            if ($('.filter__timers__title').length) $('.filter__timers__title').remove();
+                            $('.modal__history__deposit__wrapper').after(`
+                                <div class="filter__timers__title" style="
+                                    width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
+                                    Фильтр таймеров с ${ filter_from }г. по ${ filter_to }г.:
+                                </div>
+                            `);
+
                             if (!data) {
                                 $('.result__sum').text('Итого: 0р.');
+                                if ($('.filter__no__result').length) $('.filter__no__result').remove();
+                                $('.filter__timers__title').after(`
+                                    <div class="filter__no__result" style="
+                                        width: 100%; text-align: center; padding: 30px 0 10px;">
+                                        Фильтр не дал результатов.
+                                    </div>
+                                `);
                                 return;
                             }
 
@@ -657,15 +673,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             // меняем итоговую сумму внизу истории
                             self.resultSum(result_sum);
-
-                            // добавляем надпись фильтра дат
-                            if ($('.filter__timers__title').length) $('.filter__timers__title').remove();
-                            $('.modal__history__deposit__wrapper').after(`
-                                <div class="filter__timers__title" style="
-                                    width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
-                                    Фильтр таймеров с ${ filter_from }г. по ${ filter_to }г.:
-                                </div>
-                            `);
                         }
                     });
 
