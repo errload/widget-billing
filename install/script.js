@@ -83,8 +83,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     </div>
                 </div>`;
 
-            // <div className="buttonEdit" style="width: 40%; text-align: right;">${editHistoryBtn}</div>
-
             $('.modal__timer__history').append(historyDepositWrapper);
             $('.modal__input__history__deposit').css({ 'margin-bottom': '10px', 'width': '150px' });
             $('.history__wrapper__flex .deposit span').css('margin-top', '8px');
