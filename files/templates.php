@@ -574,6 +574,7 @@
             SELECT * 
             FROM billing_timer 
             WHERE essence_id = "' . $_POST['essence_id'] . '"
+                AND status = "finish"
             ORDER BY id DESC
         ';
         $result = $mysqli->query($select);
