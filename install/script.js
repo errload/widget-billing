@@ -798,7 +798,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                                <div class="modal__timer" style="width: 100%; min-height: 220px;">
+                                <div class="modal__timer" style="width: 100%; min-height: 240px;">
                                     <h2 class="modal__body__caption head_2">Таймер</h2>
                                 </div>
                             `)
@@ -851,7 +851,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 /* ###################################################################### */
 
                 // ссылка на проект
-                var linkProjectWrapper = `<div class="modal__link__project__wrapper" style="width: 100%;">
+                var linkProjectWrapper = `<div class="modal__link__project__wrapper" style="
+                        width: 100%; margin-top: 20px;
+                    ">
                     <span style="width: 100%;">Ссылка на проект:</span><br/>
                     <a href="#" class="modal__link__project" style="
                         margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
