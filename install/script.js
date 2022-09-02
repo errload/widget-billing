@@ -640,6 +640,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             `);
 
                             if (!data) {
+                                if ($('.history__no__result').length) $('.history__no__result').remove();
+
                                 $('.result__sum').text('Итого: 0р.');
                                 $('.filter__timers__title').after(`
                                     <div class="filter__no__result" style="
@@ -713,6 +715,18 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 },
                 dataType: 'json',
                 success: function (data) {
+                    if ($('.history__no__result').length) $('.history__no__result').remove();
+
+                    if (!data) {
+                        $('.result__sum').text('Итого: 0р.');
+                        $('.modal__history__deposit__wrapper').after(`
+                            <div class="history__no__result" style="
+                                width: 100%; text-align: center; padding: 30px 0 10px;">
+                                Таймеров не найдено.
+                            </div>
+                        `);
+                    }
+
                     // добавляем историю таймеров (дата, ответственный, сумма)
                     $.each(data, function () {
                         var history_id = this[0],
