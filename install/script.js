@@ -592,8 +592,27 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // показ интервала истории
                 $('.modal__showBtn__filter').unbind('click');
                 $('.modal__showBtn__filter').bind('click', function () {
-                    var filter_from = $('.input__modal__filter__input__from').val();
-                    var filter_to = $('.input__modal__filter__input__to').val();
+                    var filter_from = $('.input__modal__filter__input__from');
+                    var filter_to = $('.input__modal__filter__input__to');
+                    var isErrorFilter = false;
+
+                    if (!filter_from.val().length) {
+                        filter_from.css('border-color', '#f37575');
+                        isErrorFilter = true;
+                    }
+
+                    if (!filter_to.val().length) {
+                        filter_to.css('border-color', '#f37575');
+                        isErrorFilter = true;
+                    }
+
+                    // возвращаем естесственные цвета
+                    filter_from.unbind('click');
+                    filter_from.bind('click', function () { filter_from.css('border-color', '#dbdedf') });
+                    filter_to.unbind('click');
+                    filter_to.bind('click', function () { filter_to.css('border-color', '#dbdedf') });
+
+                    if (isErrorFilter) return false;
 
                     $.ajax({
                         url: url_link_t,
@@ -602,8 +621,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             'domain': document.domain,
                             'method': 'filter_history',
                             'essence_id': essenseID,
-                            'from': filter_from,
-                            'to': filter_to,
+                            'from': filter_from.val(),
+                            'to': filter_to.val(),
                         },
                         dataType: 'json',
                         success: function (data) {
@@ -616,7 +635,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.modal__history__deposit__wrapper').after(`
                                 <div class="filter__timers__title" style="
                                     width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
-                                    Фильтр таймеров с ${ filter_from }г. по ${ filter_to }г.:
+                                    Фильтр таймеров с ${ filter_from.val() }г. по ${ filter_to.val() }г.:
                                 </div>
                             `);
 
