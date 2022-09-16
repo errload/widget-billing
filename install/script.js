@@ -1863,7 +1863,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             settings: function() {
                 self.accessRight();
                 self.saveConfigSettings();
-                console.log(self.config_settings);
 
                 // Блок первичных настроек и авторизации
                 var _settings = self.get_settings();
