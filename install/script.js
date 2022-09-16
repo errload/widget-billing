@@ -7,6 +7,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         // настройки прав доступа, стоимость сотрудника
         this.config_settings = {};
+        this.userID = AMOCRM.constant('user').id;
 
         // получение настроек
         this.getConfigSettings = function () {
@@ -282,7 +283,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     'domain': document.domain,
                                     'method': 'edit_history_details',
                                     'history_id': historyID,
-                                    'essence_id': essenseID,
+                                    'essence_id': AMOCRM.data.current_card.id,
                                     'user': $('.modal__input__user__edit__details').val(),
                                     'client': $('.modal__input__client__edit__details').val(),
                                     'service': $('.modal__input__service__edit__details').val(),
@@ -379,7 +380,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 data: {
                     'domain': document.domain,
                     'method': 'get_sum',
-                    'essence_id': essenseID
+                    'essence_id': AMOCRM.data.current_card.id
                 },
                 dataType: 'json',
                 success: function (data) {
@@ -403,7 +404,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         // история таймеров
         const modalHistory = function (e) {
             e.preventDefault();
-            var essenseID = AMOCRM.data.current_card.id;
+            var essenseID = AMOCRM.data.current_card.id,
+                userID = AMOCRM.constant('user').id;
 
             // права доступа
             self.getConfigSettings();
@@ -805,9 +807,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 self.clearIntervals();
 
                 var interval,
-                    services = [];
-                rights = false,
-                    priceManager = false,
+                    services = [],
+                    rights = false,
+                    priceManager = 0,
                     userID = AMOCRM.constant('user').id,
                     essenseID = AMOCRM.data.current_card.id,
                     timezone = AMOCRM.constant('account').timezone;
@@ -816,9 +818,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 self.getConfigSettings();
                 if (self.config_settings.rights && self.config_settings.rights[userID]) {
                     rights = self.config_settings.rights[userID];
-                }
-                if (self.config_settings.priceManager && self.config_settings.priceManager[userID]) {
-                    priceManager = self.config_settings.priceManager[userID];
                 }
 
                 /* ###################################################################### */
@@ -1609,6 +1608,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.modal__saveBtn__timer').bind('click', function () {
                         // если необходимые поля не выбраны, красим в красный
                         var manager = $('.modal__select__managers .control--select--button');
+                        var managerID = $('.modal__select__managers .control--select--button').attr('data-value');
                         var client = $('.modal__input__client__name');
                         var service = $('.modal__select__services .control--select--button');
                         var comment = $('.modal__textarea__comment');
@@ -1641,6 +1641,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         if (error) return false;
 
                         /* ###################################################################### */
+
+                        // стоимость выбранного сотрудника
+                        if (self.config_settings.priceManager && self.config_settings.priceManager[managerID]) {
+                            priceManager = self.config_settings.priceManager[managerID];
+                        }
 
                         // сохраняем результат в БД
                         $.ajax({
@@ -1858,6 +1863,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             settings: function() {
                 self.accessRight();
                 self.saveConfigSettings();
+                console.log(self.config_settings);
 
                 // Блок первичных настроек и авторизации
                 var _settings = self.get_settings();
