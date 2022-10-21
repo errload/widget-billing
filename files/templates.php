@@ -538,12 +538,16 @@
         } else $new_price = 0;
 
         // обновляем историю
+        $charset = mb_detect_encoding($_POST['comment']);
+        $unicodeString = iconv($charset, "UTF-8", $_POST['comment']);
+        $comment = str_ireplace('"', '\"', $unicodeString);
+
         $update = '
             UPDATE billing_timer
             SET user = "' . $_POST['user'] . '",
                 client = "' . $_POST['client'] . '",
                 service = "' . $_POST['service'] . '",
-                comment = "' . $_POST['comment'] . '",
+                comment = "' . $comment . '",
                 link_task = "' . $_POST['link_task'] . '",
                 price = "' . $_POST['price'] . '"
             WHERE id = "' . $_POST['history_id'] . '"
