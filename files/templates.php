@@ -368,12 +368,16 @@
         $time_work = explode(' ', $result['time_work'])[1];
 
         // обновляем состояние таймера
+        $charset = mb_detect_encoding($_POST['comment']);
+        $unicodeString = iconv($charset, "UTF-8", $_POST['comment']);
+        $comment = str_ireplace('"', '\"', $unicodeString);
+
         $update = '
             UPDATE billing_timer
             SET user = "' . $_POST['user'] . '",
                 client = "' . $_POST['client'] . '",
                 service = "' . $_POST['service'] . '",
-                comment = "' . $_POST['comment'] . '",
+                comment = "' . $comment . '",
                 price = "' . $price . '",
                 time_work = "' . $time_work . '",
                 status = "finish"
