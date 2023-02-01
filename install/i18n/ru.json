@@ -7,5 +7,8 @@
     },
     "settings": {
         "config_settings": "Настройки"
+    },
+    "advanced": {
+        "title": "Биллинг"
     }
 }

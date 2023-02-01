@@ -1859,6 +1859,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         /* ###################################################################### */
 
+        // функция показа настроек в разделе Настройки
+        this.advancedSettings = function () {
+            $(`#work_area #work-area-${ self.get_settings().widget_code }`).append(`
+                <div class="safety_settings__section_new tasks_search">
+                    <div class="safety_settings__section_head_new">
+                        <div class="safety_settings__section_head_new_title">Задачи</div>
+                    </div>
+                </div>
+            `);
+        }
+
+        /* ###################################################################### */
+
         this.callbacks = {
             settings: function() {
                 self.accessRight();
@@ -1961,7 +1974,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 return true;
             },
-            advancedSettings: function() {}
+            advancedSettings: function() {
+                // показ настроек в разделе Настройки
+                self.advancedSettings();
+            }
         };
         return this;
     };
