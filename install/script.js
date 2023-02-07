@@ -1861,13 +1861,74 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         // функция показа настроек в разделе Настройки
         this.advancedSettings = function () {
+            let search = self.render(
+                {ref: '/tmpl/common/search_block.twig'},
+                {
+                    loader_class_name: 'loader_class_name',
+                    search_placeholder: 'Фильтр',
+                    id: 'id'
+                }
+            );
+
             $(`#work_area #work-area-${ self.get_settings().widget_code }`).append(`
                 <div class="safety_settings__section_new tasks_search">
                     <div class="safety_settings__section_head_new">
-                        <div class="safety_settings__section_head_new_title">Задачи</div>
+                        <div class="safety_settings__section_head_new_title">
+                            Задачи
+                        </div>
+                    </div>
+                    
+                    <div class="settings__search" style="
+                        width: 100%; padding: 0; display: flex; flex-direction: row;">
+                        <div class="settings__search__input" style="width: 100%;">${ search }</div>
+                        <div class="settings__search__menu">
+                        
+                            <div class="list-top-nav__icon-button list-top-nav__icon-button_dark list-top-nav__icon-button_context">
+                                <div class="button-input-wrapper button-input-more content__top__action__btn-more">
+                            
+                                    <button type="button" class="button-input  button-input-with-menu  " tabindex="" title="Еще">
+                                        <span class="button-input-inner button-input-more-inner">
+                                            <svg class="svg-icon svg-controls--button-more-dims">
+                                                <use xlink:href="#controls--button-more"></use>
+                                            </svg>
+                                        </span>
+                                    </button>
+                                    
+                                    <ul class="button-input__context-menu ">
+                                        <li class="button-input__context-menu__item  element__ js-list-export" id="">
+                                            <div class="button-input__context-menu__item__inner">
+                                                <span class="button-input__context-menu__item__icon-container">
+                                                    <svg class="button-input__context-menu__item__icon svg-icon svg-common--download-dims ">
+                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#common--download"></use>
+                                                    </svg>
+                                                </span>
+                                                <span class="button-input__context-menu__item__text">Экспорт</span>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                
+                                </div>
+                            </div>     
+                            
+                        </div>                        
                     </div>
                 </div>
             `);
+
+            // выравниваем поиск и меню
+            $('.settings__search .settings__search__input').css({
+                'margin-top': '10px',
+                'border-top': '1px solid #e8eaeb',
+                'border-bottom': '1px solid #e8eaeb'
+            });
+            $('.settings__search .list-top-search').css({ 'margin-left': '0' });
+            $('.settings__search .button-input').css({ 'border': '0', 'background': '#fff', 'max-height': 'auto' });
+            $('.settings__search .settings__search__menu').css({ 'margin-top': '10px' });
+            $('.settings__search .button-input-pressed').css({ 'background': '#fff', 'box-shadow': 'unset' });
+            $('.settings__search .list-top-nav__icon-button').css({
+                'margin-left': '10px', 'border': '1px solid #e8eaeb', 'height': '64px'
+            });
+            $('.settings__search .button-input__context-menu').css({ 'left': 'auto', 'right': '0' });
         }
 
         /* ###################################################################### */
