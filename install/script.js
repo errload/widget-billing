@@ -1958,786 +1958,193 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 
 
                 
-                
-                
-                
-                
+
 <div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute;">
     <div class="filter-search__wrapper custom-scroll">
         <div class="filter-search__inner">
         
-            <div class="filter-search__left">
-                <ul class="filter-search__list js-filter-list" id="filter_list">
+        <div class="filter-search__left">
+            <ul class="filter-search__list js-filter-list" id="filter_list">
+
+                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
+                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                    <a href="/events/list/?skip_filter=Y&amp;sel=32042857&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                        <span class="filter__list__item__inner">Все события</span>
+                    </a>
+                </li>
                 
-                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
-                        <span class="filter_items__handle">
-                            <span class="icon icon-v-dots"></span>
-                        </span>
-                        <a href="/events/list/?skip_filter=Y&amp;sel=32042857&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                            <span class="filter__list__item__inner">Все события</span>
-                        </a>
-                    </li>
-                    
-                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
-                        <span class="filter_items__handle">
-                            <span class="icon icon-v-dots"></span>
-                        </span>
-                        <a href="/events/list/?filter[main_user][]=8304874&amp;sel=32042860&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                            <span class="filter__list__item__inner">Мои события</span>
-                        </a>
-                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
-                            <span class="filter_items__edit__btn">
-                                <span class="icon icon-pencil"></span>
-                            </span>
-                            <span class="filter_items__edit__save">
-                                <span class="icon icon-accept-green"></span>
-                            </span>
-                        </span>
-                    </li>
-                    
-                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
-                        <span class="filter_items__handle">
-                            <span class="icon icon-v-dots"></span>
-                        </span>
-                        <a href="/events/list/?filter%5Bdate_preset%5D=current_day&amp;sel=32042863&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                            <span class="filter__list__item__inner">События за сегодня</span>
-                        </a>
-                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
-                            <span class="filter_items__edit__btn">
-                                <span class="icon icon-pencil"></span>
-                            </span>
-                            <span class="filter_items__edit__save">
-                                <span class="icon icon-accept-green"></span>
-                            </span>
-                        </span>
-                    </li>
-
-                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
-                        <span class="filter_items__handle">
-                            <span class="icon icon-v-dots"></span>
-                        </span>
-                        <a href="/events/list/?filter%5Bdate_preset%5D=yesterday&amp;sel=32042866&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                            <span class="filter__list__item__inner">События за вчера</span>
-                        </a>
-                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
-                            <span class="filter_items__edit__btn">
-                                <span class="icon icon-pencil"></span>
-                            </span>
-                            <span class="filter_items__edit__save">
-                                <span class="icon icon-accept-green"></span>
-                            </span>
-                        </span>
-                    </li>
-
-                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
-                        <span class="filter_items__handle">
-                            <span class="icon icon-v-dots"></span>
-                        </span>
-                        <a href="/events/list/?filter%5Bdate_preset%5D=current_month&amp;sel=32042869&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                            <span class="filter__list__item__inner">События за месяц</span>
-                        </a>
-                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
-                            <span class="filter_items__edit__btn">
-                                <span class="icon icon-pencil"></span>
-                            </span>
-                            <span class="filter_items__edit__save">
-                                <span class="icon icon-accept-green"></span>
-                            </span>
-                        </span>
-                    </li>
-
-                </ul>
-            </div>
+                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
+                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                    <a href="/events/list/?filter[main_user][]=8304874&amp;sel=32042860&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                        <span class="filter__list__item__inner">Мои события</span>
+                    </a>
+                </li>
+                
+                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
+                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                    <a href="/events/list/?filter%5Bdate_preset%5D=current_day&amp;sel=32042863&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                        <span class="filter__list__item__inner">События за сегодня</span>
+                    </a>
+                </li>
+                
+                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
+                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                    <a href="/events/list/?filter%5Bdate_preset%5D=yesterday&amp;sel=32042866&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                        <span class="filter__list__item__inner">События за вчера</span>
+                    </a>
+                </li>
+                
+                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
+                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                    <a href="/events/list/?filter%5Bdate_preset%5D=current_month&amp;sel=32042869&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                        <span class="filter__list__item__inner">События за месяц</span>
+                    </a>
+                </li>
             
-            
-            
-            
-            
-            
-            
-<div class="filter-search__right">
-<form action="/events/list/" method="GET" id="filter_form" class="filter__form">
-<div class="filter-search__form-wrapper">
-<div class="filter-search__entity-wrapper" data-element-type="events">
-<div class="filter__custom_settings__list" id="filter_fields">
+            </ul>
+        </div>
+        
+        <div class="filter-search__right">
+            <form action="/events/list/" method="GET" id="filter_form" class="filter__form">
+                <div class="filter-search__form-wrapper">
+                    <div class="filter-search__entity-wrapper" data-element-type="events">
+                        <div class="filter__custom_settings__list" id="filter_fields">
+                        
+                        
+                        
 <div class="filter__custom_settings__item" data-tmpl="text">
-<div class="filter__custom_settings__item__value-wrapper">
-<div class="date_filter js-control-date-filter custom_select">
-<div class="date_filter__head">
-<div class="date_filter__head__icon">
-<svg class="svg-card-calendar-dims">
-<use xlink:href="#card-calendar">
+    <div class="filter__custom_settings__item__value-wrapper">
+        <div class="date_filter js-control-date-filter custom_select">
+            <div class="date_filter__head">
+                <div class="date_filter__head__icon">
+                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
+                </div>
+                <span class="date_filter__period custom_select__selected " data-before="За все время">
+                    За все время
+                </span>
+                <span class="date_filter__head__dropdown_icon"></span>
+            </div>
+            <div class="date_filter__dropdown ">
+                <div class="date_filter__param hidden">
+                    <div class="control-toggler date_filter__param__toggler hidden">
+                        <label for="filter_date_switch_created" class="control-toggler__item first control-toggler__item-selected" data-id="" data-label="Созданы">
+                            <input type="radio" class="hidden " id="filter_date_switch_created" checked="checked" name="filter_date_switch" value="created">  
+                            <b></b>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <div class="date_filter__period_range__options">
+                        <div class="date_filter__period_range__controls ">
+                            <input type="hidden" class="date_field__preset" name="filter[date_preset]" value="">
+                            <span class="date_field_wrapper js-control-date date_filter__period_range__controls_field" data-kalendae-classname="">
+                                <input type="hidden" class="date_field__range_0" name="filter_date_from" value="">
+                                <input type="hidden" class="date_field__range_1" name="filter_date_to" value="">
+                                <input class="date_field js-date-filter-input date-filter-in-search empty range" type="text" value="" placeholder="">
+                                <div class="date_field_wrapper--calendar">
+                                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+                    <ul class="date_filter__period_list  without_button ">
+                        <li class="date_filter__period_item custom_select__item" data-period="" style="display:none;">
+                            <span data-value="" class="custom_select__title">
+                                За все время
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-current_day" data-period="current_day">
+                            <span data-value="current_day" class="custom_select__title" title="За сегодня">
+                                За сегодня
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-yesterday" data-period="yesterday">
+                            <span data-value="yesterday" class="custom_select__title" title="За вчера">
+                                За вчера
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-past_x_days" data-period="past_x_days">
+                            <span data-value="past_x_days" class="custom_select__title" "="">
+                                За последние 
+                                <div class="date_filter__period_item-input-days-wrapper">
+                                    <input class="date_filter__period_item-input-days js-date_filter__period_item js-control-autosized_input" data-comfort-zone="0" type="number" value="30" max="999">
+                                    <tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;">
+                                        30
+                                    </tester>
+                                </div> 
+                                дней
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-current_week" data-period="current_week">
+                            <span data-value="current_week" class="custom_select__title" title="За эту неделю">
+                                За эту неделю
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_week" data-period="previous_week">
+                            <span data-value="previous_week" class="custom_select__title" title="За прошлую неделю">
+                                За прошлую неделю
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-current_month" data-period="current_month">
+                            <span data-value="current_month" class="custom_select__title" title="За этот месяц">
+                                За этот месяц
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_month" data-period="previous_month">
+                            <span data-value="previous_month" class="custom_select__title" title="За прошлый месяц">
+                                За прошлый месяц
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-current_quarter" data-period="current_quarter">
+                            <span data-value="current_quarter" class="custom_select__title" title="За квартал">
+                                За квартал
+                            </span>
+                        </li>
+                        <li class="date_filter__period_item custom_select__item custom_select__item-current_year" data-period="current_year">
+                            <span data-value="current_year" class="custom_select__title" title="За этот год">
+                                За этот год
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <b class="js-filter-field-clear"></b>
+    </div>
+</div>                        
+               
+               
+               
+               
+               
 
-</use>
-</svg>
-</div>
-<span class="date_filter__period custom_select__selected " data-before="За все время">За все время
-</span>
-<span class="date_filter__head__dropdown_icon">
 
-</span>
-</div>
-<div class="date_filter__dropdown ">
-<div class="date_filter__param hidden">
-<div class="control-toggler date_filter__param__toggler hidden">
-<label for="filter_date_switch_created" class="control-toggler__item first control-toggler__item-selected" data-id="" data-label="Созданы">
-<input type="radio" class="hidden " id="filter_date_switch_created" checked="checked" name="filter_date_switch" value="created">
-<b>
 
-</b>
-</label>
+<div class="filter-search__users-select-holder filter-search__users-select-holder_ filter__custom_settings__item filter__custom_settings__item_suggest-manager" data-title="Менеджеры" data-is-fn="usersSelectClear" data-type="" data-tmpl="users" data-element-type-name="" data-input-name="filter[main_user][]">
+    <div class="custom-scroll">
+        <div class="multisuggest users_select-select_one  js-multisuggest js-can-add " data-multisuggest-id="5834" id="filter_users_select__holder" data-new-item-msg="">
+            <ul class="multisuggest__list js-multisuggest-list"></ul>
+        </div>
+    </div>
+    <b class="js-filter-field-clear"></b>
 </div>
+                        
+                        
+                        
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        </div>
+    </div>
 </div>
-<div>
-<div class="date_filter__period_range__options">
-<div class="date_filter__period_range__controls ">
-<input type="hidden" class="date_field__preset" name="filter[date_preset]" value="">
-<span class="date_field_wrapper js-control-date date_filter__period_range__controls_field" data-kalendae-classname="">
-<input type="hidden" class="date_field__range_0" name="filter_date_from" value="">
-<input type="hidden" class="date_field__range_1" name="filter_date_to" value="">
-<input class="date_field js-date-filter-input date-filter-in-search empty range" type="text" value="" placeholder="">
-<div class="date_field_wrapper--calendar">
-<svg class="svg-card-calendar-dims">
-<use xlink:href="#card-calendar">
 
-</use>
-</svg>
-</div>
-</span>
-</div>
-</div>
-<ul class="date_filter__period_list  without_button ">
-<li class="date_filter__period_item custom_select__item" data-period="" style="display:none;">
-<span data-value="" class="custom_select__title">За все время
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-current_day" data-period="current_day">
-<span data-value="current_day" class="custom_select__title" title="За сегодня">За сегодня
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-yesterday" data-period="yesterday">
-<span data-value="yesterday" class="custom_select__title" title="За вчера">За вчера
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-past_x_days" data-period="past_x_days">
-<span data-value="past_x_days" class="custom_select__title" "="">За последние 
-<div class="date_filter__period_item-input-days-wrapper">
-<input class="date_filter__period_item-input-days js-date_filter__period_item js-control-autosized_input" data-comfort-zone="0" type="number" value="30" max="999">
-<tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;">30
-</tester>
-</div> дней
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-current_week" data-period="current_week">
-<span data-value="current_week" class="custom_select__title" title="За эту неделю">За эту неделю
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-previous_week" data-period="previous_week">
-<span data-value="previous_week" class="custom_select__title" title="За прошлую неделю">За прошлую неделю
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-current_month" data-period="current_month">
-<span data-value="current_month" class="custom_select__title" title="За этот месяц">За этот месяц
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-previous_month" data-period="previous_month">
-<span data-value="previous_month" class="custom_select__title" title="За прошлый месяц">За прошлый месяц
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-current_quarter" data-period="current_quarter">
-<span data-value="current_quarter" class="custom_select__title" title="За квартал">За квартал
-</span>
-</li>
-<li class="date_filter__period_item custom_select__item custom_select__item-current_year" data-period="current_year">
-<span data-value="current_year" class="custom_select__title" title="За этот год">За этот год
-</span>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<b class="js-filter-field-clear">
 
-</b>
-</div>
-</div>
-<div class="filter-search__users-select-holder filter-search__users-select-holder_ filter__custom_settings__item filter__custom_settings__item_suggest-manager " data-title="Менеджеры" data-is-fn="usersSelectClear" data-type="" data-tmpl="users" data-element-type-name="" data-input-name="filter[main_user][]">
-<div class="custom-scroll">
-<div class="multisuggest users_select-select_one  js-multisuggest js-can-add " data-multisuggest-id="7409" id="filter_users_select__holder" data-new-item-msg="">
-<ul class="multisuggest__list js-multisuggest-list">
 
-</ul>
-</div>
-</div>
-<b class="js-filter-field-clear">
 
-</b>
-</div>
-<div class="filter__custom_settings__item" data-field-name="filter[entity][]" data-tmpl="tags">
-<div class="filter__custom_settings__item__value-wrapper">
-<div class="checkboxes_dropdown  js-control-checkboxes_dropdown">
-<div class="checkboxes_dropdown__list custom-scroll ">
-<div class="checkboxes_dropdown__list__wrapper__inner">
-<div class="checkboxes_dropdown__item">
-<label class="control-checkbox checkboxes_dropdown__label js-master-checkbox-wrapper control-checkbox_small">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-form-changes-skip js-master-checkbox" name="" id="cbx_drop_master_901" value="" data-value="">
-<span class="control-checkbox__helper">
 
-</span>
-</div>
-<div class="control-checkbox__text element__text js-select-all-text checkboxes_dropdown__label_title checkboxes_dropdown__label_title-not_active" title="Выбрать всё">Выбрать всё
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_82131" value="2" data-value="2">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="Сделки">Сделки
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_88209" value="1" data-value="1">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="Контакты">Контакты
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_3898" value="3" data-value="3">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="Компании">Компании
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_30448" value="12" data-value="12">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="Покупатели">Покупатели
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_17810" value="4" data-value="4">
-<span class="control-checkbox__helper ">
-
-</span>
-</div><div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="Задачи">Задачи
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_84715" value="24" data-value="24">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="Беседы">Беседы
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_85923" value="6767" data-value="6767">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="Товары">Товары
-</div>
-</label>
-</div>
-<div class="checkboxes_dropdown__item   " style="">
-<label class="control-checkbox checkboxes_dropdown__label control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-item-checkbox" name="filter[entity][]" id="cbx_drop_47388" value="6839" data-value="6839">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text checkboxes_dropdown__label_title" title="test">test
-</div>
-</label>
-</div>
-</div>
-</div>
-<div class="checkboxes_dropdown__title_wrapper ">
-<label class="control-checkbox checkboxes_dropdown__checkbox_master icon-checkbox js-master-checkbox-wrapper control-checkbox_small">
-<div class="control-checkbox__body">
-<input type="checkbox" class="js-form-changes-skip js-master-checkbox" name="" checked="checked" value="" data-value="">
-<span class="control-checkbox__helper">
-
-</span>
-</div>
-</label>
-<span class="checkboxes_dropdown__title-selected">
-<span class="checkboxes_dropdown__title" data-numeral="сущность,сущности,сущностей,сущности" data-title-empty="">
-<div class="checkboxes_dropdown__title-item" data-title-before="">Все сущности
-</div>
-</span>
-</span>
-<span class="checkboxes_dropdown_icon icon-v-ico-2">
-
-</span>
-</div>
-</div>
-<b class="js-filter-field-clear">
-
-</b>
-</div>
-</div>
-<div class="filter__custom_settings__item checkboxes-search js-control-checkboxes-search" data-name="filter[event_type][]" data-field-name="filter[event_type][]" title="Типы событий">
-<div class="checkboxes-search__title-wrapper">
-<span class="checkboxes-search__title-selected">
-<span class="checkboxes-search__title" data-numeral="Типы событий" data-title-empty="">
-<div class="checkboxes-search__title-item">Типы событий
-</div>
-</span>
-</span>
-<span class="checkboxes-search__icon icon-v-ico-2">
-
-</span>
-</div>
-<div class="checkboxes-search__opening-list hidden">
-<div class="checkboxes-search__content-scroll checkboxes-search__visible-scroll">
-<div class="checkboxes-search__links-wrapper">
-<span class="checkboxes-search__link js-checkboxes-search-check-all">Выбрать всё
-</span>
-<span class="checkboxes-search__link js-checkboxes-search-clear-all">Очистить
-</span>
-</div>
-<input name="" class="js-form-changes-skip checkboxes-search__search-input text-input" type="text" value="" placeholder="Поиск" autocomplete="off">
-<div class="checkboxes-search__section-common custom-scroll">
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="2" value="2" data-value="Новый контакт">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Новый контакт">Новый контакт
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="8" value="8" data-value="Контакт удален">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Контакт удален">Контакт удален
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:972515" data-value="Изменение поля / bbbbb" data-cf-id="972515">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / bbbbb">Изменение поля / bbbbb
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:972415" data-value="Изменение поля / Единица измерения" data-cf-id="972415">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / Единица измерения">Изменение поля / Единица измерения
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:972445" data-value="Изменение поля / Статус" data-cf-id="972445">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / Статус">Изменение поля / Статус
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:972451" data-value="Изменение поля / Тип НДС" data-cf-id="972451">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / Тип НДС">Изменение поля / Тип НДС
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:975335" data-value="Изменение поля / Единица измерения" data-cf-id="975335">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / Единица измерения">Изменение поля / Единица измерения
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:976017" data-value="Изменение поля / 123" data-cf-id="976017">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / 123">Изменение поля / 123
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:975269" data-value="Изменение поля / Пользовательское соглашение" data-cf-id="975269">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / Пользовательское соглашение">Изменение поля / Пользовательское соглашение
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label is-cf-id control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24:976143" data-value="Изменение поля / чек" data-cf-id="976143">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля / чек">Изменение поля / чек
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="24" value="24" data-value="Изменение поля">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение поля">Изменение поля
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="25" value="25" data-value="Ответственный изменен">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Ответственный изменен">Ответственный изменен
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="81" value="81" data-value="Прикрепление контакта">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Прикрепление контакта">Прикрепление контакта
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="85" value="85" data-value="Открепление контакта">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Открепление контакта">Открепление контакта
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="1" value="1" data-value="Новая сделка">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Новая сделка">Новая сделка
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="7" value="7" data-value="Сделка удалена">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Сделка удалена">Сделка удалена
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="14" value="14" data-value="Изменение этапа продажи">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение этапа продажи">Изменение этапа продажи
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="20" value="20" data-value="Новый покупатель">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Новый покупатель">Новый покупатель
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="80" value="80" data-value="Прикрепление сделки">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Прикрепление сделки">Прикрепление сделки
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="84" value="84" data-value="Открепление сделки">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Открепление сделки">Открепление сделки
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="79" value="79" data-value="Примечание удалено">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Примечание удалено">Примечание удалено
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="3" value="3" data-value="Новая компания">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Новая компания">Новая компания
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="9" value="9" data-value="Компания удалена">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Компания удалена">Компания удалена
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="82" value="82" data-value="Прикрепление компании">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Прикрепление компании">Прикрепление компании
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="86" value="86" data-value="Открепление компании">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Открепление компании">Открепление компании
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="29" value="29" data-value="Завершение задачи">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Завершение задачи">Завершение задачи
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="33" value="33" data-value="Результат по задаче">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Результат по задаче">Результат по задаче
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="49" value="49" data-value="Новая задача">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Новая задача">Новая задача
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="51" value="51" data-value="Задача удалена">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Задача удалена">Задача удалена
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="77" value="77" data-value="Изменение текста задачи">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Изменение текста задачи">Изменение текста задачи
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="53" value="53" data-value="Покупатель удален">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Покупатель удален">Покупатель удален
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="83" value="83" data-value="Прикрепление покупателя">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Прикрепление покупателя">Прикрепление покупателя
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="87" value="87" data-value="Открепление покупателя">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Открепление покупателя">Открепление покупателя
-</div>
-</label>
-<label class="control-checkbox checkboxes-search__item-label  control-checkbox_small ">
-<div class="control-checkbox__body">
-<input type="checkbox" class="" name="filter[event_type][]" id="119" value="119" data-value="Беседа создана">
-<span class="control-checkbox__helper ">
-
-</span>
-</div>
-<div class="control-checkbox__text element__text " title="Беседа создана">Беседа создана
-</div>
-</label>
-</div>
-</div>
-<div class="checkboxes-search__buttons-wrapper">
-<div class="button-input js-button-with-loader js-checkboxes-search-list-apply checkboxes-search__button button-input-disabled" tabindex="1">
-<span class="button-input-inner__text">ОК
-</span>
-</div>
-<button type="button" class="button-input button-cancel js-checkboxes-search-list-close checkboxes-search__button-close" tabindex="2" style="">
-<span>Отменить
-</span>
-</button>
-</div>
-</div>
-<b class="js-filter-field-clear">
-
-</b>
-</div>
-<div data-name="filter[value_before]" data-title="Значение до" class="filter__custom_settings__item filter-control-checkboxes-search">
-<div class="filter__custom_settings__item">
-<input name="filter[value_before]" class="filter__custom_input text-input" type="value_before" value="" placeholder="Значение до" autocomplete="off">
-<b class="js-filter-field-clear">
-
-</b>
-</div>
-</div>
-<div data-name="filter[value_after]" data-title="Значение после" class="filter__custom_settings__item filter-control-checkboxes-search">
-<div class="filter__custom_settings__item">
-<input name="filter[value_after]" class="filter__custom_input text-input" type="value_after" value="" placeholder="Значение после" autocomplete="off">
-<b class="js-filter-field-clear">
-
-</b>
-</div>
-</div>
-</div>
-</div>
-</div>
-</form>
-</div>
-</div>
-</div>
-<div id="search-suggest-drop-down-menu" class="search-results custom-scroll">
-<div id="search-suggest-drop-down-menu_container">
-
-</div>
-</div>
-<div class="modal-body__actions filter__params_manage" style="margin-right: 0px;">
-<button type="button" class="button-input   button-input-disabled js-modal-accept js-button-with-loader modal-body__actions__save button-input_blue filter__params_manage__apply" tabindex="1" id="filter_apply">
-<span class="button-input-inner ">
-<span class="button-input-inner__text">Применить
-</span>
-</span>
-</button>
-<button type="button" class="button-input button-cancel js-search-filter-clear" tabindex="2" style="">
-<span>Сбросить
-</span>
-</button>
-</div>
-</div>                
-                
-                
-                
-                
-                
-                
                 
                 `);
             });
