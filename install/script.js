@@ -1911,7 +1911,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         
                     </div>
                     
-                    <div class="settings__search__filter" style="position: relative; width: 100%; border: 1px solid red;"></div>
+                    <div class="settings__search__filter" style="position: relative; width: 100%;"></div>
                 </div>
             `);
 
@@ -1925,6 +1925,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             $('.settings__search .button-input').css({ 'border': '0', 'background': '#fff', 'max-height': 'auto' });
             $('.settings__search .settings__search__menu').css({ 'margin-top': '10px' });
             $('.settings__search .list-top-search__input').attr('readonly', true);
+            $('.settings__search .list-top-search__input-block').css('cursor', 'pointer');
             $('.settings__search .list-top-search__input').css('cursor', 'pointer');
 
             $('.settings__search .settings__search__menu').css({
@@ -1933,11 +1934,26 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
             $('.settings__search .button-input__context-menu').css({'left': 'auto', 'right': '0'});
 
+            // клик по свободному месту для закрытия фильтра
+            $('#page_holder').unbind('click');
+            $('#page_holder').bind('click', function (e) {
+                // если фильтр не открыт, выходим
+                if (!$('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
+                // если клик по диву фильтра, выходим
+                if ($(e.target).closest('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
+                // если клик по инпуту фильтра, выходим
+                if ($(e.target).hasClass('.settings__search .list-top-search__input-block')) return;
+                if ($(e.target).closest('.settings__search .list-top-search__input-block').length) return;
+
+                // удаляем фильтр
+                $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
+            });
+
             // клик по фильтру
-            $('.settings__search .list-top-search__input').unbind('click');
-            $('.settings__search .list-top-search__input').bind('click', function () {
-                if ($('.settings__search__filter .js-filter-sidebar').length) $('.settings__search__filter .js-filter-sidebar').remove();
-                else $('.settings__search__filter').append(`
+            $('.settings__search .list-top-search__input-block').unbind('click');
+            $('.settings__search .list-top-search__input-block').bind('click', function () {
+                if ($('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
+                $('.settings__search__filter').append(`
                 
                 
 
@@ -1946,144 +1962,99 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 
                 
                 
-<div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: 1094px; position: absolute;">
-<div class="filter-search__wrapper custom-scroll">
-<div class="filter-search__inner">
-<div class="filter-search__left">
-<ul class="filter-search__list js-filter-list" id="filter_list">
-<li class="filter__list__item filter__list__item-system-preset    js-filter__common_settings__item-sortable js-filter-preset-link " title="Все события" data-id="32042857" data-sort="1000">
-<span class="filter_items__handle">
-<span class="icon icon-v-dots">
+<div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute;">
+    <div class="filter-search__wrapper custom-scroll">
+        <div class="filter-search__inner">
+        
+            <div class="filter-search__left">
+                <ul class="filter-search__list js-filter-list" id="filter_list">
+                
+                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
+                        <span class="filter_items__handle">
+                            <span class="icon icon-v-dots"></span>
+                        </span>
+                        <a href="/events/list/?skip_filter=Y&amp;sel=32042857&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                            <span class="filter__list__item__inner">Все события</span>
+                        </a>
+                    </li>
+                    
+                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
+                        <span class="filter_items__handle">
+                            <span class="icon icon-v-dots"></span>
+                        </span>
+                        <a href="/events/list/?filter[main_user][]=8304874&amp;sel=32042860&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                            <span class="filter__list__item__inner">Мои события</span>
+                        </a>
+                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
+                            <span class="filter_items__edit__btn">
+                                <span class="icon icon-pencil"></span>
+                            </span>
+                            <span class="filter_items__edit__save">
+                                <span class="icon icon-accept-green"></span>
+                            </span>
+                        </span>
+                    </li>
+                    
+                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
+                        <span class="filter_items__handle">
+                            <span class="icon icon-v-dots"></span>
+                        </span>
+                        <a href="/events/list/?filter%5Bdate_preset%5D=current_day&amp;sel=32042863&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                            <span class="filter__list__item__inner">События за сегодня</span>
+                        </a>
+                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
+                            <span class="filter_items__edit__btn">
+                                <span class="icon icon-pencil"></span>
+                            </span>
+                            <span class="filter_items__edit__save">
+                                <span class="icon icon-accept-green"></span>
+                            </span>
+                        </span>
+                    </li>
 
-</span>
-</span>
-<a href="/events/list/?skip_filter=Y&amp;sel=32042857&amp;preset=y" class="js-navigate-link filter__list__item__link">
-<!---->
-<span class="filter__list__item__inner">Все события
-</span>
-</a>
-<span class="filter_items__edit filter_items__system-edit" style="display: block;">
-<span class="filter_items__edit__btn">
-<span class="icon icon-pencil">
+                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
+                        <span class="filter_items__handle">
+                            <span class="icon icon-v-dots"></span>
+                        </span>
+                        <a href="/events/list/?filter%5Bdate_preset%5D=yesterday&amp;sel=32042866&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                            <span class="filter__list__item__inner">События за вчера</span>
+                        </a>
+                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
+                            <span class="filter_items__edit__btn">
+                                <span class="icon icon-pencil"></span>
+                            </span>
+                            <span class="filter_items__edit__save">
+                                <span class="icon icon-accept-green"></span>
+                            </span>
+                        </span>
+                    </li>
 
-</span>
-</span>
-<!---->
-<span class="filter_items__edit__save">
-<span class="icon icon-accept-green">
+                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
+                        <span class="filter_items__handle">
+                            <span class="icon icon-v-dots"></span>
+                        </span>
+                        <a href="/events/list/?filter%5Bdate_preset%5D=current_month&amp;sel=32042869&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                            <span class="filter__list__item__inner">События за месяц</span>
+                        </a>
+                        <span class="filter_items__edit filter_items__system-edit" style="display: none;">
+                            <span class="filter_items__edit__btn">
+                                <span class="icon icon-pencil"></span>
+                            </span>
+                            <span class="filter_items__edit__save">
+                                <span class="icon icon-accept-green"></span>
+                            </span>
+                        </span>
+                    </li>
 
-</span>
-</span>
-</span>
-</li>
-<li class="filter__list__item filter__list__item-system-preset    js-filter__common_settings__item-sortable js-filter-preset-link " title="Мои события" data-id="32042860" data-sort="2000">
-<span class="filter_items__handle">
-<span class="icon icon-v-dots">
-
-</span>
-</span>
-<a href="/events/list/?filter[main_user][]=8304874&amp;sel=32042860&amp;preset=y" class="js-navigate-link filter__list__item__link">
-<!---->
-<span class="filter__list__item__inner">Мои события
-</span>
-</a>
-<span class="filter_items__edit filter_items__system-edit" style="display: none;">
-<span class="filter_items__edit__btn">
-<span class="icon icon-pencil">
-
-</span>
-</span>
-<!---->
-<span class="filter_items__edit__save">
-<span class="icon icon-accept-green">
-
-</span>
-</span>
-</span>
-</li>
-<li class="filter__list__item filter__list__item-system-preset    js-filter__common_settings__item-sortable js-filter-preset-link " title="События за сегодня" data-id="32042863" data-sort="3000">
-<span class="filter_items__handle">
-<span class="icon icon-v-dots">
-
-</span>
-</span>
-<a href="/events/list/?filter%5Bdate_preset%5D=current_day&amp;sel=32042863&amp;preset=y" class="js-navigate-link filter__list__item__link">
-<!---->
-<span class="filter__list__item__inner">События за сегодня
-</span>
-</a>
-<span class="filter_items__edit filter_items__system-edit" style="display: none;">
-<span class="filter_items__edit__btn">
-<span class="icon icon-pencil">
-
-</span>
-</span>
-<!---->
-<span class="filter_items__edit__save">
-<span class="icon icon-accept-green">
-
-</span>
-</span>
-</span>
-</li>
-<li class="filter__list__item filter__list__item-system-preset    js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера" data-id="32042866" data-sort="4000">
-<span class="filter_items__handle">
-<span class="icon icon-v-dots">
-
-</span>
-</span>
-<a href="/events/list/?filter%5Bdate_preset%5D=yesterday&amp;sel=32042866&amp;preset=y" class="js-navigate-link filter__list__item__link">
-<!---->
-<span class="filter__list__item__inner">События за вчера
-</span>
-</a>
-<span class="filter_items__edit filter_items__system-edit" style="display: none;">
-<span class="filter_items__edit__btn">
-<span class="icon icon-pencil">
-
-</span>
-</span>
-<!---->
-<span class="filter_items__edit__save">
-<span class="icon icon-accept-green">
-
-</span>
-</span>
-</span>
-</li>
-<li class="filter__list__item filter__list__item-system-preset    js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц" data-id="32042869" data-sort="5000">
-<span class="filter_items__handle">
-<span class="icon icon-v-dots">
-
-</span>
-</span>
-<a href="/events/list/?filter%5Bdate_preset%5D=current_month&amp;sel=32042869&amp;preset=y" class="js-navigate-link filter__list__item__link">
-<!---->
-<span class="filter__list__item__inner">События за месяц
-</span>
-</a>
-<span class="filter_items__edit filter_items__system-edit" style="display: none;">
-<span class="filter_items__edit__btn">
-<span class="icon icon-pencil">
-
-</span>
-</span>
-<!---->
-<span class="filter_items__edit__save">
-<span class="icon icon-accept-green">
-
-</span>
-</span>
-</span>
-</li>
-<li class="filter__list__item filter__list__item-save js-filter-save hidden" title="Сохранить">
-<a href="#" class="js-navigate-link filter__list__item__link">
-<span class="filter__list__item__inner">Сохранить
-</span>
-</a>
-</li>
-</ul>
-</div>
+                </ul>
+            </div>
+            
+            
+            
+            
+            
+            
+            
 <div class="filter-search__right">
 <form action="/events/list/" method="GET" id="filter_form" class="filter__form">
 <div class="filter-search__form-wrapper">
