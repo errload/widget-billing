@@ -1953,201 +1953,259 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             $('.settings__search .list-top-search__input-block').unbind('click');
             $('.settings__search .list-top-search__input-block').bind('click', function () {
                 if ($('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
+
                 $('.settings__search__filter').append(`
-                
-                
-
-                
-
-<div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute;">
-    <div class="filter-search__wrapper custom-scroll">
-        <div class="filter-search__inner">
-        
-        <div class="filter-search__left">
-            <ul class="filter-search__list js-filter-list" id="filter_list">
-
-                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
-                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                    <a href="/events/list/?skip_filter=Y&amp;sel=32042857&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                        <span class="filter__list__item__inner">Все события</span>
-                    </a>
-                </li>
-                
-                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
-                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                    <a href="/events/list/?filter[main_user][]=8304874&amp;sel=32042860&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                        <span class="filter__list__item__inner">Мои события</span>
-                    </a>
-                </li>
-                
-                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
-                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                    <a href="/events/list/?filter%5Bdate_preset%5D=current_day&amp;sel=32042863&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                        <span class="filter__list__item__inner">События за сегодня</span>
-                    </a>
-                </li>
-                
-                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
-                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                    <a href="/events/list/?filter%5Bdate_preset%5D=yesterday&amp;sel=32042866&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                        <span class="filter__list__item__inner">События за вчера</span>
-                    </a>
-                </li>
-                
-                <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
-                    <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                    <a href="/events/list/?filter%5Bdate_preset%5D=current_month&amp;sel=32042869&amp;preset=y" class="js-navigate-link filter__list__item__link">
-                        <span class="filter__list__item__inner">События за месяц</span>
-                    </a>
-                </li>
-            
-            </ul>
-        </div>
-        
-        <div class="filter-search__right">
-            <form action="/events/list/" method="GET" id="filter_form" class="filter__form">
-                <div class="filter-search__form-wrapper">
-                    <div class="filter-search__entity-wrapper" data-element-type="events">
-                        <div class="filter__custom_settings__list" id="filter_fields">
-                        
-                        
-                        
-<div class="filter__custom_settings__item" data-tmpl="text">
-    <div class="filter__custom_settings__item__value-wrapper">
-        <div class="date_filter js-control-date-filter custom_select">
-            <div class="date_filter__head">
-                <div class="date_filter__head__icon">
-                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
-                </div>
-                <span class="date_filter__period custom_select__selected " data-before="За все время">
-                    За все время
-                </span>
-                <span class="date_filter__head__dropdown_icon"></span>
-            </div>
-            <div class="date_filter__dropdown ">
-                <div class="date_filter__param hidden">
-                    <div class="control-toggler date_filter__param__toggler hidden">
-                        <label for="filter_date_switch_created" class="control-toggler__item first control-toggler__item-selected" data-id="" data-label="Созданы">
-                            <input type="radio" class="hidden " id="filter_date_switch_created" checked="checked" name="filter_date_switch" value="created">  
-                            <b></b>
-                        </label>
-                    </div>
-                </div>
-                <div>
-                    <div class="date_filter__period_range__options">
-                        <div class="date_filter__period_range__controls ">
-                            <input type="hidden" class="date_field__preset" name="filter[date_preset]" value="">
-                            <span class="date_field_wrapper js-control-date date_filter__period_range__controls_field" data-kalendae-classname="">
-                                <input type="hidden" class="date_field__range_0" name="filter_date_from" value="">
-                                <input type="hidden" class="date_field__range_1" name="filter_date_to" value="">
-                                <input class="date_field js-date-filter-input date-filter-in-search empty range" type="text" value="" placeholder="">
-                                <div class="date_field_wrapper--calendar">
-                                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
-                                </div>
-                            </span>
+                    <div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute;">
+                        <div class="filter-search__wrapper custom-scroll">
+                            <div class="filter-search__inner">
+                            
+                            <div class="filter-search__left">
+                                <ul class="filter-search__list js-filter-list" id="filter_list">
+                    
+                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
+                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                                        <a href="/events/list/?skip_filter=Y&amp;sel=32042857&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                            <span class="filter__list__item__inner">Все события</span>
+                                        </a>
+                                    </li>
+                                    
+                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
+                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                                        <a href="/events/list/?filter[main_user][]=8304874&amp;sel=32042860&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                            <span class="filter__list__item__inner">Мои события</span>
+                                        </a>
+                                    </li>
+                                    
+                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
+                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                                        <a href="/events/list/?filter%5Bdate_preset%5D=current_day&amp;sel=32042863&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                            <span class="filter__list__item__inner">События за сегодня</span>
+                                        </a>
+                                    </li>
+                                    
+                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
+                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                                        <a href="/events/list/?filter%5Bdate_preset%5D=yesterday&amp;sel=32042866&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                            <span class="filter__list__item__inner">События за вчера</span>
+                                        </a>
+                                    </li>
+                                    
+                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
+                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+                                        <a href="/events/list/?filter%5Bdate_preset%5D=current_month&amp;sel=32042869&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                            <span class="filter__list__item__inner">События за месяц</span>
+                                        </a>
+                                    </li>
+                                
+                                </ul>
+                            </div>
+                            
+                            <div class="filter-search__right">
+                                <form action="/events/list/" method="GET" id="filter_form" class="filter__form">
+                                    <div class="filter-search__form-wrapper">
+                                        <div class="filter-search__entity-wrapper" data-element-type="events">
+                                            <div class="filter__custom_settings__list" id="filter_fields">
+                                            
+                                                <div class="filter__custom_settings__item" data-tmpl="text">
+                                                    <div class="filter__custom_settings__item__value-wrapper">
+                                                        <div class="date_filter js-control-date-filter custom_select">
+                                                            <div class="date_filter__head">
+                                                                <div class="date_filter__head__icon">
+                                                                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
+                                                                </div>
+                                                                <span class="date_filter__period custom_select__selected " data-before="За все время">
+                                                                    За все время
+                                                                </span>
+                                                                <span class="date_filter__head__dropdown_icon"></span>
+                                                            </div>
+                                                            <div class="date_filter__dropdown ">
+                                                                <div class="date_filter__param hidden">
+                                                                    <div class="control-toggler date_filter__param__toggler hidden">
+                                                                        <label for="filter_date_switch_created" class="control-toggler__item first control-toggler__item-selected" data-id="" data-label="Созданы">
+                                                                            <input type="radio" class="hidden " id="filter_date_switch_created" checked="checked" name="filter_date_switch" value="created">  
+                                                                            <b></b>
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="date_filter__period_range__options">
+                                                                        <div class="date_filter__period_range__controls ">
+                                                                            <input type="hidden" class="date_field__preset" name="filter[date_preset]" value="">
+                                                                            <span class="date_field_wrapper js-control-date date_filter__period_range__controls_field" data-kalendae-classname="">
+                                                                                <input type="hidden" class="date_field__range_0" name="filter_date_from" value="">
+                                                                                <input type="hidden" class="date_field__range_1" name="filter_date_to" value="">
+                                                                                <input class="date_field js-date-filter-input date-filter-in-search empty range" type="text" value="" placeholder="">
+                                                                                <div class="date_field_wrapper--calendar">
+                                                                                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
+                                                                                </div>
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <ul class="date_filter__period_list  without_button ">
+                                                                        <li class="date_filter__period_item custom_select__item" data-period="" style="display:none;">
+                                                                            <span data-value="" class="custom_select__title">
+                                                                                За все время
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_day" data-period="current_day">
+                                                                            <span data-value="current_day" class="custom_select__title" title="За сегодня">
+                                                                                За сегодня
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-yesterday" data-period="yesterday">
+                                                                            <span data-value="yesterday" class="custom_select__title" title="За вчера">
+                                                                                За вчера
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-past_x_days" data-period="past_x_days">
+                                                                            <span data-value="past_x_days" class="custom_select__title" "="">
+                                                                                За последние 
+                                                                                <div class="date_filter__period_item-input-days-wrapper">
+                                                                                    <input class="date_filter__period_item-input-days js-date_filter__period_item js-control-autosized_input" data-comfort-zone="0" type="number" value="30" max="999">
+                                                                                    <tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;">
+                                                                                        30
+                                                                                    </tester>
+                                                                                </div> 
+                                                                                дней
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_week" data-period="current_week">
+                                                                            <span data-value="current_week" class="custom_select__title" title="За эту неделю">
+                                                                                За эту неделю
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_week" data-period="previous_week">
+                                                                            <span data-value="previous_week" class="custom_select__title" title="За прошлую неделю">
+                                                                                За прошлую неделю
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_month" data-period="current_month">
+                                                                            <span data-value="current_month" class="custom_select__title" title="За этот месяц">
+                                                                                За этот месяц
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_month" data-period="previous_month">
+                                                                            <span data-value="previous_month" class="custom_select__title" title="За прошлый месяц">
+                                                                                За прошлый месяц
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_quarter" data-period="current_quarter">
+                                                                            <span data-value="current_quarter" class="custom_select__title" title="За квартал">
+                                                                                За квартал
+                                                                            </span>
+                                                                        </li>
+                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_year" data-period="current_year">
+                                                                            <span data-value="current_year" class="custom_select__title" title="За этот год">
+                                                                                За этот год
+                                                                            </span>
+                                                                        </li>
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <b class="js-filter-field-clear"></b>
+                                                    </div>
+                                                </div>                        
+                                   
+                                                <div class="filter-search__users-select-holder filter-search__users-select-holder_ filter__custom_settings__item filter__custom_settings__item_suggest-manager" data-title="Менеджеры" data-is-fn="usersSelectClear" data-type="" data-tmpl="users" data-element-type-name="" data-input-name="filter[main_user][]">
+                                                    <div class="custom-scroll">
+                                                        <div class="multisuggest users_select-select_one  js-multisuggest js-can-add " data-multisuggest-id="5834" id="filter_users_select__holder" data-new-item-msg="">
+                                                            <ul class="multisuggest__list js-multisuggest-list"></ul>
+                                                        </div>
+                                                    </div>
+                                                    <div class="filter__managers" style="width: 100%; border: 1px solid red; position: relative; height: 300px;"></div>
+                                                    <b class="js-filter-field-clear"></b>
+                                                </div>
+                                            
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            </div>
                         </div>
                     </div>
-                    <ul class="date_filter__period_list  without_button ">
-                        <li class="date_filter__period_item custom_select__item" data-period="" style="display:none;">
-                            <span data-value="" class="custom_select__title">
-                                За все время
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-current_day" data-period="current_day">
-                            <span data-value="current_day" class="custom_select__title" title="За сегодня">
-                                За сегодня
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-yesterday" data-period="yesterday">
-                            <span data-value="yesterday" class="custom_select__title" title="За вчера">
-                                За вчера
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-past_x_days" data-period="past_x_days">
-                            <span data-value="past_x_days" class="custom_select__title" "="">
-                                За последние 
-                                <div class="date_filter__period_item-input-days-wrapper">
-                                    <input class="date_filter__period_item-input-days js-date_filter__period_item js-control-autosized_input" data-comfort-zone="0" type="number" value="30" max="999">
-                                    <tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;">
-                                        30
-                                    </tester>
-                                </div> 
-                                дней
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-current_week" data-period="current_week">
-                            <span data-value="current_week" class="custom_select__title" title="За эту неделю">
-                                За эту неделю
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_week" data-period="previous_week">
-                            <span data-value="previous_week" class="custom_select__title" title="За прошлую неделю">
-                                За прошлую неделю
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-current_month" data-period="current_month">
-                            <span data-value="current_month" class="custom_select__title" title="За этот месяц">
-                                За этот месяц
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_month" data-period="previous_month">
-                            <span data-value="previous_month" class="custom_select__title" title="За прошлый месяц">
-                                За прошлый месяц
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-current_quarter" data-period="current_quarter">
-                            <span data-value="current_quarter" class="custom_select__title" title="За квартал">
-                                За квартал
-                            </span>
-                        </li>
-                        <li class="date_filter__period_item custom_select__item custom_select__item-current_year" data-period="current_year">
-                            <span data-value="current_year" class="custom_select__title" title="За этот год">
-                                За этот год
-                            </span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <b class="js-filter-field-clear"></b>
-    </div>
-</div>                        
-               
-               
-               
-               
-               
-
-
-
-<div class="filter-search__users-select-holder filter-search__users-select-holder_ filter__custom_settings__item filter__custom_settings__item_suggest-manager" data-title="Менеджеры" data-is-fn="usersSelectClear" data-type="" data-tmpl="users" data-element-type-name="" data-input-name="filter[main_user][]">
-    <div class="custom-scroll">
-        <div class="multisuggest users_select-select_one  js-multisuggest js-can-add " data-multisuggest-id="5834" id="filter_users_select__holder" data-new-item-msg="">
-            <ul class="multisuggest__list js-multisuggest-list"></ul>
-        </div>
-    </div>
-    <b class="js-filter-field-clear"></b>
-</div>
-                        
-                        
-                        
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-        
-        </div>
-    </div>
-</div>
-
-
-
-
-
-                
                 `);
+
+
+                $('.filter-search__right .custom-scroll').unbind('click');
+                $('.filter-search__right .custom-scroll').bind('click', function () {
+                    if ($('.filter-search__right .filter__managers .multisuggest__suggest-wrapper').length) return;
+
+                    $('.filter-search__right .filter__managers').append(`
+                        <div class="multisuggest__suggest-wrapper suggest-manager users-select-suggest filter__users-select-suggest" style="top: 0; left: 0; position: absolute; display: block; width: 300px; height: auto;" data-is-suggest="y">
+                            <div class="multisuggest__suggest js-multisuggest-suggest custom-scroll" style="max-height: 300px;">
+                                <div class="users-select-row"></div>
+                            </div>
+                        </div>
+                    `);
+
+                    // пользователи и группы
+                    let groups = AMOCRM.constant('groups'),
+                        managers = AMOCRM.constant('managers');
+
+                    // перебираем группы и пользователей этих групп
+                    $.each(groups, function (key, value) {
+                        var users = [], groupID = key;
+
+                        $.each(managers, function () {
+                            if (this.group != key) return;
+                            if (!this.active) return;
+
+                            users.push({id: this.id, title: this.title});
+                        });
+
+                        // добавляем группу, если в ней есть пользователи
+                        if (!users.length) return;
+
+                        $('.filter-search__right .filter__managers .users-select-row').append(`
+                            <div class="users-select-row__inner group-color-wrapper ">
+                                <div class="users-select__head group-color  js-multisuggest-item multisuggest__suggest-item" data-title="${ value }" data-group="y" data-id="${ key }" style="height: 35px;">
+                                    <div class="users-select__head-title" style="width: 293px;">
+                
+                                        <span class="users-select__head-title-text">${ value }</span>
+                                        <div class="users-select__head-allgroup" data-id="${ key }">
+                                            <span>Весь отдел</span>
+                                        </div>
+                
+                                    </div>
+                                </div>
+                
+                                <div class="users-select__body" data-id="${ key }"></div>
+                            </div>                        
+                        `);
+
+                        $.each(users, function () {
+                            $(`.filter-search__right .users-select__body[data-id=${ key }]`).append(`
+                                <div class="users-select__body__item" id="select_users__user-${ this.id }">
+                                    <div class="multisuggest__suggest-item js-multisuggest-item true" data-group="${ key }" data-id="${ this.id }">
+                                        ${ this.title }
+                                        <span data-id="${ this.id }" class="control-user_state"></span>
+                                    </div>
+                                </div>
+                            `);
+                        });
+                    });
+
+
+
+
+
+
+
+
+
+                });
+
+                $('.filter-search__right').append('<b>bb</b>');
+
+
+
             });
+
+
+
 
             // клик по меню экспорт
             $('.settings__search .settings__search__menu #export').unbind('click');
