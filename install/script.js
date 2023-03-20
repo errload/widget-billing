@@ -2113,7 +2113,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                             <ul class="multisuggest__list js-multisuggest-list"></ul>
                                                         </div>
                                                     </div>
-                                                    <div class="filter__managers" style="width: 100%; border: 1px solid red; position: relative; height: 300px;"></div>
+                                                    <div class="filter__managers" style="width: 100%; border: 1px solid red; position: relative;"></div>
                                                     <b class="js-filter-field-clear"></b>
                                                 </div>
                                             
@@ -2186,6 +2186,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 </div>
                             `);
                         });
+                    });
+
+                    $('.filter-search__right .filter__managers').css({
+                        'height': '300px'
+                    });
+
+                    $('.filter-search__right .filter__managers').css({
+                        'overflow-x': 'hidden',
+                        'overflow-y': 'auto'
                     });
 
 
