@@ -2113,9 +2113,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                             <ul class="multisuggest__list js-multisuggest-list"></ul>
                                                         </div>
                                                     </div>
-                                                    <div class="filter__managers" style="width: 100%; border: 1px solid red; position: relative;"></div>
                                                     <b class="js-filter-field-clear"></b>
                                                 </div>
+                                                
+                                                <div class="filter__managers" style="width: 100%; position: relative; margin: 3px 0 0 3px;"></div>
                                             
                                             </div>
                                         </div>
@@ -2128,7 +2129,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     </div>
                 `);
 
-
+                // открываем список пользователей
                 $('.filter-search__right .custom-scroll').unbind('click');
                 $('.filter-search__right .custom-scroll').bind('click', function () {
                     if ($('.filter-search__right .filter__managers .multisuggest__suggest-wrapper').length) return;
@@ -2136,7 +2137,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.filter-search__right .filter__managers').append(`
                         <div class="multisuggest__suggest-wrapper suggest-manager users-select-suggest filter__users-select-suggest" style="top: 0; left: 0; position: absolute; display: block; width: 300px; height: auto;" data-is-suggest="y">
                             <div class="multisuggest__suggest js-multisuggest-suggest custom-scroll" style="max-height: 300px;">
-                                <div class="users-select-row"></div>
+                                <div class="users-select-row custom-scroll"></div>
                             </div>
                         </div>
                     `);
@@ -2188,24 +2189,34 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         });
                     });
 
-                    $('.filter-search__right .filter__managers').css({
-                        'height': '300px'
-                    });
-
-                    $('.filter-search__right .filter__managers').css({
-                        'overflow-x': 'hidden',
-                        'overflow-y': 'auto'
+                    // ровняем пользователей и скролл
+                    $('.filter-search__right .filter__managers').css('height', '300px');
+                    $('.filter-search__right .users-select-row').css({
+                        'overflow-x': 'hidden', 'overflow-y': 'auto', 'max-width': '300px'
                     });
 
 
 
 
+
+                    // клик по свободному месту для закрытия списка менеджеров
+                    $('#page_holder').unbind('click');
+                    $('#page_holder').bind('click', function (e) {
+                        if (e.target.closest('.filter__managers')) return;
+                        if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
+                        console.log('bb')
+
+                        $('.filter__managers .multisuggest__suggest-wrapper').remove();
+                        $('.filter-search__right .filter__managers').css('height', '0');
+                    });
 
 
 
 
 
                 });
+
+
 
                 $('.filter-search__right').append('<b>bb</b>');
 
