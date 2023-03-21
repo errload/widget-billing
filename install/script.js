@@ -2129,9 +2129,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     </div>
                 `);
 
+
+
+
+
+
+
                 // открываем список пользователей
                 $('.filter-search__right .custom-scroll').unbind('click');
-                $('.filter-search__right .custom-scroll').bind('click', function () {
+                $('.filter-search__right .custom-scroll').bind('click', function (e) {
                     if ($('.filter-search__right .filter__managers .multisuggest__suggest-wrapper').length) return;
 
                     $('.filter-search__right .filter__managers').append(`
@@ -2199,33 +2205,34 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
-                    // клик по свободному месту для закрытия списка менеджеров
-                    $('#page_holder').unbind('click');
-                    $('#page_holder').bind('click', function (e) {
-                        if (e.target.closest('.filter__managers')) return;
-                        if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
-                        console.log('bb')
-
-                        $('.filter__managers .multisuggest__suggest-wrapper').remove();
-                        $('.filter-search__right .filter__managers').css('height', '0');
-                    });
-
-
-
-
+                    e.stopPropagation();
 
                 });
 
+                // клик по свободному месту для закрытия списка менеджеров
+                $('.settings__search__filter .filter-search__inner').unbind('click');
+                $('.settings__search__filter .filter-search__inner').bind('click', function (e) {
+                    // если список менеджеров не открыт, выходим
+                    if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
+                    // если клик по списку менеджеров, выходим
+                    if (e.target.closest('.multisuggest__suggest')) return;
 
+                    // удаляем список менеджеров
+                    $('.filter__managers .multisuggest__suggest-wrapper').remove();
+                    $('.filter-search__right .filter__managers').css('height', '0');
+                });
 
-                $('.filter-search__right').append('<b>bb</b>');
+                $('.filter-search__right .filter__custom_settings__item').unbind('click');
+                $('.filter-search__right .filter__custom_settings__item').bind('click', function () {
+                    console.log('bb')
+                });
 
 
 
             });
 
 
-
+            $('.filter-search__right').append('<b>bb</b>');
 
             // клик по меню экспорт
             $('.settings__search .settings__search__menu #export').unbind('click');
