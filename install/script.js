@@ -2185,7 +2185,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         $.each(users, function () {
                             $(`.filter-search__right .users-select__body[data-id=${ key }]`).append(`
-                                <div class="users-select__body__item" id="select_users__user-${ this.id }">
+                                <div class="users-select__body__item" id="select_users__user-${ this.id }" style="display: block;">
                                     <div class="multisuggest__suggest-item js-multisuggest-item true" data-group="${ key }" data-id="${ this.id }">
                                         ${ this.title }
                                         <span data-id="${ this.id }" class="control-user_state"></span>
@@ -2214,9 +2214,114 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // удаляем список менеджеров
                         $('.filter__managers .multisuggest__suggest-wrapper').remove();
                         $('.filter-search__right .filter__managers').css('height', '0');
+                        $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
+
+                        if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
+                            $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
+                        }
                     });
 
 
+
+
+                    // добавляем инпут для ввода пользователя
+                    $('.multisuggest__list.js-multisuggest-list').addClass('js-multisuggest-loading');
+
+                    // if (!$('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
+                    $('.multisuggest__list.js-multisuggest-list').append(`
+                            <li class="multisuggest__list-item multisuggest__list-item_input">
+                                <span class="js-multisuggest-hint multisuggest__hint">Менеджеры</span>
+                                    <input type="text" class="multisuggest__input js-multisuggest-input" tabindex="-1" data-can-add="Y" value="" placeholder="" style="width: 5px;">
+                                <tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;"></tester>
+                            </li>
+                        `);
+                    // }
+
+                    // отображение пользователя в инпут при смене наведения курсора
+                    $('.filter__managers .users-select__head-title').bind('mouseenter', function (e) {
+                        let title = $(e.target).find('.users-select__head-title-text').text();
+                        $('.multisuggest__list .multisuggest__hint').text(title);
+                    });
+
+                    $('.filter__managers .users-select__body__item').bind('mouseenter', function (e) {
+                        let title = $(e.target).text().trim();
+                        $('.multisuggest__list .multisuggest__hint').text(title);
+                    });
+
+                    // клик на менеджера
+                    $('.filter__managers .users-select__body__item').unbind('click');
+                    $('.filter__managers .users-select__body__item').bind('click', function (e) {
+                        e.stopPropagation();
+
+                        let title = $(e.target).text().trim();
+                        let group = $(e.target).attr('data-group');
+                        let ID = $(e.target).attr('data-id');
+
+                        // добавляем в инпут
+                        $('.multisuggest__list-item.multisuggest__list-item_input').before(`
+                            <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
+                                <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
+                                <span>${ title }</span>
+                                <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
+                            </li>
+                        `);
+
+                        // убираем из списка менеджеров
+                        $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
+
+                        // если менеджеров в списке больше нет, скрываем группу
+                        let is_visible = false;
+                        $.each($(e.target).closest('.users-select__body').find('.users-select__body__item'), function () {
+                            if ($(this).css('display') === 'block') is_visible = true;
+                        });
+
+                        if (!is_visible) $(e.target).closest('.users-select-row__inner').css('display', 'none');
+                    });
+
+                    // клик на группу менеджеров
+                    $('.filter__managers .users-select__head-title').unbind('click');
+                    $('.filter__managers .users-select__head-title').bind('click', function (e) {
+                        e.stopPropagation();
+
+                        let group_ID = $(this).find('.users-select__head-allgroup').attr('data-id');
+
+                        $.each($(`.users-select__body[data-id="${group_ID}"] .users-select__body__item`), function () {
+                            let title = $(this).find('.multisuggest__suggest-item').text().trim();
+                            let group = $(this).find('.multisuggest__suggest-item').attr('data-group');
+                            let ID = $(this).find('.multisuggest__suggest-item').attr('data-id');
+
+                            // добавляем в инпут
+                            if (!$(`.multisuggest__list .multisuggest__list-item[data-id="${ID}"]`).length) {
+                                $('.multisuggest__list-item.multisuggest__list-item_input').before(`
+                                    <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
+                                        <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
+                                        <span>${ title }</span>
+                                        <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
+                                    </li>
+                                `);
+                            }
+
+                            // убираем из списка менеджеров
+                            $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
+                            $(`.users-select__body[data-id="${group_ID}"]`).closest('.users-select-row__inner').css('display', 'none');
+                        });
+
+                        // let title = $(e.target).text().trim();
+                        // let group = $(e.target).attr('data-group');
+                        // let ID = $(e.target).attr('data-id');
+                        //
+                        // // добавляем в инпут
+                        // $('.multisuggest__list-item.multisuggest__list-item_input').before(`
+                        //     <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
+                        //         <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
+                        //         <span>${ title }</span>
+                        //         <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
+                        //     </li>
+                        // `);
+                        //
+                        // // убираем из списка менеджеров
+                        // $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
+                    });
 
 
 
@@ -2230,6 +2335,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     if ($('.date_filter__dropdown').css('display') === 'block') {
                         if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
                         $('.filter__managers .multisuggest__suggest-wrapper').remove();
+                        $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
+
+                        if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
+                            $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
+                        }
                     }
                 });
 
