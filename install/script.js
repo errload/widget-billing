@@ -2201,31 +2201,38 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         'overflow-x': 'hidden', 'overflow-y': 'auto', 'max-width': '300px'
                     });
 
+                    // клик по свободному месту для закрытия списка менеджеров
+                    $('.settings__search__filter .filter-search__inner').unbind('click');
+                    $('.settings__search__filter .filter-search__inner').bind('click', function (e) {
+                        // если список менеджеров не открыт, выходим
+                        if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
+                        // если клик по списку менеджеров, выходим
+                        if (e.target.closest('.filter__managers .multisuggest__suggest')) return;
+                        // если клик по инпуту списка менеджеров, выходим
+                        if (e.target.closest('.filter-search__right .custom-scroll')) return;
+
+                        // удаляем список менеджеров
+                        $('.filter__managers .multisuggest__suggest-wrapper').remove();
+                        $('.filter-search__right .filter__managers').css('height', '0');
+                    });
 
 
 
 
-                    e.stopPropagation();
+
+
+                    // e.stopPropagation();
 
                 });
 
-                // клик по свободному месту для закрытия списка менеджеров
-                $('.settings__search__filter .filter-search__inner').unbind('click');
-                $('.settings__search__filter .filter-search__inner').bind('click', function (e) {
-                    // если список менеджеров не открыт, выходим
-                    if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
-                    // если клик по списку менеджеров, выходим
-                    if (e.target.closest('.multisuggest__suggest')) return;
-
-                    // удаляем список менеджеров
-                    $('.filter__managers .multisuggest__suggest-wrapper').remove();
-                    $('.filter-search__right .filter__managers').css('height', '0');
+                // если открыт дата фильтр, закрываем список пользователей
+                $('.filter-search__right').on('DOMSubtreeModified', function() {
+                    if ($('.date_filter__dropdown').css('display') === 'block') {
+                        if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
+                        $('.filter__managers .multisuggest__suggest-wrapper').remove();
+                    }
                 });
 
-                $('.filter-search__right .filter__custom_settings__item').unbind('click');
-                $('.filter-search__right .filter__custom_settings__item').bind('click', function () {
-                    console.log('bb')
-                });
 
 
 
