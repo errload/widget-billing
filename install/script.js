@@ -2154,7 +2154,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // перебираем группы и пользователей этих групп
                     $.each(groups, function (key, value) {
-                        var users = [], groupID = key;
+                        var users = [], group_ID = key;
 
                         $.each(managers, function () {
                             if (this.group != key) return;
@@ -2184,15 +2184,40 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         `);
 
                         $.each(users, function () {
+                            let user_ID = this.id;
+                            let user_title = this.title;
+
                             $(`.filter-search__right .users-select__body[data-id=${ key }]`).append(`
-                                <div class="users-select__body__item" id="select_users__user-${ this.id }" style="display: block;">
-                                    <div class="multisuggest__suggest-item js-multisuggest-item true" data-group="${ key }" data-id="${ this.id }">
-                                        ${ this.title }
-                                        <span data-id="${ this.id }" class="control-user_state"></span>
+                                <div class="users-select__body__item" id="select_users__user-${ user_ID }" style="display: block;">
+                                    <div class="multisuggest__suggest-item js-multisuggest-item true" data-group="${ key }" data-id="${ user_ID }">
+                                        ${ user_title }
+                                        <span data-id="${ user_ID }" class="control-user_state"></span>
                                     </div>
                                 </div>
                             `);
                         });
+
+                        // если менеджер ранее выбран, прячем в списке
+                        if ($('.multisuggest__list .multisuggest__list-item')) {
+                            let group, item_group, ID;
+
+                            $.each($('.multisuggest__list .multisuggest__list-item'), function (e) {
+                                ID = $(this).attr('data-id');
+                                $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
+                            });
+
+                            // если менеджеров в списке больше нет, скрываем группу
+                            group = $(`.users-select-row__inner .users-select__body[data-id="${group_ID}"]`);
+                            item_group = group.find('.users-select__body__item');
+
+                            let is_visible = false;
+
+                            $.each(item_group, function () {
+                                if ($(this).css('display') === 'block') is_visible = true;
+                            });
+
+                            if (!is_visible) $(group).closest('.users-select-row__inner').css('display', 'none');
+                        }
                     });
 
                     // ровняем пользователей и скролл
@@ -2306,27 +2331,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $(`.users-select__body[data-id="${group_ID}"]`).closest('.users-select-row__inner').css('display', 'none');
                         });
 
-                        // let title = $(e.target).text().trim();
-                        // let group = $(e.target).attr('data-group');
-                        // let ID = $(e.target).attr('data-id');
-                        //
-                        // // добавляем в инпут
-                        // $('.multisuggest__list-item.multisuggest__list-item_input').before(`
-                        //     <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
-                        //         <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
-                        //         <span>${ title }</span>
-                        //         <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
-                        //     </li>
-                        // `);
-                        //
-                        // // убираем из списка менеджеров
-                        // $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
                     });
 
 
 
 
-                    // e.stopPropagation();
+
 
                 });
 
