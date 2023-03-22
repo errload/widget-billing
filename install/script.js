@@ -8,6 +8,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         // настройки прав доступа, стоимость сотрудника
         this.config_settings = {};
         this.userID = AMOCRM.constant('user').id;
+        this.filter_date = [];
+        this.filter_managers = [];
 
         // получение настроек
         this.getConfigSettings = function () {
@@ -2103,7 +2105,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <b class="js-filter-field-clear"></b>
+                                                        <b class="js-filter-field-clear clear__date"></b>
                                                     </div>
                                                 </div>                        
                                    
@@ -2113,7 +2115,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                             <ul class="multisuggest__list js-multisuggest-list"></ul>
                                                         </div>
                                                     </div>
-                                                    <b class="js-filter-field-clear"></b>
+                                                    <b class="js-filter-field-clear clear__managers"></b>
                                                 </div>
                                                 
                                                 <div class="filter__managers" style="width: 100%; position: relative; margin: 3px 0 0 3px;"></div>
@@ -2244,6 +2246,18 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
                             $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
                         }
+
+                        // если менеджеры есть, добавляем возможность очистки
+                        if ($('.multisuggest__list .multisuggest__list-item').length) {
+                            $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
+
+                            let managers = [];
+                            $.each($('.multisuggest__list .multisuggest__list-item'), function () {
+                                managers.push($(this).attr('data-title').trim());
+                            });
+
+                            if (managers.length) self.filter_managers = managers;
+                        }
                     });
 
 
@@ -2350,7 +2364,29 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
                             $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
                         }
+
+                        // если менеджеры есть, добавляем возможность очистки
+                        if ($('.multisuggest__list .multisuggest__list-item').length) {
+                            $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
+
+                            let managers = [];
+                            $.each($('.multisuggest__list .multisuggest__list-item'), function () {
+                                managers.push($(this).attr('data-title').trim());
+                            });
+
+                            if (managers.length) self.filter_managers = managers;
+                        }
                     }
+                });
+
+
+
+                // очищаем список менеджеров
+                $('.js-filter-field-clear.clear__managers').unbind('click');
+                $('.js-filter-field-clear.clear__managers').bind('click', function () {
+                    $('.multisuggest__list .multisuggest__list-item').remove();
+                    $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
+                    self.filter_managers = [];
                 });
 
 
