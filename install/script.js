@@ -2131,6 +2131,48 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     </div>
                 `);
 
+                // очищаем все фильтры
+                const clearFilters = function () {
+                    $('.list-top-search .list-top-search__info').unbind('click');
+                    $('.list-top-search .list-top-search__info').bind('click', function () {
+
+                        if ($('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
+                            $.each($('.date_filter .date_filter__period_item'), function () {
+                                if ($(this).hasClass('date_filter__period_item_selected')) {
+                                    $(this).removeClass('date_filter__period_item_selected');
+                                }
+                            });
+
+                            $('.date_filter .date_filter__period').attr('data-before', 'За все время');
+                            $('.date_filter .date_filter__period').text('За все время');
+                            $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
+                        }
+
+                        if ($('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
+                            if ($('.filter__managers .multisuggest__suggest-wrapper').length) {
+                                $('.filter__managers .multisuggest__suggest-wrapper').remove();
+                                $('.filter-search__right .filter__managers').css('height', '0');
+                                $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
+                            }
+
+                            if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
+                                $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
+                            }
+
+                            $('.multisuggest__list .js-multisuggest-item').remove();
+                            $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
+                        }
+
+                        $('.list-top-search .search-options').remove();
+                        $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+                        $('#search_clear_button').addClass('h-hidden');
+
+                        self.filter_date = null;
+                        self.filter_managers = [];
+                        return false;
+                    });
+                }
+
 
 
                 // выбор фильтра даты (добавляем крестик для очистки поля)
@@ -2168,15 +2210,33 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.list-top-search .date__filter__icon .options-text').text(`Созданы: ${ filter_date }`);
                     }
 
+                    // кнопки применить и очистить на главном инпуте фильтра
+                    if ($('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+                        $('.list-top-search .list-top-search__apply-block').removeClass('h-hidden');
+                    }
+
+                    if ($('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').removeClass('h-hidden');
+
                     // очищаем главный фильтр
                     $('.list-top-search .date__filter__icon .option-delete').unbind('click');
                     $('.list-top-search .date__filter__icon .option-delete').bind('click', function () {
                         $('.list-top-search .date__filter__icon').remove();
 
+                        $.each($('.date_filter .date_filter__period_item'), function () {
+                            if ($(this).hasClass('date_filter__period_item_selected')) {
+                                $(this).removeClass('date_filter__period_item_selected');
+                            }
+                        });
+
                         if (!$('.list-top-search .search-options-wrapper div').length) {
                             $('.list-top-search .search-options').remove();
+                            $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+                            $('#search_clear_button').addClass('h-hidden');
                         }
                     });
+
+                    // очищаем все фильтры
+                    clearFilters();
                 });
 
 
@@ -2185,6 +2245,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // добавляем менеджеров в поле фильтра
                 const addManagersFilter = function () {
                     let managers = null;
+                    if (!self.filter_managers.length) return;
+
                     if (self.filter_managers.length === 1) managers = self.filter_managers[0];
                     else managers = self.filter_managers.length;
 
@@ -2213,6 +2275,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.list-top-search .managers__filter__icon .options-text').text(`Менеджеры: ${ managers }`);
                     }
 
+                    // кнопки применить и очистить на главном инпуте фильтра
+                    if ($('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+                        $('.list-top-search .list-top-search__apply-block').removeClass('h-hidden');
+                    }
+
+                    if ($('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').removeClass('h-hidden');
+
                     // очищаем главный фильтр
                     $('.list-top-search .managers__filter__icon .option-delete').unbind('click');
                     $('.list-top-search .managers__filter__icon .option-delete').bind('click', function () {
@@ -2220,8 +2289,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         if (!$('.list-top-search .search-options-wrapper div').length) {
                             $('.list-top-search .search-options').remove();
+                            $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+                            $('#search_clear_button').addClass('h-hidden');
                         }
                     });
+
+                    // очищаем все фильтры
+                    clearFilters();
                 }
 
 
@@ -2295,6 +2369,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     </div>
                                 </div>
                             `);
+
+
                         });
 
                         // если менеджер ранее выбран, прячем в списке
@@ -2318,6 +2394,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             if (!is_visible) $(group).closest('.users-select-row__inner').css('display', 'none');
                         }
+
                     });
 
                     // ровняем пользователей и скролл
@@ -2381,6 +2458,67 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.multisuggest__list .multisuggest__hint').text(title);
                     });
 
+                    // удаляем пользователя со списка пользователей
+                    const deleteManagersForInput = function () {
+                        $('.multisuggest__list-item.js-multisuggest-item').unbind('click');
+                        $('.multisuggest__list-item.js-multisuggest-item').bind('click', function (e) {
+                            e.stopPropagation();
+
+                            let managers = [], manager = $(e.target).closest('.multisuggest__list-item.js-multisuggest-item');
+                            let manager_ID = manager.attr('data-id');
+                            let manager_group = manager.attr('data-group');
+
+                            // удаляем пользователя
+                            $(manager).remove();
+
+                            // если группа скрыта, восстанавливаем
+                            if ($(`.users-select__head-allgroup[data-id="${manager_group}"]`).closest('.users-select-row__inner').css('display') === 'none') {
+                                $(`.users-select__head-allgroup[data-id="${manager_group}"]`).closest('.users-select-row__inner').css('display', 'block');
+                            }
+
+                            // восстанавливаем пользователя
+                            $(`#select_users__user-${ manager_ID }`).css('display', 'block');
+
+                            // перезаписываем массив пользователей
+                            $.each($('.multisuggest__list-item.js-multisuggest-item'), function () {
+                                managers.push($(this).attr('data-title').trim());
+                            });
+
+                            self.filter_managers = managers;
+
+                            if (!$('.multisuggest__list-item.js-multisuggest-item').length) {
+                                if ($('.filter-search__right .filter-search__users-select-holder').length) {
+                                    $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
+                                }
+                            }
+
+                            // перезаписываем менеджеров в поле фильтра
+                            if (!self.filter_managers.length) {
+                                // очищаем список менеджеров
+                                $('.multisuggest__list .multisuggest__list-item').remove();
+                                $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
+                                self.filter_managers = [];
+
+                                // очищаем главный фильтр
+                                $('.list-top-search .managers__filter__icon').remove();
+
+                                if (!$('.list-top-search .search-options-wrapper div').length) {
+                                    $('.list-top-search .search-options').remove();
+                                    $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+                                    $('#search_clear_button').addClass('h-hidden');
+                                }
+                            }
+
+                            if (managers.length === 1) {
+                                $('.list-top-search .managers__filter__icon .options-text').attr('title', `Менеджеры: ${ managers }`);
+                                $('.list-top-search .managers__filter__icon .options-text').text(`Менеджеры: ${ managers }`);
+                            } else if (managers.length > 1) {
+                                $('.list-top-search .managers__filter__icon .options-text').attr('title', `Менеджеры: ${ managers.length }`);
+                                $('.list-top-search .managers__filter__icon .options-text').text(`Менеджеры: ${ managers.length }`);
+                            }
+                        });
+                    }
+
                     // клик на менеджера
                     $('.filter__managers .users-select__body__item').unbind('click');
                     $('.filter__managers .users-select__body__item').bind('click', function (e) {
@@ -2409,6 +2547,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         });
 
                         if (!is_visible) $(e.target).closest('.users-select-row__inner').css('display', 'none');
+
+                        // удаляем пользователя со списка пользователей
+                        deleteManagersForInput();
                     });
 
                     // клик на группу менеджеров
@@ -2439,7 +2580,23 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $(`.users-select__body[data-id="${group_ID}"]`).closest('.users-select-row__inner').css('display', 'none');
                         });
 
+                        // удаляем пользователя со списка пользователей
+                        deleteManagersForInput();
                     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2489,11 +2646,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
                     self.filter_date = null;
 
+                    $.each($('.date_filter .date_filter__period_item'), function () {
+                        if ($(this).hasClass('date_filter__period_item_selected')) {
+                            $(this).removeClass('date_filter__period_item_selected');
+                        }
+                    });
+
                     // очищаем главный фильтр
                     $('.list-top-search .date__filter__icon').remove();
 
                     if (!$('.list-top-search .search-options-wrapper div').length) {
                         $('.list-top-search .search-options').remove();
+                        $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+                        $('#search_clear_button').addClass('h-hidden');
                     }
                 });
 
@@ -2509,6 +2674,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     if (!$('.list-top-search .search-options-wrapper div').length) {
                         $('.list-top-search .search-options').remove();
+                        $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+                        $('#search_clear_button').addClass('h-hidden');
                     }
                 });
 
