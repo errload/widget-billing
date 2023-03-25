@@ -8,7 +8,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         // настройки прав доступа, стоимость сотрудника
         this.config_settings = {};
         this.userID = AMOCRM.constant('user').id;
-        this.filter_date = [];
+        this.filter_date = null;
         this.filter_managers = [];
 
         // получение настроек
@@ -1861,7 +1861,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         /* ###################################################################### */
 
-        // функция показа настроек в разделе Настройки
+        // функция показа фильтра в разделе Настройки
         this.advancedSettings = function () {
             let search = self.render(
                 {ref: '/tmpl/common/search_block.twig'},
@@ -2008,7 +2008,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         <div class="filter-search__entity-wrapper" data-element-type="events">
                                             <div class="filter__custom_settings__list" id="filter_fields">
                                             
-                                                <div class="filter__custom_settings__item" data-tmpl="text">
+                                                <div class="filter__custom_settings__item date__filter" data-tmpl="text">
                                                     <div class="filter__custom_settings__item__value-wrapper">
                                                         <div class="date_filter js-control-date-filter custom_select">
                                                             <div class="date_filter__head">
@@ -2133,6 +2133,96 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
+                // выбор фильтра даты (добавляем крестик для очистки поля)
+                $('.date_filter__head').on('DOMSubtreeModified', function() {
+                    if (!$('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow'))
+                        $('.filter-search__right .filter__custom_settings__item.date__filter').addClass('glow');
+
+                    // добавляем дату в поле фильтра
+                    let filter_date = $('.date_filter .date_filter__head .date_filter__period').text().trim();
+                    filter_date = filter_date.split('(')[0].trim();
+                    self.filter_date = filter_date;
+
+                    if (!$('.list-top-search .search-options').length) {
+                        $('.list-top-search').prepend(`
+                            <div class="search-options" id="search-options">
+                                <div class="list-top-search__preset" id="search_filter_preset"></div>
+                                <div class="search-options-wrapper"></div>
+                            </div>
+                        `);
+                    }
+
+                    if (!$('.search-options-wrapper .date__filter__icon').length) {
+                        $('.list-top-search .search-options-wrapper').append(`
+                            <div class="list-top-search__options date__filter__icon list-top-search__options-showed">
+                                <div class="options-text" title="Созданы: ${ filter_date }">Созданы: ${ filter_date }</div>
+                                <div class="option-delete js-filter-field-clear" data-input-name="filter[date_preset]">
+                                    <svg class="svg-icon svg-common--cross-close-dims">
+                                        <use xlink:href="#common--cross-close"></use>
+                                    </svg>
+                                </div>
+                            </div>                          
+                        `);
+                    } else {
+                        $('.list-top-search .date__filter__icon .options-text').attr('title', `Созданы: ${ filter_date }`);
+                        $('.list-top-search .date__filter__icon .options-text').text(`Созданы: ${ filter_date }`);
+                    }
+
+                    // очищаем главный фильтр
+                    $('.list-top-search .date__filter__icon .option-delete').unbind('click');
+                    $('.list-top-search .date__filter__icon .option-delete').bind('click', function () {
+                        $('.list-top-search .date__filter__icon').remove();
+
+                        if (!$('.list-top-search .search-options-wrapper div').length) {
+                            $('.list-top-search .search-options').remove();
+                        }
+                    });
+                });
+
+
+
+
+                // добавляем менеджеров в поле фильтра
+                const addManagersFilter = function () {
+                    let managers = null;
+                    if (self.filter_managers.length === 1) managers = self.filter_managers[0];
+                    else managers = self.filter_managers.length;
+
+                    if (!$('.list-top-search .search-options').length) {
+                        $('.list-top-search').prepend(`
+                            <div class="search-options" id="search-options">
+                                <div class="list-top-search__preset" id="search_filter_preset"></div>
+                                <div class="search-options-wrapper"></div>
+                            </div>
+                        `);
+                    }
+
+                    if (!$('.search-options-wrapper .managers__filter__icon').length) {
+                        $('.list-top-search .search-options-wrapper').append(`
+                                <div class="list-top-search__options managers__filter__icon list-top-search__options-showed">
+                                    <div class="options-text" title="Менеджеры: ${ managers }">Менеджеры: ${ managers }</div>
+                                    <div class="option-delete js-filter-field-clear" data-input-name="filter[main_user][]">
+                                        <svg class="svg-icon svg-common--cross-close-dims">
+                                            <use xlink:href="#common--cross-close"></use>
+                                        </svg>
+                                    </div>
+                                </div>                           
+                            `);
+                    } else {
+                        $('.list-top-search .managers__filter__icon .options-text').attr('title', `Менеджеры: ${ managers }`);
+                        $('.list-top-search .managers__filter__icon .options-text').text(`Менеджеры: ${ managers }`);
+                    }
+
+                    // очищаем главный фильтр
+                    $('.list-top-search .managers__filter__icon .option-delete').unbind('click');
+                    $('.list-top-search .managers__filter__icon .option-delete').bind('click', function () {
+                        $('.list-top-search .managers__filter__icon').remove();
+
+                        if (!$('.list-top-search .search-options-wrapper div').length) {
+                            $('.list-top-search .search-options').remove();
+                        }
+                    });
+                }
 
 
 
@@ -2148,6 +2238,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 <div class="users-select-row custom-scroll"></div>
                             </div>
                         </div>
+                    `);
+
+                    $('.multisuggest__list.js-multisuggest-list').addClass('js-multisuggest-loading');
+
+                    $('.multisuggest__list.js-multisuggest-list').append(`
+                        <li class="multisuggest__list-item multisuggest__list-item_input">
+                            <span class="js-multisuggest-hint multisuggest__hint">Менеджеры</span>
+                        </li>
                     `);
 
                     // пользователи и группы
@@ -2228,9 +2326,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         'overflow-x': 'hidden', 'overflow-y': 'auto', 'max-width': '300px'
                     });
 
+
+
                     // клик по свободному месту для закрытия списка менеджеров
                     $('.settings__search__filter .filter-search__inner').unbind('click');
                     $('.settings__search__filter .filter-search__inner').bind('click', function (e) {
+                        let managers = [];
+
                         // если список менеджеров не открыт, выходим
                         if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
                         // если клик по списку менеджеров, выходим
@@ -2249,32 +2351,24 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // если менеджеры есть, добавляем возможность очистки
                         if ($('.multisuggest__list .multisuggest__list-item').length) {
-                            $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
+                            if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow'))
+                                $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
 
-                            let managers = [];
+                            managers = [];
                             $.each($('.multisuggest__list .multisuggest__list-item'), function () {
                                 managers.push($(this).attr('data-title').trim());
                             });
 
                             if (managers.length) self.filter_managers = managers;
                         }
+
+                        // добавляем менеджеров в поле фильтра
+                        addManagersFilter();
                     });
 
 
 
 
-                    // добавляем инпут для ввода пользователя
-                    $('.multisuggest__list.js-multisuggest-list').addClass('js-multisuggest-loading');
-
-                    // if (!$('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
-                    $('.multisuggest__list.js-multisuggest-list').append(`
-                            <li class="multisuggest__list-item multisuggest__list-item_input">
-                                <span class="js-multisuggest-hint multisuggest__hint">Менеджеры</span>
-                                    <input type="text" class="multisuggest__input js-multisuggest-input" tabindex="-1" data-can-add="Y" value="" placeholder="" style="width: 5px;">
-                                <tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;"></tester>
-                            </li>
-                        `);
-                    // }
 
                     // отображение пользователя в инпут при смене наведения курсора
                     $('.filter__managers .users-select__head-title').bind('mouseenter', function (e) {
@@ -2356,6 +2450,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // если открыт дата фильтр, закрываем список пользователей
                 $('.filter-search__right').on('DOMSubtreeModified', function() {
+                    let managers = [];
+
                     if ($('.date_filter__dropdown').css('display') === 'block') {
                         if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
                         $('.filter__managers .multisuggest__suggest-wrapper').remove();
@@ -2367,19 +2463,39 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // если менеджеры есть, добавляем возможность очистки
                         if ($('.multisuggest__list .multisuggest__list-item').length) {
-                            $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
+                            if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow'))
+                                $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
 
-                            let managers = [];
+                            managers = [];
                             $.each($('.multisuggest__list .multisuggest__list-item'), function () {
                                 managers.push($(this).attr('data-title').trim());
                             });
 
                             if (managers.length) self.filter_managers = managers;
                         }
+
+                        // добавляем менеджеров в поле фильтра
+                        addManagersFilter();
                     }
                 });
 
 
+
+                // очищаем фильтр даты
+                $('.js-filter-field-clear.clear__date').unbind('click');
+                $('.js-filter-field-clear.clear__date').bind('click', function () {
+                    $('.date_filter .date_filter__head span').attr('data-before', 'За все время');
+                    $('.date_filter .date_filter__head span').text('За все время');
+                    $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
+                    self.filter_date = null;
+
+                    // очищаем главный фильтр
+                    $('.list-top-search .date__filter__icon').remove();
+
+                    if (!$('.list-top-search .search-options-wrapper div').length) {
+                        $('.list-top-search .search-options').remove();
+                    }
+                });
 
                 // очищаем список менеджеров
                 $('.js-filter-field-clear.clear__managers').unbind('click');
@@ -2387,7 +2503,20 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.multisuggest__list .multisuggest__list-item').remove();
                     $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
                     self.filter_managers = [];
+
+                    // очищаем главный фильтр
+                    $('.list-top-search .managers__filter__icon').remove();
+
+                    if (!$('.list-top-search .search-options-wrapper div').length) {
+                        $('.list-top-search .search-options').remove();
+                    }
                 });
+
+
+
+
+
+
 
 
 
