@@ -2123,10 +2123,105 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 /* ###################################################################### */
 
-                // функция кнопки Сбросить
-                const buttonCancel = function (e) {
-                    e.preventDefault();
+                // функция обработки параметров фильтра
+                const getParamsFilter = function () {
+                    let result = [],
+                        filter_date, date_from, date_to, date_now = null,
+                        filter_managers = [];
 
+                    // если дата не выбрана, пишем пустое значение
+                    if (!self.filter_date) result.filter_date = null;
+                    // иначе разбираем дату
+                    else {
+                        filter_date = self.filter_date.split('(')[0].trim();
+
+                        // если стоит стандартное значение, пишем пустое значение
+                        if (filter_date === 'За все время') result.filter_date = null;
+                        // иначе разбираем дату
+                        else {
+                            // убираем лишние пробелы
+                            filter_date = self.filter_date.replace(/\s{2,}/g, ' ');
+
+                            // если даты стандартные, обрезаем текстовую часть
+                            if (filter_date.indexOf('За') !== -1) {
+                                // получаем дату
+                                filter_date = filter_date.split('(')[1];
+                                // удаляем последнюю скобку
+                                filter_date = filter_date.replace(')', '');
+                            }
+
+                            // если дата имеет диапазон, берем от и до
+                            if (filter_date.indexOf('-') !== -1) {
+                                filter_date = filter_date.split('-');
+
+                                // добавляем к дате текущий год
+                                date_from = filter_date[0].trim();
+                                date_to = filter_date[1].trim();
+
+                                // если дата записана как Сегодня, переводим в цифру
+                                if (date_from === 'Сегодня') {
+                                    date_now = new Date().toLocaleString();
+                                    date_now = date_now.split(',')[0].trim();
+                                    date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
+
+                                    // добавляем к дате текущий год
+                                    date_from = `${ date_now }.${ new Date().getFullYear() }`;
+
+                                    // добавляем к дате текущий год
+                                } else date_from = `${ date_from }.${ new Date().getFullYear() }`;
+
+                                if (date_to === 'Сегодня') {
+                                    date_now = new Date().toLocaleString();
+                                    date_now = date_now.split(',')[0].trim();
+                                    date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
+
+                                    // добавляем к дате текущий год
+                                    date_to = `${ date_now }.${ new Date().getFullYear() }`;
+
+                                    // добавляем к дате текущий год
+                                } else date_to = `${ date_to }.${ new Date().getFullYear() }`;
+
+                                // иначе от и до одинаковая дата
+                            } else {
+                                // добавляем к дате текущий год
+                                date_from = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
+                                date_to = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
+                            }
+
+                            // console.log(filter_date);
+                            console.log(date_from, date_to);
+
+                            // сохраняем результат
+                            filter_date = {};
+                            filter_date.date_from = date_from;
+                            filter_date.date_to = date_to;
+
+                            result.filter_date = filter_date;
+                        }
+                    }
+
+                    // массив менеджеров
+                    if (!self.filter_managers.length) result.filter_managers = null;
+                    else {
+                        $.each(self.filter_managers, function () {
+                            filter_managers.push(this.title);
+                        });
+
+                        result.filter_managers = filter_managers;
+                    }
+
+                    return result;
+                }
+
+                // функция выгрузки из БД
+                const ajaxFilterParams = function (array) {
+                    console.log(array);
+                }
+
+                /* ###################################################################### */
+
+                // функция кнопки Сбросить
+                const buttonCancel = function () {
                     // удаляем ранее выбранные фильтры и прячем кнопки фильтра
                     if ($('.list-top-search .search-options').length) $('.list-top-search .search-options').remove();
 
@@ -2157,8 +2252,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     self.filter_date = null;
                     self.filter_managers = [];
 
+                    // запрос в БД
+                    ajaxFilterParams(getParamsFilter());
+
                     // удаляем окно фильтра
                     $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
+
+                    return false;
                 }
 
                 // функция кнопки Применить
@@ -2289,11 +2389,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         }
                     }
 
-                    // удаляем окно фильтра
-                    $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
 
 
 
+
+
+
+                    // запрос в БД
+                    ajaxFilterParams(getParamsFilter());
 
 
                     // удаление даты с фильтра
@@ -2313,6 +2416,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // обнуляем значениe даты
                         self.filter_date = null;
+                        // запрос в БД
+                        ajaxFilterParams(getParamsFilter());
                     });
 
                     // удаление менеджеров с фильтра
@@ -2332,7 +2437,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // обнуляем массив менеджеров
                         self.filter_managers = [];
+                        // запрос в БД
+                        ajaxFilterParams(getParamsFilter());
                     });
+
+                    // удаляем окно фильтра
+                    $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
                 }
 
                 /* ###################################################################### */
