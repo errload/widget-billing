@@ -2126,7 +2126,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // функция обработки параметров фильтра
                 const getParamsFilter = function () {
                     let result = [],
-                        filter_date, date_from, date_to, date_now = null,
+                        filter_date, date_from, date_to, d = null,
                         filter_managers = [];
 
                     // если дата не выбрана, пишем пустое значение
@@ -2154,29 +2154,60 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             // за вчера
                             if (filter_date.indexOf('За вчера') !== -1) {
-                                date_now = new Date();
-                                date_now = date_now.setDate(date_now.getDate() - 1);
+                                d = new Date();
+                                d = d.setDate(d.getDate() - 1);
 
-                                date_from = date_to = new Date(date_now).toLocaleDateString();
+                                date_from = date_to = new Date(d).toLocaleDateString();
                             }
 
                             // за последние Х дней
                             if (filter_date.indexOf('За последние') !== -1) {
                                 filter_date = filter_date.split(' ')[2];
 
-                                date_now = new Date();
-                                date_now = date_now.setDate(date_now.getDate() - parseInt(filter_date));
+                                d = new Date();
+                                d = d.setDate(d.getDate() - parseInt(filter_date));
 
-                                date_from = new Date(date_now).toLocaleDateString();
+                                date_from = new Date(d).toLocaleDateString();
                                 date_to = new Date().toLocaleDateString();
                             }
 
                             // за эту неделю
                             if (filter_date.indexOf('За эту неделю') !== -1) {
+                                d = new Date().getDay();
+                                date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
+                                date_from = new Date(new Date().setDate(date_from)).toLocaleDateString();
+
+                                d = new Date();
+                                date_to = d.setDate(d.getDate() + (7 - d.getDay()));
+                                date_to = new Date(date_to).toLocaleDateString();
+                            }
+
+                            // за прошлую неделю
+                            if (filter_date.indexOf('За прошлую неделю') !== -1) {
+                                d = new Date().getDay();
+                                date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
+                                date_from = new Date(new Date().setDate(date_from - 7)).toLocaleDateString();
+
+                                d = new Date();
+                                date_to = d.setDate(d.getDate() + (7 - d.getDay()) - 7);
+                                date_to = new Date(date_to).toLocaleDateString();
+                            }
+
+                            // за этот месяц
+                            if (filter_date.indexOf('За этот месяц') !== -1) {
+                                d = new Date();
+
+                                date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
+                                date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
+                            }
+
+                            // за прошлый месяц
+                            if (filter_date.indexOf('За прошлый месяц') !== -1) {
+                                d = new Date();
 
 
-                                date_from = 'start';
-                                date_to = 'finish';
+
+
                             }
 
                             console.log(date_from, date_to)
