@@ -2142,54 +2142,94 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             // убираем лишние пробелы
                             filter_date = self.filter_date.replace(/\s{2,}/g, ' ');
 
-                            // если даты стандартные, обрезаем текстовую часть
-                            if (filter_date.indexOf('За') !== -1) {
-                                // получаем дату
-                                filter_date = filter_date.split('(')[1];
-                                // удаляем последнюю скобку
-                                filter_date = filter_date.replace(')', '');
+                            // если дата в скобках - убираем скобки
+                            if (filter_date.slice(0, 1) === '(') {
+                                filter_date = filter_date.slice(1, -1);
                             }
 
-                            // если дата имеет диапазон, берем от и до
-                            if (filter_date.indexOf('-') !== -1) {
-                                filter_date = filter_date.split('-');
-
-                                // добавляем к дате текущий год
-                                date_from = filter_date[0].trim();
-                                date_to = filter_date[1].trim();
-
-                                // если дата записана как Сегодня, переводим в цифру
-                                if (date_from === 'Сегодня') {
-                                    date_now = new Date().toLocaleString();
-                                    date_now = date_now.split(',')[0].trim();
-                                    date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
-
-                                    // добавляем к дате текущий год
-                                    date_from = `${ date_now }.${ new Date().getFullYear() }`;
-
-                                    // добавляем к дате текущий год
-                                } else date_from = `${ date_from }.${ new Date().getFullYear() }`;
-
-                                if (date_to === 'Сегодня') {
-                                    date_now = new Date().toLocaleString();
-                                    date_now = date_now.split(',')[0].trim();
-                                    date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
-
-                                    // добавляем к дате текущий год
-                                    date_to = `${ date_now }.${ new Date().getFullYear() }`;
-
-                                    // добавляем к дате текущий год
-                                } else date_to = `${ date_to }.${ new Date().getFullYear() }`;
-
-                                // иначе от и до одинаковая дата
-                            } else {
-                                // добавляем к дате текущий год
-                                date_from = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
-                                date_to = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
+                            // за сегодня
+                            if (filter_date.indexOf('За сегодня') !== -1) {
+                                date_from = date_to = new Date().toLocaleDateString();
                             }
 
-                            // console.log(filter_date);
-                            console.log(date_from, date_to);
+                            // за вчера
+                            if (filter_date.indexOf('За вчера') !== -1) {
+                                date_now = new Date();
+                                date_now = date_now.setDate(date_now.getDate() - 1);
+
+                                date_from = date_to = new Date(date_now).toLocaleDateString();
+                            }
+
+                            // за последние Х дней
+                            if (filter_date.indexOf('За последние') !== -1) {
+                                filter_date = filter_date.split(' ')[2];
+
+                                date_now = new Date();
+                                date_now = date_now.setDate(date_now.getDate() - parseInt(filter_date));
+
+                                date_from = new Date(date_now).toLocaleDateString();
+                                date_to = new Date().toLocaleDateString();
+                            }
+
+                            // за эту неделю
+                            if (filter_date.indexOf('За эту неделю') !== -1) {
+
+
+                                date_from = 'start';
+                                date_to = 'finish';
+                            }
+
+                            console.log(date_from, date_to)
+                            console.log(filter_date)
+
+                            //     // если даты стандартные, обрезаем текстовую часть
+                            //     if (filter_date.indexOf('За') !== -1) {
+                            //         // получаем дату
+                            //         filter_date = filter_date.split('(')[1];
+                            //         // удаляем последнюю скобку
+                            //         filter_date = filter_date.replace(')', '');
+                            //     }
+                            //
+                            //     // если дата имеет диапазон, берем от и до
+                            //     if (filter_date.indexOf('-') !== -1) {
+                            //         filter_date = filter_date.split('-');
+                            //
+                            //         // добавляем к дате текущий год
+                            //         date_from = filter_date[0].trim();
+                            //         date_to = filter_date[1].trim();
+                            //
+                            //         // если дата записана как Сегодня, переводим в цифру
+                            //         if (date_from === 'Сегодня') {
+                            //             date_now = new Date().toLocaleString();
+                            //             date_now = date_now.split(',')[0].trim();
+                            //             date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
+                            //
+                            //             // добавляем к дате текущий год
+                            //             date_from = `${ date_now }.${ new Date().getFullYear() }`;
+                            //
+                            //             // добавляем к дате текущий год
+                            //         } else date_from = `${ date_from }.${ new Date().getFullYear() }`;
+                            //
+                            //         if (date_to === 'Сегодня') {
+                            //             date_now = new Date().toLocaleString();
+                            //             date_now = date_now.split(',')[0].trim();
+                            //             date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
+                            //
+                            //             // добавляем к дате текущий год
+                            //             date_to = `${ date_now }.${ new Date().getFullYear() }`;
+                            //
+                            //             // добавляем к дате текущий год
+                            //         } else date_to = `${ date_to }.${ new Date().getFullYear() }`;
+                            //
+                            //         // иначе от и до одинаковая дата
+                            //     } else {
+                            //         // добавляем к дате текущий год
+                            //         date_from = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
+                            //         date_to = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
+                            //     }
+                            //
+                            //     // console.log(filter_date);
+                            //     console.log(date_from, date_to);
 
                             // сохраняем результат
                             filter_date = {};
