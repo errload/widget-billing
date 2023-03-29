@@ -3004,6 +3004,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 /* ###################################################################### */
 
                 // клик на все события
+                $('.filter-search__left .filter__all__events').unbind('click');
                 $('.filter-search__left .filter__all__events').bind('click', function (e) {
                     let result = {};
 
@@ -3023,6 +3024,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 // клик на мои события
+                $('.filter-search__left .filter__my__events').unbind('click');
                 $('.filter-search__left .filter__my__events').bind('click', function (e) {
                     let result = {}, filter_managers = [];
 
@@ -3043,6 +3045,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 // клик на события за сегодня
+                $('.filter-search__left .filter__today__events').unbind('click');
                 $('.filter-search__left .filter__today__events').bind('click', function (e) {
                     let result = {}, date_from, date_to, filter_date = {};
 
@@ -3066,6 +3069,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 // клик на события за вчера
+                $('.filter-search__left .filter__yesterday__events').unbind('click');
                 $('.filter-search__left .filter__yesterday__events').bind('click', function (e) {
                     let result = {}, date_from, date_to, filter_date = {}, d;
 
@@ -3091,6 +3095,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 // клик на события за месяц
+                $('.filter-search__left .filter__month__events').unbind('click');
                 $('.filter-search__left .filter__month__events').bind('click', function (e) {
                     let result = {}, date_from, date_to, filter_date = {}, d;
 
