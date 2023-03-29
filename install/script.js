@@ -1954,35 +1954,35 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     
                                     <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
                                         <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="/events/list/?skip_filter=Y&amp;sel=32042857&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                        <a href="" class="js-navigate-link filter__list__item__link filter__all__events">
                                             <span class="filter__list__item__inner">Все события</span>
                                         </a>
                                     </li>
                                     
                                     <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
                                         <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="/events/list/?filter[main_user][]=8304874&amp;sel=32042860&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                        <a href="" class="js-navigate-link filter__list__item__link filter__my__events">
                                             <span class="filter__list__item__inner">Мои события</span>
                                         </a>
                                     </li>
                                     
                                     <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
                                         <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="/events/list/?filter%5Bdate_preset%5D=current_day&amp;sel=32042863&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                        <a href="" class="js-navigate-link filter__list__item__link filter__today__events">
                                             <span class="filter__list__item__inner">События за сегодня</span>
                                         </a>
                                     </li>
                                     
                                     <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
                                         <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="/events/list/?filter%5Bdate_preset%5D=yesterday&amp;sel=32042866&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                        <a href="" class="js-navigate-link filter__list__item__link filter__yesterday__events">
                                             <span class="filter__list__item__inner">События за вчера</span>
                                         </a>
                                     </li>
                                     
                                     <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
                                         <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="/events/list/?filter%5Bdate_preset%5D=current_month&amp;sel=32042869&amp;preset=y" class="js-navigate-link filter__list__item__link">
+                                        <a href="" class="js-navigate-link filter__list__item__link filter__month__events">
                                             <span class="filter__list__item__inner">События за месяц</span>
                                         </a>
                                     </li>
@@ -2219,15 +2219,18 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             date_from = new Date(d.getFullYear(), 0, 1).toLocaleDateString();
                             date_to = new Date(d.getFullYear(), 12, 0).toLocaleDateString();
 
-                            // иначе ни обнуляем дату
-                        } else result.filter_date = null;
+                            // иначе обнуляем дату
+                        } else date_from = date_to = null;
 
                         // сохраняем результат
-                        filter_date = {};
-                        filter_date.date_from = date_from;
-                        filter_date.date_to = date_to;
+                        if (!date_from || !date_to) result.filter_date = null;
+                        else {
+                            filter_date = {};
+                            filter_date.date_from = date_from;
+                            filter_date.date_to = date_to;
 
-                        result.filter_date = filter_date;
+                            result.filter_date = filter_date;
+                        }
                     }
 
                     // массив менеджеров
@@ -2251,7 +2254,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 /* ###################################################################### */
 
                 // функция кнопки Сбросить
-                const buttonCancel = function () {
+                const buttonCancel = function (is_ajax = false) { // отправлять сразу запрос в БД или нет
                     // удаляем ранее выбранные фильтры и прячем кнопки фильтра
                     if ($('.list-top-search .search-options').length) $('.list-top-search .search-options').remove();
 
@@ -2283,7 +2286,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     self.filter_managers = [];
 
                     // запрос в БД
-                    ajaxFilterParams(getParamsFilter());
+                    if (is_ajax) ajaxFilterParams(getParamsFilter());
 
                     // удаляем окно фильтра
                     $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
@@ -2390,7 +2393,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // кнопка сбросить в фильтре
                         $('#search_clear_button').unbind('click');
-                        $('#search_clear_button').bind('click', buttonCancel);
+                        $('#search_clear_button').bind('click', { is_ajax: true }, buttonCancel);
 
                         // иначе прячем кнопки фильтра
                     } else if (filter_date === 'За все время' && !self.filter_managers.length) {
@@ -2536,7 +2539,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // кнопка Сбросить
                     $('.modal-body__actions .button-cancel').unbind('click');
-                    $('.modal-body__actions .button-cancel').bind('click', buttonCancel);
+                    $('.modal-body__actions .button-cancel').bind('click', { is_ajax: true }, buttonCancel);
                 }
 
                 // функция удаления менеджера с заголовка менеджеров
@@ -2967,6 +2970,120 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
                     $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
                 }
+
+                /* ###################################################################### */
+
+                // клик на все события
+                $('.filter-search__left .filter__all__events').bind('click', function (e) {
+                    let result = {};
+
+                    // останавливаем действие по умолчанию
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    // указываем параметры запроса в БД
+                    result.filter_date = null;
+                    result.filter_managers = null;
+
+                    // очищаем фильтр
+                    buttonCancel(false);
+
+                    // запрос в БД
+                    ajaxFilterParams(result);
+                });
+
+                // клик на мои события
+                $('.filter-search__left .filter__my__events').bind('click', function (e) {
+                    let result = {}, filter_managers = [];
+
+                    // останавливаем действие по умолчанию
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    // указываем параметры запроса в БД
+                    result.filter_date = null;
+                    filter_managers.push(AMOCRM.constant('user').name);
+                    result.filter_managers = filter_managers;
+
+                    // очищаем фильтр
+                    buttonCancel(false);
+
+                    // запрос в БД
+                    ajaxFilterParams(result);
+                });
+
+                // клик на события за сегодня
+                $('.filter-search__left .filter__today__events').bind('click', function (e) {
+                    let result = {}, date_from, date_to, filter_date = {};
+
+                    // останавливаем действие по умолчанию
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    // указываем параметры запроса в БД
+                    date_from = date_to = new Date().toLocaleDateString();
+                    filter_date.date_from = date_from;
+                    filter_date.date_to = date_to;
+
+                    result.filter_date = filter_date;
+                    result.filter_managers = null;
+
+                    // очищаем фильтр
+                    buttonCancel(false);
+
+                    // запрос в БД
+                    ajaxFilterParams(result);
+                });
+
+                // клик на события за вчера
+                $('.filter-search__left .filter__yesterday__events').bind('click', function (e) {
+                    let result = {}, date_from, date_to, filter_date = {}, d;
+
+                    // останавливаем действие по умолчанию
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    // указываем параметры запроса в БД
+                    d = new Date();
+                    d = d.setDate(d.getDate() - 1);
+                    date_from = date_to = new Date(d).toLocaleDateString();
+                    filter_date.date_from = date_from;
+                    filter_date.date_to = date_to;
+
+                    result.filter_date = filter_date;
+                    result.filter_managers = null;
+
+                    // очищаем фильтр
+                    buttonCancel(false);
+
+                    // запрос в БД
+                    ajaxFilterParams(result);
+                });
+
+                // клик на события за месяц
+                $('.filter-search__left .filter__month__events').bind('click', function (e) {
+                    let result = {}, date_from, date_to, filter_date = {}, d;
+
+                    // останавливаем действие по умолчанию
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    // указываем параметры запроса в БД
+                    d = new Date();
+                    date_from = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 30).toLocaleDateString();
+                    date_to = new Date().toLocaleDateString();
+                    filter_date.date_from = date_from;
+                    filter_date.date_to = date_to;
+
+                    result.filter_date = filter_date;
+                    result.filter_managers = null;
+
+                    // очищаем фильтр
+                    buttonCancel(false);
+
+                    // запрос в БД
+                    ajaxFilterParams(result);
+                });
             });
 
             // клик по меню экспорт
