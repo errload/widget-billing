@@ -2135,140 +2135,99 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     else {
                         filter_date = self.filter_date.split('(')[0].trim();
 
-                        // если стоит стандартное значение, пишем пустое значение
-                        if (filter_date === 'За все время') result.filter_date = null;
-                        // иначе разбираем дату
-                        else {
-                            // убираем лишние пробелы
-                            filter_date = self.filter_date.replace(/\s{2,}/g, ' ');
+                        // убираем лишние пробелы
+                        filter_date = self.filter_date.replace(/\s{2,}/g, ' ');
 
-                            // если дата в скобках - убираем скобки
-                            if (filter_date.slice(0, 1) === '(') {
-                                filter_date = filter_date.slice(1, -1);
-                            }
+                        // если дата в скобках - убираем скобки
+                        if (filter_date.slice(0, 1) === '(') {
+                            filter_date = filter_date.slice(1, -1);
+                        }
 
-                            // за сегодня
-                            if (filter_date.indexOf('За сегодня') !== -1) {
-                                date_from = date_to = new Date().toLocaleDateString();
-                            }
+                        // за сегодня
+                        if (filter_date.indexOf('За сегодня') !== -1) {
+                            date_from = date_to = new Date().toLocaleDateString();
 
                             // за вчера
-                            if (filter_date.indexOf('За вчера') !== -1) {
-                                d = new Date();
-                                d = d.setDate(d.getDate() - 1);
+                        } else if (filter_date.indexOf('За вчера') !== -1) {
+                            d = new Date();
+                            d = d.setDate(d.getDate() - 1);
 
-                                date_from = date_to = new Date(d).toLocaleDateString();
-                            }
+                            date_from = date_to = new Date(d).toLocaleDateString();
 
                             // за последние Х дней
-                            if (filter_date.indexOf('За последние') !== -1) {
-                                filter_date = filter_date.split(' ')[2];
+                        } else if (filter_date.indexOf('За последние') !== -1) {
+                            filter_date = filter_date.split(' ')[2];
 
-                                d = new Date();
-                                d = d.setDate(d.getDate() - parseInt(filter_date));
+                            d = new Date();
+                            d = d.setDate(d.getDate() - parseInt(filter_date));
 
-                                date_from = new Date(d).toLocaleDateString();
-                                date_to = new Date().toLocaleDateString();
-                            }
+                            date_from = new Date(d).toLocaleDateString();
+                            date_to = new Date().toLocaleDateString();
 
                             // за эту неделю
-                            if (filter_date.indexOf('За эту неделю') !== -1) {
-                                d = new Date().getDay();
-                                date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
-                                date_from = new Date(new Date().setDate(date_from)).toLocaleDateString();
+                        } else if (filter_date.indexOf('За эту неделю') !== -1) {
+                            d = new Date().getDay();
+                            date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
+                            date_from = new Date(new Date().setDate(date_from)).toLocaleDateString();
 
-                                d = new Date();
-                                date_to = d.setDate(d.getDate() + (7 - d.getDay()));
-                                date_to = new Date(date_to).toLocaleDateString();
-                            }
+                            d = new Date();
+                            date_to = d.setDate(d.getDate() + (7 - d.getDay()));
+                            date_to = new Date(date_to).toLocaleDateString();
 
                             // за прошлую неделю
-                            if (filter_date.indexOf('За прошлую неделю') !== -1) {
-                                d = new Date().getDay();
-                                date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
-                                date_from = new Date(new Date().setDate(date_from - 7)).toLocaleDateString();
+                        } else if (filter_date.indexOf('За прошлую неделю') !== -1) {
+                            d = new Date().getDay();
+                            date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
+                            date_from = new Date(new Date().setDate(date_from - 7)).toLocaleDateString();
 
-                                d = new Date();
-                                date_to = d.setDate(d.getDate() + (7 - d.getDay()) - 7);
-                                date_to = new Date(date_to).toLocaleDateString();
-                            }
+                            d = new Date();
+                            date_to = d.setDate(d.getDate() + (7 - d.getDay()) - 7);
+                            date_to = new Date(date_to).toLocaleDateString();
 
                             // за этот месяц
-                            if (filter_date.indexOf('За этот месяц') !== -1) {
-                                d = new Date();
+                        } else if (filter_date.indexOf('За этот месяц') !== -1) {
+                            d = new Date();
 
-                                date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
-                                date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
-                            }
+                            date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
+                            date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
 
                             // за прошлый месяц
-                            if (filter_date.indexOf('За прошлый месяц') !== -1) {
-                                d = new Date();
+                        } else if (filter_date.indexOf('За прошлый месяц') !== -1) {
+                            // первое число прошлого месяца
+                            d = new Date();
+                            d = new Date(d.getFullYear(), d.getMonth() - 1, 1);
 
+                            date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
+                            date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
 
+                            // за квартал
+                        } else if (filter_date.indexOf('За квартал') !== -1) {
+                            // определяем текущий квартал
+                            d = new Date();
 
+                            if (d.getMonth() < 3) d = new Date(d.getFullYear(), 0, 1);
+                            if (d.getMonth() > 2 && d.getMonth() < 6) d = new Date(d.getFullYear(), 3, 1);
+                            if (d.getMonth() > 5 && d.getMonth() < 9) d = new Date(d.getFullYear(), 6, 1);
+                            if (d.getMonth() > 8) d = new Date(d.getFullYear(), 9, 1);
 
-                            }
+                            date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
+                            date_to = new Date(d.getFullYear(), d.getMonth() + 3, 0).toLocaleDateString();
 
-                            console.log(date_from, date_to)
-                            console.log(filter_date)
+                            // за этот год
+                        } else if (filter_date.indexOf('За этот год') !== -1) {
+                            d = new Date();
+                            date_from = new Date(d.getFullYear(), 0, 1).toLocaleDateString();
+                            date_to = new Date(d.getFullYear(), 12, 0).toLocaleDateString();
 
-                            //     // если даты стандартные, обрезаем текстовую часть
-                            //     if (filter_date.indexOf('За') !== -1) {
-                            //         // получаем дату
-                            //         filter_date = filter_date.split('(')[1];
-                            //         // удаляем последнюю скобку
-                            //         filter_date = filter_date.replace(')', '');
-                            //     }
-                            //
-                            //     // если дата имеет диапазон, берем от и до
-                            //     if (filter_date.indexOf('-') !== -1) {
-                            //         filter_date = filter_date.split('-');
-                            //
-                            //         // добавляем к дате текущий год
-                            //         date_from = filter_date[0].trim();
-                            //         date_to = filter_date[1].trim();
-                            //
-                            //         // если дата записана как Сегодня, переводим в цифру
-                            //         if (date_from === 'Сегодня') {
-                            //             date_now = new Date().toLocaleString();
-                            //             date_now = date_now.split(',')[0].trim();
-                            //             date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
-                            //
-                            //             // добавляем к дате текущий год
-                            //             date_from = `${ date_now }.${ new Date().getFullYear() }`;
-                            //
-                            //             // добавляем к дате текущий год
-                            //         } else date_from = `${ date_from }.${ new Date().getFullYear() }`;
-                            //
-                            //         if (date_to === 'Сегодня') {
-                            //             date_now = new Date().toLocaleString();
-                            //             date_now = date_now.split(',')[0].trim();
-                            //             date_now = `${ date_now.split('.')[0] }.${ date_now.split('.')[1] }`;
-                            //
-                            //             // добавляем к дате текущий год
-                            //             date_to = `${ date_now }.${ new Date().getFullYear() }`;
-                            //
-                            //             // добавляем к дате текущий год
-                            //         } else date_to = `${ date_to }.${ new Date().getFullYear() }`;
-                            //
-                            //         // иначе от и до одинаковая дата
-                            //     } else {
-                            //         // добавляем к дате текущий год
-                            //         date_from = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
-                            //         date_to = `${ filter_date.trim() }.${ new Date().getFullYear() }`;
-                            //     }
-                            //
-                            //     // console.log(filter_date);
-                            //     console.log(date_from, date_to);
+                            // иначе ни обнуляем дату
+                        } else result.filter_date = null;
 
-                            // сохраняем результат
-                            filter_date = {};
-                            filter_date.date_from = date_from;
-                            filter_date.date_to = date_to;
+                        // сохраняем результат
+                        filter_date = {};
+                        filter_date.date_from = date_from;
+                        filter_date.date_to = date_to;
 
-                            result.filter_date = filter_date;
-                        }
+                        result.filter_date = filter_date;
                     }
 
                     // массив менеджеров
@@ -2368,12 +2327,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         `);
                     }
 
-                    // console.log(self.filter_date);
-
-
-
-
-
                     // перебираем менеджеров с заголовка и обновляем массив
                     let managers = [];
 
@@ -2425,15 +2378,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         `);
                     }
 
-                    // console.log(self.filter_managers);
-
-
-
-
-
-
-
-
                     // если есть какие-то фильтры, прячем кнопку Применить и показываем кнопку очистки фильтра
                     if (filter_date !== 'За все время' || self.filter_managers.length) {
                         if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
@@ -2460,15 +2404,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         }
                     }
 
-
-
-
-
-
-
                     // запрос в БД
                     ajaxFilterParams(getParamsFilter());
-
 
                     // удаление даты с фильтра
                     $('.list-top-search__options.date__filter__icon .option-delete').unbind('click');
@@ -2600,34 +2537,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     // кнопка Сбросить
                     $('.modal-body__actions .button-cancel').unbind('click');
                     $('.modal-body__actions .button-cancel').bind('click', buttonCancel);
-
-                    // // кнопка Сбросить
-                    // $('.modal-body__actions .button-input.button-cancel').unbind('click');
-                    // $('.modal-body__actions .button-input.button-cancel').bind('click', function () {
-                    //     // удаляем ранее выбранные фильтры и прячем кнопки фильтра
-                    //     $('.list-top-search .search-options').remove();
-                    //     $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                    //     $('#search_clear_button').addClass('h-hidden');
-                    //
-                    //     // удаляем кнопки Применить и Сбросить
-                    //     if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                    //     if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                    //         $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                    //     }
-                    //
-                    //     // обнуляем значения фильтра
-                    //     self.filter_date = null;
-                    //     self.filter_managers = [];
-                    // });
-
-                    // // кнопка Применить
-                    // $('.modal-body__actions .button-input.modal-body__actions__save').unbind('click');
-                    // $('.modal-body__actions .button-input.modal-body__actions__save').bind('click', function () {
-                    //     // запускаем кнопку Применить
-                    //     buttonApply();
-                    //     // закрытие окна фильтра
-                    //     closeFilterWindow();
-                    // });
                 }
 
                 // функция удаления менеджера с заголовка менеджеров
@@ -2659,46 +2568,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
                         }
 
-                        // // перезаписываем массив оставшихся менеджеров
-                        // $.each($('.multisuggest__list-item.js-multisuggest-item'), function () {
-                        //     managers.push($(this).attr('data-title').trim());
-                        // });
-                        //
-                        // // обновляем значение в массиве
-                        // self.filter_managers = managers;
-                        //
-                        // // если удаляется последний менеджер
-                        // if (!self.filter_managers.length) {
-                        //     // очищаем заголовок менеджеров
-                        //     $('.multisuggest__list .multisuggest__list-item').remove();
-                        //     // убираем рамку
-                        //     $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
-                        //     // обнуляем значение массива
-                        //     self.filter_managers = [];
-                        //
-                        //     // очищаем фильтр
-                        //     $('.list-top-search .managers__filter__icon').remove();
-                        //
-                        //     // прячем кнопки фильтра
-                        //     if (!$('.list-top-search .search-options-wrapper div').length) {
-                        //         $('.list-top-search .search-options').remove();
-                        //         $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                        //         $('#search_clear_button').addClass('h-hidden');
-                        //     }
-                        // }
-                        //
-                        // // если в массиве 1 менеджер, пишем имя
-                        // if (managers.length === 1) {
-                        //     $('.list-top-search .managers__filter__icon .options-text').attr('title', `Менеджеры: ${ managers }`);
-                        //     $('.list-top-search .managers__filter__icon .options-text').text(`Менеджеры: ${ managers }`);
-                        // // иначе пишем количество менеджеров
-                        // } else if (managers.length > 1) {
-                        //     $('.list-top-search .managers__filter__icon .options-text').attr('title', `Менеджеры: ${ managers.length }`);
-                        //     $('.list-top-search .managers__filter__icon .options-text').text(`Менеджеры: ${ managers.length }`);
-                        // }
-                        //
-                        // // добавляем кнопки Применить и Сбросить
-                        // addButtonApplyCancel();
+                        // добавляем кнопку Применить в фильтре
+                        addButtonApplyFilter();
+                        // добавляем кнопки Применить и Сбросить в окне фильтра
+                        addButtonApplyCancel();
                     });
                 }
 
@@ -2733,44 +2606,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     addButtonApplyFilter();
                     // добавляем кнопки Применить и Сбросить в окне фильтра
                     addButtonApplyCancel();
-
-
-
-
-
-
-                    // if ($('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').removeClass('h-hidden');
-
-                    // // очищаем фильтр
-                    // $('.list-top-search .date__filter__icon .option-delete').unbind('click');
-                    // $('.list-top-search .date__filter__icon .option-delete').bind('click', function () {
-                    //     $('.list-top-search .date__filter__icon').remove();
-                    //
-                    //     // удаляем ранее выбранные значения в календаре
-                    //     $.each($('.date_filter .date_filter__period_item'), function () {
-                    //         if ($(this).hasClass('date_filter__period_item_selected')) {
-                    //             $(this).removeClass('date_filter__period_item_selected');
-                    //         }
-                    //     });
-                    //
-                    //     // прячем кнопки фильтра
-                    //     if (!$('.list-top-search .search-options-wrapper div').length) {
-                    //         $('.list-top-search .search-options').remove();
-                    //         $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                    //         $('#search_clear_button').addClass('h-hidden');
-                    //     }
-                    //
-                    //     // обновляем значение
-                    //     self.filter_date = null;
-                    // });
-
-                    // // очищаем все фильтры
-                    // clearFilter();
-                    // // добавляем кнопки Применить и Сбросить
-                    // addButtonApplyCancel();
                 });
-
-
 
                 // если открыт дата фильтр, закрываем список менеджеров
                 $('.filter-search__right').on('DOMSubtreeModified', function() {
@@ -2793,27 +2629,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
                                 $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
                             }
-
-                            // // обновляем массив
-                            // managers = [];
-                            //
-                            // $.each($('.multisuggest__list .multisuggest__list-item'), function () {
-                            //     managers.push({
-                            //         'title' : $(this).attr('data-title').trim(),
-                            //         'group' : $(this).attr('data-group').trim(),
-                            //         'id' : $(this).attr('data-id').trim(),
-                            //     });
-                            // });
-                            //
-                            // if (managers.length) self.filter_managers = managers;
                         }
-
-                        // // добавление менеджеров в заголовок менеджеров
-                        // addManagersForTitle();
                     }
                 });
-
-
 
                 // открываем список менеджеров
                 $('.filter-search__right .custom-scroll').unbind('click');
@@ -2952,33 +2770,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             addButtonApplyFilter();
                             // добавляем кнопки Применить и Сбросить в окне фильтра
                             addButtonApplyCancel();
-
-                            // // показываем кнопки применить и очистить на фильтре
-                            // if ($('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                            //     $('.list-top-search .list-top-search__apply-block').removeClass('h-hidden');
-                            // }
-                            //
-                            // if ($('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').removeClass('h-hidden');
-                            //
-                            // // добавляем кнопки Применить и Сбросить
-                            // addButtonApplyCancel();
-
-                            // // перебираем менеджеров с заголовка и обновляем массив
-                            // managers = [];
-                            //
-                            // $.each($('.multisuggest__list .multisuggest__list-item'), function () {
-                            //     managers.push({
-                            //         'title' : $(this).attr('data-title').trim(),
-                            //         'group' : $(this).attr('data-group').trim(),
-                            //         'id' : $(this).attr('data-id').trim(),
-                            //     });
-                            // });
-                            //
-                            // if (managers.length) self.filter_managers = managers;
                         }
-
-                        // // добавление менеджеров в заголовок менеджеров
-                        // addManagersForTitle();
                     });
 
                     // отображение менеджера в заговлоке при смене курсора
@@ -3064,8 +2856,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     });
                 });
 
-
-
                 // очищаем заголовок календаря
                 $('.js-filter-field-clear.clear__date').unbind('click');
                 $('.js-filter-field-clear.clear__date').bind('click', function () {
@@ -3086,30 +2876,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     addButtonApplyFilter();
                     // добавляем кнопки Применить и Сбросить в окне фильтра
                     addButtonApplyCancel();
-
-                    // // если дата ранее была выбрана, прячем только кнопку очистки фильтра
-                    // if (self.filter_date) {
-                    //     if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                    //
-                    //     // если дата ранее не была выбрана, но выбраны менеджеры, прячем так же только кнопку очистки фильтра
-                    // } else if (!self.filter_date && $('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
-                    //     if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                    //
-                    //     // иначе скрываем все кнопки
-                    // } else {
-                    //     // кнопки фильтра
-                    //     $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                    //     $('#search_clear_button').addClass('h-hidden');
-                    //
-                    //     // кнопки Применить и Сбросить
-                    //     if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                    //     if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                    //         $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                    //     }
-                    // }
                 });
-
-
 
                 // очищаем заголовок менеджеров
                 $('.js-filter-field-clear.clear__managers').unbind('click');
@@ -3122,38 +2889,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     addButtonApplyFilter();
                     // добавляем кнопки Применить и Сбросить в окне фильтра
                     addButtonApplyCancel();
-
-                    // // если менеджеры ранее были выбраны, прячем только кнопку очистки фильтра
-                    // if (self.filter_managers) {
-                    //     if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                    //     console.log('after')
-                    //
-                    //     // если менеджеры ранее не были выбраны, но выбрана дата, прячем так же только кнопку очистки фильтра
-                    // } else if (!self.filter_managers && $('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
-                    //     if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                    //
-                    //     // иначе скрываем все кнопки
-                    // } else {
-                    //     // кнопки фильтра
-                    //     $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                    //     $('#search_clear_button').addClass('h-hidden');
-                    //
-                    //     // кнопки Применить и Сбросить
-                    //     if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                    //     if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                    //         $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                    //     }
-                    // }
                 });
-
-
-
-
-
-
-
-
-
 
                 // отображаем ранее сохраненное значение даты
                 if (self.filter_date) {
@@ -3221,274 +2957,16 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     deleteManagersForTitle();
                 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                // // функция очистки всех фильтров
-                // const clearFilter = function () {
-                //     $('.list-top-search .list-top-search__info').unbind('click');
-                //     $('.list-top-search .list-top-search__info').bind('click', function () {
-                //         // удаляем дату
-                //         if ($('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
-                //             // возвращаем стандартные классы в календарь событий
-                //             $.each($('.date_filter .date_filter__period_item'), function () {
-                //                 if ($(this).hasClass('date_filter__period_item_selected')) {
-                //                     $(this).removeClass('date_filter__period_item_selected');
-                //                 }
-                //             });
-                //
-                //             // возвращаем значение календаря по умолчанию
-                //             $('.date_filter .date_filter__period').attr('data-before', 'За все время');
-                //             $('.date_filter .date_filter__period').text('За все время');
-                //
-                //             // удаляем рамку с заголовка календаря
-                //             $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
-                //         }
-                //
-                //         // удаляем менеджеров
-                //         if ($('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
-                //             // если список менеджеров раскрыт, закрываем
-                //             if ($('.filter__managers .multisuggest__suggest-wrapper').length) {
-                //                 $('.filter__managers .multisuggest__suggest-wrapper').remove();
-                //                 $('.filter-search__right .filter__managers').css('height', '0');
-                //                 $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
-                //             }
-                //
-                //             // если поле ввода активно, удаляем
-                //             if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
-                //                 $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
-                //             }
-                //
-                //             // очищаем список менеджеров с заголовка менеджеров
-                //             $('.multisuggest__list .js-multisuggest-item').remove();
-                //             // удаляем рамку с заголовка менеджеров
-                //             $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
-                //         }
-                //
-                //         // удаляем ранее выбранные фильтры и прячем кнопки фильтра
-                //         if ($('.list-top-search .search-options')) $('.list-top-search .search-options').remove();
-                //         $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                //         $('#search_clear_button').addClass('h-hidden');
-                //
-                //         // удаляем кнопки Применить и Сбросить
-                //         if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                //         if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                //             $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                //         }
-                //
-                //         // обнуляем значения фильтра
-                //         self.filter_date = null;
-                //         self.filter_managers = [];
-                //         return false;
-                //     });
-                // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                // // функция добавления менеджеров в заголовок менеджеров
-                // const addManagersForTitle = function () {
-                //     let managers = null;
-                //     // если массив менеджеров пуст, выходим
-                //     if (!self.filter_managers.length) return;
-                //
-                //     // если менеджер один, пишем имя, иначе количество
-                //     if (self.filter_managers.length === 1) managers = self.filter_managers[0].title;
-                //     else managers = self.filter_managers.length;
-                //
-                //     // если wrapper'а нет, добавляем
-                //     if (!$('.list-top-search .search-options').length) {
-                //         $('.list-top-search').prepend(`
-                //             <div class="search-options" id="search-options">
-                //                 <div class="list-top-search__preset" id="search_filter_preset"></div>
-                //                 <div class="search-options-wrapper"></div>
-                //             </div>
-                //         `);
-                //     }
-                //
-                //     // если менеджеры не были добавлены, добавляем
-                //     if (!$('.search-options-wrapper .managers__filter__icon').length) {
-                //         $('.list-top-search .search-options-wrapper').append(`
-                //             <div class="list-top-search__options managers__filter__icon list-top-search__options-showed">
-                //                 <div class="options-text" title="Менеджеры: ${ managers }">Менеджеры: ${ managers }</div>
-                //                 <div class="option-delete js-filter-field-clear" data-input-name="filter[main_user][]">
-                //                     <svg class="svg-icon svg-common--cross-close-dims">
-                //                         <use xlink:href="#common--cross-close"></use>
-                //                     </svg>
-                //                 </div>
-                //             </div>
-                //         `);
-                //     // иначе меняем количество
-                //     } else {
-                //         $('.list-top-search .managers__filter__icon .options-text').attr('title', `Менеджеры: ${ managers }`);
-                //         $('.list-top-search .managers__filter__icon .options-text').text(`Менеджеры: ${ managers }`);
-                //     }
-                //
-                //     // показываем кнопки применить и очистить на фильтре
-                //     if ($('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                //         $('.list-top-search .list-top-search__apply-block').removeClass('h-hidden');
-                //     }
-                //
-                //     if ($('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').removeClass('h-hidden');
-                //
-                //     // очищаем главный фильтр
-                //     $('.list-top-search .managers__filter__icon .option-delete').unbind('click');
-                //     $('.list-top-search .managers__filter__icon .option-delete').bind('click', function () {
-                //         // удаляем менеджеров
-                //         $('.list-top-search .managers__filter__icon').remove();
-                //
-                //         // прячем кнопки фильтра
-                //         if (!$('.list-top-search .search-options-wrapper div').length) {
-                //             $('.list-top-search .search-options').remove();
-                //             $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                //             $('#search_clear_button').addClass('h-hidden');
-                //         }
-                //
-                //         // обновляем массив
-                //         self.filter_managers = [];
-                //     });
-                //
-                //     // очищаем все фильтры
-                //     clearFilter();
-                //     // добавляем кнопки Применить и Сбросить
-                //     addButtonApplyCancel();
-                // }
-
-                /* ###################################################################### */
-
-                // // нажатие на кнопку Применить в фильтре
-                // $('.list-top-search__apply-block .list-top-search__apply-button').unbind('click');
-                // $('.list-top-search__apply-block .list-top-search__apply-button').bind('click', function () {
-                //     // запускаем кнопку Применить
-                //     buttonApply();
-                //     // закрытие окна фильтра
-                //     closeFilterWindow();
-                // });
-
-                // // очищаем заголовок календаря
-                // $('.js-filter-field-clear.clear__date').unbind('click');
-                // $('.js-filter-field-clear.clear__date').bind('click', function () {
-                //     // пишем стандартное значение
-                //     $('.date_filter .date_filter__head span').attr('data-before', 'За все время');
-                //     $('.date_filter .date_filter__head span').text('За все время');
-                //     // удаляем рамку
-                //     $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
-                //
-                //     // удаляем классы у выбранных дат календаря
-                //     $.each($('.date_filter .date_filter__period_item'), function () {
-                //         if ($(this).hasClass('date_filter__period_item_selected')) {
-                //             $(this).removeClass('date_filter__period_item_selected');
-                //         }
-                //     });
-                //
-                //     // если дата ранее была выбрана, прячем только кнопку очистки фильтра
-                //     if (self.filter_date) {
-                //         if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                //
-                //         // если дата ранее не была выбрана, но выбраны менеджеры, прячем так же только кнопку очистки фильтра
-                //     } else if (!self.filter_date && $('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
-                //         if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                //
-                //         // иначе скрываем все кнопки
-                //     } else {
-                //         // кнопки фильтра
-                //         $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                //         $('#search_clear_button').addClass('h-hidden');
-                //
-                //         // кнопки Применить и Сбросить
-                //         if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                //         if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                //             $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                //         }
-                //     }
-                // });
-
-                // // очищаем заголовок менеджеров
-                // $('.js-filter-field-clear.clear__managers').unbind('click');
-                // $('.js-filter-field-clear.clear__managers').bind('click', function () {
-                //     // удаляем менеджеров
-                //     $('.multisuggest__list .multisuggest__list-item').remove();
-                //     // удаляем рамку
-                //     $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
-                //
-                //     // если менеджеры ранее были выбраны, прячем только кнопку очистки фильтра
-                //     if (self.filter_managers) {
-                //         if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                //         console.log('after')
-                //
-                //         // если менеджеры ранее не были выбраны, но выбрана дата, прячем так же только кнопку очистки фильтра
-                //     } else if (!self.filter_managers && $('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
-                //         if (!$('#search_clear_button').hasClass('h-hidden')) $('#search_clear_button').addClass('h-hidden');
-                //
-                //         // иначе скрываем все кнопки
-                //     } else {
-                //         // кнопки фильтра
-                //         $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                //         $('#search_clear_button').addClass('h-hidden');
-                //
-                //         // кнопки Применить и Сбросить
-                //         if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                //         if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                //             $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                //         }
-                //     }
-                // });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                // по умолчанию прячем кнопку Применить в фильтре
+                if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+                    $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+                }
+
+                // по умолчанию прячем кнопки Применить и Сбросить в окне фильтра
+                if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
+                if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
+                    $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
+                }
             });
 
             // клик по меню экспорт
