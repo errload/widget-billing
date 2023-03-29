@@ -2127,6 +2127,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 const getParamsFilter = function () {
                     let result = [],
                         filter_date, date_from, date_to, d = null,
+                        date_start = null, date_end = null,
                         filter_managers = [];
 
                     // если дата не выбрана, пишем пустое значение
@@ -2142,6 +2143,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         if (filter_date.slice(0, 1) === '(') {
                             filter_date = filter_date.slice(1, -1);
                         }
+
+                        // // если дата один день (от и до совпадают)
+                        // if (filter_date === 'Сегодня') date_start = date_end = new Date().toLocaleDateString();
+                        // else if (new Date(filter_date) !== 'Invalid Date') date_start = date_end = filter_date;
 
                         // за сегодня
                         if (filter_date.indexOf('За сегодня') !== -1) {
@@ -2222,15 +2227,70 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             // иначе обнуляем дату
                         } else date_from = date_to = null;
 
-                        // сохраняем результат
+
+
+
+                        // // выбор даты вручную (от - до)
+                        // let date_start, date_end;
+
+
+
+                        // если есть начальное и конечное значение, преобразуем в дату
+                        date_start = filter_date.split('-')[0];
+                        date_end = filter_date.split('-')[1];
+
+                        if (date_start && date_end) {
+                            date_start = date_start.trim();
+                            date_end = date_end.trim();
+
+                            // проверка на валидность даты
+                            if (date_start !== 'Сегодня' && new Date(date_start) !== 'Invalid Date') date_from = date_start;
+                            else if (date_start === 'Сегодня') date_from = new Date().toLocaleDateString();
+                            else date_start = null;
+
+                            if (date_end !== 'Сегодня' && new Date(date_end) !== 'Invalid Date') date_to = date_end;
+                            else if (date_end === 'Сегодня') date_to = new Date().toLocaleDateString();
+                            else date_end = null;
+                        }
+
+                        // если дата один день (от и до совпадают)
+                        if (filter_date === 'Сегодня') date_start = date_end = new Date().toLocaleDateString();
+                        else if (new Date(filter_date) !== 'Invalid Date') date_start = date_end = filter_date;
+
+
+
+
+                        console.log(filter_date);
+                        console.log(date_start, date_end);
+                        console.log(date_from, date_to);
+
+
+
+
+
+                        date_from = date_from || date_start;
+                        date_to = date_to || date_end;
+
                         if (!date_from || !date_to) result.filter_date = null;
                         else {
                             filter_date = {};
-                            filter_date.date_from = date_from;
-                            filter_date.date_to = date_to;
+                            filter_date.date_from = date_from || date_start;
+                            filter_date.date_to = date_to || date_end;
 
                             result.filter_date = filter_date;
                         }
+
+
+                        // // сохраняем результат
+                        // if (!date_start || !date_end) result.filter_date = null;
+                        // else if (!date_from || !date_to) result.filter_date = null;
+                        // else {
+                        //     filter_date = {};
+                        //     filter_date.date_from = date_from || date_start;
+                        //     filter_date.date_to = date_to || date_end;
+                        //
+                        //     result.filter_date = filter_date;
+                        // }
                     }
 
                     // массив менеджеров
