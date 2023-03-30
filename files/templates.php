@@ -620,3 +620,58 @@
         $result = $mysqli->query($select)->fetch_assoc();
         echo json_encode($result['result__sum']);
     }
+
+    /* ##################################################################### */
+
+    // выгрузка в настройки
+    if ($_POST['method'] == 'filter__events' && $Config->CheckToken()) {
+        $date_from = null;
+        $date_to = null;
+        $managers = null;
+
+        // если указана дата
+        if ($_POST['filter'] && $_POST['filter']['filter_date']) {
+            $date_from = strtotime($_POST['filter']['filter_date']['date_from']);
+            $date_to = strtotime($_POST['filter']['filter_date']['date_to']);
+        }
+
+        // если указаны менеджеры
+        if ($_POST['filter'] && $_POST['filter']['filter_managers'] && count($_POST['filter']['filter_managers']) > 0) {
+            $managers = $_POST['filter']['filter_managers'];
+        }
+
+        // перебираем данные на предмет совпадений с фильтром
+        $select = ' SELECT * FROM billing_timer ORDER BY id DESC';
+        $result = $mysqli->query($select)->fetch_all();
+
+        // если параметры есть, делаем выборку
+        if (($date_from && $date_to) || $managers) {
+            $items = [];
+
+            foreach ($result as $row) {
+                $manager = $row[3];
+                $created_at = $row[9];
+                $created_at = explode(' ', $created_at)[0];
+                $created_at = strtotime($created_at);
+
+                // если есть только дата
+                if (($date_from && $date_to) && !$managers) {
+                    if ($created_at >= $date_from && $created_at <= $date_to) $items[] = $row;
+
+                // если есть только менеджеры
+                } else if (!($date_from && $date_to) && $managers) {
+                    if (in_array($manager, $managers)) $items[] = $row;
+
+                // если есть и дата и менеджеры
+                } else if (($date_from && $date_to) && $managers) {
+                    if (($created_at >= $date_from && $created_at <= $date_to) &&
+                        in_array($manager, $managers))
+                        $items[] = $row;
+                }
+            }
+
+            $result = $items;
+        }
+
+        print_r(json_encode($result));
+    }

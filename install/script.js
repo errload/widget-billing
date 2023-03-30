@@ -1918,6 +1918,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 </div>
             `);
 
+            // количество событий в фильтре
+            $('.list-top-search .list-top-search__input-block .list-top-search__input').after(`
+                <span class="list-top-search__summary">
+                    <span class="list-top-search__summary-text">0 событий</span>
+                </span>
+            `);
+
             // выравниваем фильтр и меню
             $('.settings__search .settings__search__input').css({
                 'margin-top': '10px',
@@ -1945,7 +1952,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // меню событий
                 $('.settings__search__filter').append(`
-                    <div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute;">
+                    <div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute; z-index: 2;">
                         <div class="filter-search__wrapper custom-scroll">
                             <div class="filter-search__inner">
                             
@@ -2125,7 +2132,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // функция обработки параметров фильтра
                 const getParamsFilter = function () {
-                    let result = [],
+                    let result = {},
                         filter_date, date_from, date_to, d = null,
                         date_start = null, date_end = null,
                         filter_managers = [];
@@ -2258,6 +2265,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         filter_date.date_from = date_from || date_start;
                         filter_date.date_to = date_to || date_end;
 
+                        // если результат стандартный, обнуляем значение
+                        if (filter_date.date_from === 'За все время' || filter_date.date_to === 'За все время') {
+                            filter_date.date_from = null;
+                            filter_date.date_to = null;
+                        }
+
                         // если ни один из вариантов не определен, обнуляем
                         if (!(filter_date.date_from && filter_date.date_to)) result.filter_date = null;
                         else result.filter_date = filter_date;
@@ -2277,8 +2290,144 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 }
 
                 // функция выгрузки из БД
-                const ajaxFilterParams = function (array) {
-                    console.log(array);
+                const ajaxFilterParams = function (params) {
+                    // удаляем старый результат
+                    if ($('.list__table__holder').length) $('.list__table__holder').remove();
+
+                    // для подкраски столбцов синим цветом
+                    let date_blue = false, managers_blue = false;
+                    if (params.filter_date) date_blue = true;
+                    if (params.filter_managers) managers_blue = true;
+
+                    // запрос в БД
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'post',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'filter__events',
+                            'filter': params
+                        },
+                        dataType: 'json',
+                        success: function (data) {
+                            // если масссив пустой, выходим
+                            if (!data.length) return;
+
+                            // показываем количество строк
+                            $('.list-top-search__summary-text').text(`${ data.length } событий`);
+
+                            // заголовок
+                            $('.safety_settings__section_new.tasks_search').after(`
+                                <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1;">
+                                    <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
+                                    
+                                        <div class="list-row list-row-head js-list-row js-list-row-head" id="list_head">
+                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
+                                                <div class="cell-head__inner">
+                                                    <div class="cell-head__inner-content">
+                                                        <span class="cell-head__dots icon icon-v-dots"></span>
+                                                        <span class="cell-head__title filter__blue__date">Дата</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 24%;">
+                                                <div class="cell-head__inner">
+                                                    <div class="cell-head__inner-content">
+                                                        <span class="cell-head__dots icon icon-v-dots"></span>
+                                                        <span class="cell-head__title filter__blue__manager">Автор</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
+                                                <div class="cell-head__inner">
+                                                    <div class="cell-head__inner-content">
+                                                        <span class="cell-head__dots icon icon-v-dots"></span>
+                                                        <span class="cell-head__title">Время</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
+                                                <div class="cell-head__inner">
+                                                    <div class="cell-head__inner-content">
+                                                        <span class="cell-head__dots icon icon-v-dots"></span>
+                                                        <span class="cell-head__title">Сумма</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 40%;">
+                                                <div class="cell-head__inner">
+                                                    <div class="cell-head__inner-content">
+                                                        <span class="cell-head__dots icon icon-v-dots"></span>
+                                                        <span class="cell-head__title">Ссылка на задачу</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            `);
+
+                            // если менеджер или дата указаны в фильтре, красим столбец в синий
+                            if (date_blue) $('.filter__blue__date').css('color', '#2798d5');
+                            if (managers_blue) $('.filter__blue__manager').css('color', '#2798d5');
+
+                            // строки
+                            $.each(data, function () {
+                                let date = this[9],
+                                    autor = this[3],
+                                    time = this[12],
+                                    sum = this[7],
+                                    link = this[8];
+
+                                date = date.split(' ')[0];
+
+                                $('#list_table').append(`
+                                    <div class="list-row js-list-row js-pager-list-item__1">
+                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+                                            <div class="content-table__item__inner" title="${ date }">
+                                                <span class="block-selectable">${ date }</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+                                            <div class="content-table__item__inner" title="${ autor }">
+                                                <span class="block-selectable">${ autor }</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+                                            <div class="content-table__item__inner" title="${ time }">
+                                                <span class="block-selectable">${ time }</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+                                            <div class="content-table__item__inner" title="${ sum }">
+                                                <span class="block-selectable">${ sum }р.</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-event_object list-row__cell-object">
+                                            <div class="content-table__item__inner">
+                                                <a class="list-row__template-name__table-wrapper__name-link js-navigate-link" href="${ link }" title="${ link }" target="_blank">${ link }</a>
+                                            </div>
+                                        </div>
+                                    </div>                                
+                                `);
+                            });
+
+                            // останавливаем стандартное поведение ссылки, чтобы она открылась в новом окне
+                            $('.list-row__cell.list-row__cell-template-event_object').unbind('click');
+                            $('.list-row__cell.list-row__cell-template-event_object').bind('click', function (e) {
+                                e.stopPropagation();
+                            });
+                        }
+                    });
                 }
 
                 /* ###################################################################### */
@@ -2315,11 +2464,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     self.filter_date = null;
                     self.filter_managers = [];
 
-                    // запрос в БД
-                    if (is_ajax) ajaxFilterParams(getParamsFilter());
-
                     // удаляем окно фильтра
                     $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
+                    // очищаем результат количества событий
+                    $('.list-top-search .list-top-search__summary-text').text('0 событий');
+
+                    // запрос в БД
+                    if (is_ajax) ajaxFilterParams(getParamsFilter());
 
                     return false;
                 }
@@ -2437,9 +2588,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         }
                     }
 
-                    // запрос в БД
-                    ajaxFilterParams(getParamsFilter());
-
                     // удаление даты с фильтра
                     $('.list-top-search__options.date__filter__icon .option-delete').unbind('click');
                     $('.list-top-search__options.date__filter__icon .option-delete').bind('click', function () {
@@ -2454,6 +2602,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 $('#search_clear_button').addClass('h-hidden');
                             }
                         }
+
+                        // очищаем результат количества событий
+                        $('.list-top-search .list-top-search__summary-text').text('0 событий');
 
                         // обнуляем значениe даты
                         self.filter_date = null;
@@ -2476,12 +2627,17 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             }
                         }
 
+                        // очищаем результат количества событий
+                        $('.list-top-search .list-top-search__summary-text').text('0 событий');
+
                         // обнуляем массив менеджеров
                         self.filter_managers = [];
                         // запрос в БД
                         ajaxFilterParams(getParamsFilter());
                     });
 
+                    // запрос в БД
+                    ajaxFilterParams(getParamsFilter());
                     // удаляем окно фильтра
                     $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
                 }
