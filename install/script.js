@@ -2381,14 +2381,27 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             if (managers_blue) $('.filter__blue__manager').css('color', '#2798d5');
 
                             // строки
+                            let all_sum = 0;
+                            let null_time = new Date(2000, 0, 1, 0, 0, 0).getTime(); // 1.01.2000 00:00:00 timestamp
+                            let all_time = 0;
+
                             $.each(data, function () {
                                 let date = this[9],
                                     autor = this[3],
                                     time = this[12],
                                     sum = this[7],
-                                    link = this[8];
+                                    link = this[8],
+                                    timestamp = null;
 
                                 date = date.split(' ')[0];
+
+                                // общая сумма списания
+                                all_sum += parseInt(sum);
+
+                                // прибавляем время каждой записи к нулевому значению
+                                timestamp = new Date(2000, 0, 1, time.split(':')[0], time.split(':')[1], time.split(':')[2]).getTime();
+                                timestamp -= null_time;
+                                all_time += timestamp;
 
                                 $('#list_table').append(`
                                     <div class="list-row js-list-row js-pager-list-item__1">
@@ -2424,6 +2437,86 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     </div>                                
                                 `);
                             });
+
+                            // прибавляем общее затраченное время каждой записи к нулевому значению
+                            all_time += null_time;
+                            // получаем время
+                            all_time = new Date(all_time);
+
+                            let houses = all_time.getHours(),
+                                minutes = all_time.getMinutes(),
+                                seconds = all_time.getSeconds(),
+                                days = all_time.getDate(),
+                                months = all_time.getMonth(),
+                                years = all_time.getFullYear(),
+                                d;
+
+                            // добавляем минуту ( если секунд > 30)
+                            if (seconds > 30) minutes += 1;
+                            // если больше суток, прибавляем к часам
+                            if (days > 1) houses += days * 24 - 24;
+                            // если месяцев больше, прибавляем к часам
+                            if (months > 0) {
+                                for (let i = 0; i <= months; i++) {
+                                    d = new Date(2000, i + 1, 0);
+                                    d = d.getDate();
+                                    houses += d * 24;
+                                }
+                            }
+                            // если лет больше, прибавляем к часам
+                            if (years > 2000) {
+                                years -= 2000;
+                                if (years % 4 === 0) houses += 364 * 24;
+                                else houses += 365 * 24;
+                            }
+
+                            // вывод итога таблицы
+                            $('.list__table__holder').after(`
+                                <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1; margin-top: 10px;">
+                                    <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
+                                    
+                                        <div class="list-row js-list-row js-pager-list-item__1">
+                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
+                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                    <span class="block-selectable" style="display: flex; justify-content: right;">Общее количество затраченного времени</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
+                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                    <span class="block-selectable">
+                                                        <span class="all__time__houses__results">${ houses }</span> ч.
+                                                        <span class="all__time__minutes__results">${ minutes }</span> мин.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                                
+                                <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1;">
+                                    <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
+                                    
+                                        <div class="list-row js-list-row js-pager-list-item__1">
+                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
+                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                    <span class="block-selectable" style="display: flex; justify-content: right;">Общая сумма списания</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
+                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                    <span class="block-selectable">
+                                                        <span class="all__sum__results">${ all_sum }</span> p.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            `);
 
                             // останавливаем стандартное поведение ссылки, чтобы она открылась в новом окне
                             $('.list-row__cell.list-row__cell-template-event_object').unbind('click');
