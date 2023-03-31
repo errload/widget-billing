@@ -641,7 +641,7 @@
         }
 
         // перебираем данные на предмет совпадений с фильтром
-        $select = ' SELECT * FROM billing_timer ORDER BY id DESC';
+        $select = ' SELECT * FROM billing_timer WHERE status = "finish" ORDER BY id DESC';
         $result = $mysqli->query($select)->fetch_all();
 
         // если параметры есть, делаем выборку

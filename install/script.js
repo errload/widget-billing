@@ -2310,8 +2310,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         },
                         dataType: 'json',
                         success: function (data) {
-                            // если масссив пустой, выходим
-                            if (!data.length) return;
+                            // если масссив пустой, обнуляем количество строк в фильтре, удаляем старый результат и выходим
+                            if (!data.length) {
+                                $('.list-top-search__summary-text').text('0 событий');
+                                if ($('.list__table__holder').length) $('.list__table__holder').remove();
+                                return;
+                            }
 
                             // показываем количество строк
                             $('.list-top-search__summary-text').text(`${ data.length } событий`);
@@ -2469,8 +2473,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     // очищаем результат количества событий
                     $('.list-top-search .list-top-search__summary-text').text('0 событий');
 
-                    // запрос в БД
-                    if (is_ajax) ajaxFilterParams(getParamsFilter());
+                    // удаляем старый результат
+                    if ($('.list__table__holder').length) $('.list__table__holder').remove();
 
                     return false;
                 }
@@ -2593,6 +2597,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.list-top-search__options.date__filter__icon .option-delete').bind('click', function () {
                         // удаление фильтра
                         $('.list-top-search__options.date__filter__icon').remove();
+                        // очищаем результат количества событий
+                        $('.list-top-search__summary-text').text('0 событий');
 
                         // если фильтр последний, удаляем wrapper фильтра и кнопку очистки фильтра
                         if (!$('.search-options .list-top-search__options').length) {
@@ -2601,15 +2607,17 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             if (!$('#search_clear_button').hasClass('h-hidden')) {
                                 $('#search_clear_button').addClass('h-hidden');
                             }
+
+                            // обнуляем значениe даты
+                            self.filter_date = null;
+                            // удаляем старый результат
+                            if ($('.list__table__holder').length) $('.list__table__holder').remove();
+
+                            // иначе обнуляем значениe даты и делаем запрос в БД
+                        } else {
+                            self.filter_date = null;
+                            ajaxFilterParams(getParamsFilter());
                         }
-
-                        // очищаем результат количества событий
-                        $('.list-top-search .list-top-search__summary-text').text('0 событий');
-
-                        // обнуляем значениe даты
-                        self.filter_date = null;
-                        // запрос в БД
-                        ajaxFilterParams(getParamsFilter());
                     });
 
                     // удаление менеджеров с фильтра
@@ -2617,6 +2625,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.list-top-search__options.managers__filter__icon .option-delete').bind('click', function () {
                         // удаление фильтра
                         $('.list-top-search__options.managers__filter__icon').remove();
+                        // очищаем результат количества событий
+                        $('.list-top-search__summary-text').text('0 событий');
 
                         // если фильтр последний, удаляем wrapper фильтра и кнопку очистки фильтра
                         if (!$('.search-options .list-top-search__options').length) {
@@ -2625,19 +2635,24 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             if (!$('#search_clear_button').hasClass('h-hidden')) {
                                 $('#search_clear_button').addClass('h-hidden');
                             }
+
+                            // обнуляем массив менеджеров
+                            self.filter_managers = [];
+                            // удаляем старый результат
+                            if ($('.list__table__holder').length) $('.list__table__holder').remove();
+
+                            // иначе обнуляем массив менеджеров и делаем запрос в БД
+                        } else {
+                            self.filter_managers = [];
+                            ajaxFilterParams(getParamsFilter());
                         }
-
-                        // очищаем результат количества событий
-                        $('.list-top-search .list-top-search__summary-text').text('0 событий');
-
-                        // обнуляем массив менеджеров
-                        self.filter_managers = [];
-                        // запрос в БД
-                        ajaxFilterParams(getParamsFilter());
                     });
 
-                    // запрос в БД
-                    ajaxFilterParams(getParamsFilter());
+                    // если значение не по умолчанию, делаем запрос в БД, иначе очищаем фильтр
+                    if (!(filter_date === 'За все время' && !self.filter_managers.length)) {
+                        ajaxFilterParams(getParamsFilter());
+                    } else buttonCancel();
+
                     // удаляем окно фильтра
                     $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
                 }
@@ -2657,23 +2672,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     if (!self.filter_managers.length) {
                         if ($('.list-top-search .managers__filter__icon')) {
                             $('.list-top-search .managers__filter__icon').remove();
-                        }
-                    }
-
-                    // если нет ни менеджеров, ни даты, прячем кнопки
-                    if (!self.filter_date && !self.filter_managers.length) {
-                        // прячем кнопки фильтра
-                        if (!$('.list-top-search .search-options-wrapper div').length) {
-                            $('.list-top-search .search-options').remove();
-                        }
-
-                        $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                        $('#search_clear_button').addClass('h-hidden');
-
-                        // иначе прячем кнопку Применить
-                    } else {
-                        if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                            $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
                         }
                     }
 
@@ -3159,6 +3157,16 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 /* ###################################################################### */
 
+                // функция показа кнопки Очистить фильтр
+                const addButtonCalcelFilter = function () {
+                    if ($('#search_clear_button').hasClass('h-hidden')) {
+                        $('#search_clear_button').removeClass('h-hidden');
+
+                        $('#search_clear_button').unbind('click');
+                        $('#search_clear_button').bind('click', { is_ajax: true }, buttonCancel);
+                    }
+                }
+
                 // клик на все события
                 $('.filter-search__left .filter__all__events').unbind('click');
                 $('.filter-search__left .filter__all__events').bind('click', function (e) {
@@ -3174,6 +3182,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // очищаем фильтр
                     buttonCancel(false);
+                    // показываем кнопку Очистить фильтр
+                    addButtonCalcelFilter();
 
                     // запрос в БД
                     ajaxFilterParams(result);
@@ -3195,6 +3205,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // очищаем фильтр
                     buttonCancel(false);
+                    // показываем кнопку Очистить фильтр
+                    addButtonCalcelFilter();
 
                     // запрос в БД
                     ajaxFilterParams(result);
@@ -3219,6 +3231,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // очищаем фильтр
                     buttonCancel(false);
+                    // показываем кнопку Очистить фильтр
+                    addButtonCalcelFilter();
 
                     // запрос в БД
                     ajaxFilterParams(result);
@@ -3245,6 +3259,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // очищаем фильтр
                     buttonCancel(false);
+                    // показываем кнопку Очистить фильтр
+                    addButtonCalcelFilter();
 
                     // запрос в БД
                     ajaxFilterParams(result);
@@ -3271,6 +3287,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // очищаем фильтр
                     buttonCancel(false);
+                    // показываем кнопку Очистить фильтр
+                    addButtonCalcelFilter();
 
                     // запрос в БД
                     ajaxFilterParams(result);
