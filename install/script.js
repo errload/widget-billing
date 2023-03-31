@@ -2317,8 +2317,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 return;
                             }
 
-                            // показываем количество строк
+                            // показываем количество строк и очищаем прошлый результат
                             $('.list-top-search__summary-text').text(`${ data.length } событий`);
+                            if ($('.list__table__holder').length) $('.list__table__holder').remove();
 
                             // заголовок
                             $('.safety_settings__section_new.tasks_search').after(`
