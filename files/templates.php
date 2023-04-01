@@ -655,15 +655,15 @@
                 $created_at = strtotime($created_at);
 
                 // если есть только дата
-                if (($date_from && $date_to) && !$managers) {
+                if (($date_from && $date_to) && !count($managers)) {
                     if ($created_at >= $date_from && $created_at <= $date_to) $items[] = $row;
 
                 // если есть только менеджеры
-                } else if (!($date_from && $date_to) && $managers) {
+                } else if (!($date_from && $date_to) && count($managers)) {
                     if (in_array($manager, $managers)) $items[] = $row;
 
                 // если есть и дата и менеджеры
-                } else if (($date_from && $date_to) && $managers) {
+                } else if (($date_from && $date_to) && count($managers)) {
                     if (($created_at >= $date_from && $created_at <= $date_to) &&
                         in_array($manager, $managers))
                         $items[] = $row;
