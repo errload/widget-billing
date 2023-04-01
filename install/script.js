@@ -2404,25 +2404,25 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     <div class="list-row js-list-row js-pager-list-item__1">
                                         <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
                                             <div class="content-table__item__inner" title="${ date }">
-                                                <span class="block-selectable">${ date }</span>
+                                                <span class="block-selectable date">${ date }</span>
                                             </div>
                                         </div>
                                         
                                         <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
                                             <div class="content-table__item__inner" title="${ autor }">
-                                                <span class="block-selectable">${ autor }</span>
+                                                <span class="block-selectable autor">${ autor }</span>
                                             </div>
                                         </div>
                                         
                                         <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
                                             <div class="content-table__item__inner" title="${ time }">
-                                                <span class="block-selectable">${ time }</span>
+                                                <span class="block-selectable time">${ time }</span>
                                             </div>
                                         </div>
                                         
                                         <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
                                             <div class="content-table__item__inner" title="${ sum }">
-                                                <span class="block-selectable">${ sum }р.</span>
+                                                <span class="block-selectable sum">${ sum }р.</span>
                                             </div>
                                         </div>
                                         
@@ -2474,13 +2474,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     
                                         <div class="list-row js-list-row js-pager-list-item__1">
                                             <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
-                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                <div class="content-table__item__inner" title="Общее количество затраченного времени">
                                                     <span class="block-selectable" style="display: flex; justify-content: right;">Общее количество затраченного времени</span>
                                                 </div>
                                             </div>
                                             
                                             <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
-                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                <div class="content-table__item__inner" title="${ houses } ч. ${ minutes } мин.">
                                                     <span class="block-selectable">
                                                         <span class="all__time__houses__results">${ houses }</span> ч.
                                                         <span class="all__time__minutes__results">${ minutes }</span> мин.
@@ -2497,13 +2497,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     
                                         <div class="list-row js-list-row js-pager-list-item__1">
                                             <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
-                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                <div class="content-table__item__inner" title="Общая сумма списания">
                                                     <span class="block-selectable" style="display: flex; justify-content: right;">Общая сумма списания</span>
                                                 </div>
                                             </div>
                                             
                                             <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
-                                                <div class="content-table__item__inner" title="bbbbbbbbbbb">
+                                                <div class="content-table__item__inner" title="${ all_sum } p.">
                                                     <span class="block-selectable">
                                                         <span class="all__sum__results">${ all_sum }</span> p.
                                                     </span>
@@ -3444,12 +3444,50 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // кнопка Экспорт
                 $('.export__excel .modal__export__btn').bind('click', function () {
-                    params = ['bb'];
+                    let results = [], all_time = [], all_sum = null;
 
                     // отключаем кнопку
                     $(this).removeClass('button-input_blue');
                     $(this).addClass('button-input-disabled');
                     $(this).unbind('click');
+
+
+
+
+
+
+
+                    // собираем данные таблицы
+                    $.each($('.list-row.js-list-row.js-pager-list-item__1'), function () {
+                        let date = $(this).find('.block-selectable.date').text(),
+                            autor = $(this).find('.block-selectable.autor').text(),
+                            time = $(this).find('.block-selectable.time').text(),
+                            sum = $(this).find('.block-selectable.sum').text(),
+                            link = $(this).find('a').text();
+
+                        if (!date) return;
+
+                        // удаляем букву рубля с точкой
+                        sum = sum.replace(/[^0-9]/g, '');
+                        // сохраняем в массив
+                        results.push([date, autor, time, sum, link]);
+                    });
+
+                    // если массив не пустой, сохраняем общую сумму и общее время
+                    if (results.length) {
+                        all_time.push([
+                            $('.list__table__holder .all__time__houses__results').text(),
+                            $('.list__table__holder .all__time__minutes__results').text(),
+                        ]);
+
+                        all_sum = $('.list__table__holder .all__sum__results').text();
+                    }
+
+
+
+
+
+
 
                     // создаем excel файл на сервере
                     $.ajax({
@@ -3458,7 +3496,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         data: {
                             'domain': document.domain,
                             'method': 'export_excel',
-                            'params': params
+                            'params': { results, all_time, all_sum }
                         },
                         dataType: 'json',
                         success: function (data) {
@@ -3483,7 +3521,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     </svg>
                                     <div class="modal-export__file-container" style="display: flex; flex-direction: column; flex: 1 0; align-items: flex-start; margin-left: 8px;">
                                         <div class="modal-export__file-info" style="display: flex; width: 100%; justify-content: space-between;">
-                                            <a class="modal-export__file-name" download="amocrm_export_leads_2023-04-01.xlsx" href="/download/export/544fbc4b-8610-4f08-ad4b-7d34dfaecbbd">export_2023-04-01.xlsx</a>
+                                            <a class="modal-export__file-name" download="export_billing.xlsx" href="https://integratorgroup.k-on.ru/andreev/billing/export_billing.xlsx">export_billing.xlsx</a>
                                             <span class="modal-export__file-size">5.49&nbsp;КБ&nbsp;/&nbsp;5&nbsp;строк</span>
                                         </div>
                                         <span class="modal-export__file-time" style="margin-left: 8px;">01.04.2023 в 15:06</span>
@@ -3491,7 +3529,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 </div>
                                 
                                 <div class="modal-body__actions">
-                                    <a download="amocrm_export_leads_2023-04-01.xlsx" href="/download/export/544fbc4b-8610-4f08-ad4b-7d34dfaecbbd">
+                                    <a download="export_billing.xlsx" href="https://integratorgroup.k-on.ru/andreev/billing/export_billing.xlsx">
                                         <button type="button" class="button-input button-input_blue modal-export__save-button" tabindex="">
                                             <span class="button-input-inner ">
                                                 <svg class="svg-icon svg-common--export--download-dims">

@@ -682,20 +682,140 @@
         require_once __DIR__ . '/../PHPExcel/Classes/PHPExcel.php';
         require_once __DIR__ . '/../PHPExcel/Classes/PHPExcel/Writer/Excel2007.php';
         $xls = new PHPExcel();
+        $file = new DateTime();
 
-        echo json_encode('bb');
+        // установка сводки документа
+        $xls->getProperties()->setTitle('Экспорт');
+        $xls->getProperties()->setCreator('Интегратор');
+        $xls->getProperties()->setManager('Гошгар Мехтиев');
+        $xls->getProperties()->setCompany('Интегратор групп');
+        $xls->getProperties()->setCreated((new DateTime())->format('Y-m-d'));
+
+        // создаем новый лист
+        $xls->setActiveSheetIndex(0);
+        $sheet = $xls->getActiveSheet();
+        $sheet->setTitle('Экспорт');
+        $sheet->getPageSetup()->setOrientation(PHPExcel_Worksheet_PageSetup::ORIENTATION_PORTRAIT);
+
+        // запись в ячейки
+        $sheet->setCellValue('A1', 'ДАТА');
+        $sheet->setCellValue('B1', 'АВТОР');
+        $sheet->setCellValue('C1', 'ВРЕМЯ');
+        $sheet->setCellValue('D1', 'СУММА');
+        $sheet->setCellValue('E1', 'ССЫЛКА НА ЗАДАЧУ');
+
+        // высота строки заголовка
+        $sheet->getRowDimension('1')->setRowHeight(30);
+        // выравнивание по центру по вертикали
+        $sheet->getStyle('A1')->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('B1')->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('C1')->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('D1')->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('E1')->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+
+        // жирный шрифт
+        $sheet->getStyle('A1')->getFont()->setBold(true);
+        $sheet->getStyle('B1')->getFont()->setBold(true);
+        $sheet->getStyle('C1')->getFont()->setBold(true);
+        $sheet->getStyle('D1')->getFont()->setBold(true);
+        $sheet->getStyle('E1')->getFont()->setBold(true);
+
+        // выравнивание по центру
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('B1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('C1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('D1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('E1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+
+        // если массив не пустой, пишем значения
+        if ($_POST['params']['results']) {
+            for ($i = 0; $i < count($_POST['params']['results']); $i++) {
+                $row = $i + 2;
+
+                $sheet->setCellValue('A' . $row, $_POST['params']['results'][$i][0]);
+                $sheet->setCellValue('B' . $row, $_POST['params']['results'][$i][1]);
+                $sheet->setCellValue('C' . $row, $_POST['params']['results'][$i][2]);
+                $sheet->setCellValue('D' . $row, $_POST['params']['results'][$i][3]);
+//                $sheet->setCellValue('E' . $row, $_POST['params']['results'][$i][4]);
+
+                // ссылка
+                $sheet->setCellValue('E' . $row, $_POST['params']['results'][$i][4]);
+                $sheet->getCell('E' . $row)->getHyperlink()->setUrl($_POST['params']['results'][$i][4]);
+
+                // синий цвет ссылки
+                $sheet->getStyle('E' . $row)->applyFromArray(
+                    array('font' => array('color' => array('rgb' => '0000FF')))
+                );
+
+                // высота строки
+                $sheet->getRowDimension($row)->setRowHeight(20);
+                // выравнивание по центру по вертикали
+                $sheet->getStyle('A' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $sheet->getStyle('B' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $sheet->getStyle('C' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $sheet->getStyle('D' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $sheet->getStyle('E' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            }
+
+            // общее количество затраченного времени
+            $time_row = count($_POST['params']['results']) + 3;
+            $all_time = $_POST['params']['all_time'][0][0] . ' ч. ' . $_POST['params']['all_time'][0][1] . ' мин.';
+
+            $sheet->mergeCells('A' . $time_row . ':D' . $time_row);
+            $sheet->setCellValue('A' . $time_row, 'Общее количество затраченного времени');
+            $sheet->setCellValue('E' . $time_row, $all_time);
+
+            // выравнивание по правому краю
+            $sheet->getStyle('A' . $time_row)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('E' . $time_row)->getFont()->setBold(true);
+
+            // высота строки
+            $sheet->getRowDimension($time_row)->setRowHeight(20);
+            // выравнивание по центру по вертикали
+            $sheet->getStyle('A' . $time_row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $sheet->getStyle('E' . $time_row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+
+            // общая сумма списания
+            $time_row += 1;
+            $all_sum = $_POST['params']['all_sum'] . ' р.';
+
+            $sheet->mergeCells('A' . $time_row . ':D' . $time_row);
+            $sheet->setCellValue('A' . $time_row, 'Общая сумма списания');
+            $sheet->setCellValue('E' . $time_row, $all_sum);
+
+            // выравнивание по правому краю и жирный шрифт
+            $sheet->getStyle('A' . $time_row)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('E' . $time_row)->getFont()->setBold(true);
+
+            // высота строки
+            $sheet->getRowDimension($time_row)->setRowHeight(20);
+            // выравнивание по центру по вертикали
+            $sheet->getStyle('A' . $time_row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $sheet->getStyle('E' . $time_row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+
+        }
+
+        // ширина столбцов
+        $sheet->getColumnDimension('A')->setWidth(15);
+        $sheet->getColumnDimension('B')->setWidth(35);
+        $sheet->getColumnDimension('C')->setWidth(15);
+        $sheet->getColumnDimension('D')->setWidth(15);
+        $sheet->getColumnDimension('E')->setWidth(80);
+
+        // авто переносы строк для столбца
+        $sheet->getStyle('A1')->getAlignment()->setWrapText(true);
+        $sheet->getStyle('B1')->getAlignment()->setWrapText(true);
+        $sheet->getStyle('C1')->getAlignment()->setWrapText(true);
+        $sheet->getStyle('D1')->getAlignment()->setWrapText(true);
+        $sheet->getStyle('E1')->getAlignment()->setWrapText(true);
 
 
 
-//        // создаем новый лист
-//        $xls->setActiveSheetIndex(0);
-//        $sheet = $xls->getActiveSheet();
-//        $sheet->setTitle('Название листа');
-//
-//        // сохраняем в файл
-//        $file = new DateTime();
-//        $file = '/export_' . $file->format('Y-m-d') . '.xlsx';
-//
-//        $objWriter = new PHPExcel_Writer_Excel2007($xls);
-//        $objWriter->save(__DIR__ . $file);
+
+        // сохраняем в файл
+        $file = '/export_billing.xlsx';
+        $objWriter = new PHPExcel_Writer_Excel2007($xls);
+        $objWriter->save(__DIR__ . $file);
+
+        print_r(json_encode($_POST['params']));
     }
