@@ -3488,8 +3488,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         },
                         dataType: 'json',
                         success: function (data) {
-                            console.log(data);
-
                             // очищаем окно экспорта
                             if ($('.modal__export__excel .modal-export__header').length) {
                                 $('.modal__export__excel .modal-export__header').remove();
