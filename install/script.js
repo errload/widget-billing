@@ -10,6 +10,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         this.userID = AMOCRM.constant('user').id;
         this.filter_date = null;
         this.filter_managers = [];
+        this.filter_results = []; // результирующий массив для экспорта
+        this.filter_all_time = null; // общее время для экспорта
+        this.filter_all_sum = null; // общая сумма для экспорта
 
         // получение настроек
         this.getConfigSettings = function () {
@@ -1897,10 +1900,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     </button>
                         
                                     <ul class="button-input__context-menu ">
-                                        <li class="button-input__context-menu__item  element__ js-list-export" id="export">
+                                        <li class="button-input__context-menu__item  element__ js-list-export" id="export" style="min-width: 120px;">
                                             <div class="button-input__context-menu__item__inner">
                                                 <span class="button-input__context-menu__item__icon-container">
-                                                    <svg class="button-input__context-menu__item__icon svg-icon svg-common--download-dims ">
+                                                    <svg class="button-input__context-menu__item__icon svg-icon svg-common--download-dims" style="justify-content: left;">
                                                         <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#common--download"></use>
                                                     </svg>
                                                 </span>
@@ -2310,6 +2313,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         },
                         dataType: 'json',
                         success: function (data) {
+                            self.filter_results = data;
+
                             // показываем количество строк и очищаем прошлый результат
                             $('.list-top-search__summary-text').text(`${ data.length } событий`);
                             if ($('.list__table__holder').length) $('.list__table__holder').remove();
@@ -2381,14 +2386,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             let all_sum = 0;
                             let null_time = new Date(2000, 0, 1, 0, 0, 0).getTime(); // 1.01.2000 00:00:00 timestamp
                             let all_time = 0;
+                            let timestamp = null;
 
                             $.each(data, function () {
                                 let date = this[9],
                                     autor = this[3],
                                     time = this[12],
                                     sum = this[7],
-                                    link = this[8],
-                                    timestamp = null;
+                                    link = this[8];
 
                                 date = date.split(' ')[0];
 
@@ -2435,7 +2440,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 `);
                             });
 
-                            // прибавляем общее затраченное время каждой записи к нулевому значению
+                            // прибавляем общее затраченное время всех записей к нулевому значению
                             all_time += null_time;
                             // получаем время
                             all_time = new Date(all_time);
@@ -2466,6 +2471,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 if (years % 4 === 0) houses += 364 * 24;
                                 else houses += 365 * 24;
                             }
+
+                            // результат для экспорта
+                            self.filter_all_time = `${ houses } ч. ${ minutes } мин.`;
+                            self.filter_all_sum = `${ all_sum } p.`;
 
                             // вывод итога таблицы
                             $('.list__table__holder').after(`
@@ -2557,6 +2566,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     // обнуляем значения фильтра
                     self.filter_date = null;
                     self.filter_managers = [];
+
+                    // обнуляем значения экспорта
+                    self.filter_results = [];
+                    self.filter_all_time = null;
+                    self.filter_all_sum = null;
 
                     // удаляем окно фильтра
                     $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
@@ -2703,6 +2717,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             // удаляем старый результат
                             if ($('.list__table__holder').length) $('.list__table__holder').remove();
 
+                            // обнуляем значения экспорта
+                            self.filter_results = [];
+                            self.filter_all_time = null;
+                            self.filter_all_sum = null;
+
                             // иначе обнуляем значениe даты и делаем запрос в БД
                         } else {
                             self.filter_date = null;
@@ -2730,6 +2749,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             self.filter_managers = [];
                             // удаляем старый результат
                             if ($('.list__table__holder').length) $('.list__table__holder').remove();
+
+                            // обнуляем значения экспорта
+                            self.filter_results = [];
+                            self.filter_all_time = null;
+                            self.filter_all_sum = null;
 
                             // иначе обнуляем массив менеджеров и делаем запрос в БД
                         } else {
@@ -3444,50 +3468,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // кнопка Экспорт
                 $('.export__excel .modal__export__btn').bind('click', function () {
-                    let results = [], all_time = [], all_sum = null;
-
                     // отключаем кнопку
                     $(this).removeClass('button-input_blue');
                     $(this).addClass('button-input-disabled');
                     $(this).unbind('click');
-
-
-
-
-
-
-
-                    // собираем данные таблицы
-                    $.each($('.list-row.js-list-row.js-pager-list-item__1'), function () {
-                        let date = $(this).find('.block-selectable.date').text(),
-                            autor = $(this).find('.block-selectable.autor').text(),
-                            time = $(this).find('.block-selectable.time').text(),
-                            sum = $(this).find('.block-selectable.sum').text(),
-                            link = $(this).find('a').text();
-
-                        if (!date) return;
-
-                        // удаляем букву рубля с точкой
-                        sum = sum.replace(/[^0-9]/g, '');
-                        // сохраняем в массив
-                        results.push([date, autor, time, sum, link]);
-                    });
-
-                    // если массив не пустой, сохраняем общую сумму и общее время
-                    if (results.length) {
-                        all_time.push([
-                            $('.list__table__holder .all__time__houses__results').text(),
-                            $('.list__table__holder .all__time__minutes__results').text(),
-                        ]);
-
-                        all_sum = $('.list__table__holder .all__sum__results').text();
-                    }
-
-
-
-
-
-
 
                     // создаем excel файл на сервере
                     $.ajax({
@@ -3496,7 +3480,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         data: {
                             'domain': document.domain,
                             'method': 'export_excel',
-                            'params': { results, all_time, all_sum }
+                            'params': {
+                                'filter_results': self.filter_results,
+                                'filter_all_time': self.filter_all_time,
+                                'filter_all_sum': self.filter_all_sum
+                            }
                         },
                         dataType: 'json',
                         success: function (data) {
@@ -3522,9 +3510,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     <div class="modal-export__file-container" style="display: flex; flex-direction: column; flex: 1 0; align-items: flex-start; margin-left: 8px;">
                                         <div class="modal-export__file-info" style="display: flex; width: 100%; justify-content: space-between;">
                                             <a class="modal-export__file-name" download="export_billing.xlsx" href="https://integratorgroup.k-on.ru/andreev/billing/export_billing.xlsx">export_billing.xlsx</a>
-                                            <span class="modal-export__file-size">5.49&nbsp;КБ&nbsp;/&nbsp;5&nbsp;строк</span>
+                                            <span class="modal-export__file-size"></span>
                                         </div>
-                                        <span class="modal-export__file-time" style="margin-left: 8px;">01.04.2023 в 15:06</span>
+                                        <span class="modal-export__file-time" style="margin-left: 8px;"></span>
                                     </div>
                                 </div>
                                 
@@ -3543,6 +3531,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             `);
 
                             $('.modal__export__excel').css('min-height', '150px');
+
+                            // размер файла
+                            $('.modal-export__file-container .modal-export__file-size').text(`${ data.filesize } / ${ data.count } строк`);
+                            // дата создания файла
+                            $('.modal-export__file-container .modal-export__file-time').text(`${ data.date } в ${ data.time }`);
                         }
                     });
                 });
