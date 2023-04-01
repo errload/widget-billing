@@ -2310,16 +2310,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         },
                         dataType: 'json',
                         success: function (data) {
-                            // если масссив пустой, обнуляем количество строк в фильтре, удаляем старый результат и выходим
-                            if (!data.length) {
-                                $('.list-top-search__summary-text').text('0 событий');
-                                if ($('.list__table__holder').length) $('.list__table__holder').remove();
-                                return;
-                            }
-
                             // показываем количество строк и очищаем прошлый результат
                             $('.list-top-search__summary-text').text(`${ data.length } событий`);
                             if ($('.list__table__holder').length) $('.list__table__holder').remove();
+
+                            // если масссив пустой, обнуляем количество строк в фильтре, удаляем старый результат и выходим
+                            if (!data.length) return;
 
                             // заголовок
                             $('.safety_settings__section_new.tasks_search').after(`
@@ -3392,7 +3388,126 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             // клик по меню экспорт
             $('.settings__search .settings__search__menu #export').unbind('click');
             $('.settings__search .settings__search__menu #export').bind('click', function (e) {
-                console.log('export');
+                // модалка экспорта
+                new Modal({
+                    class_name: 'export__excel',
+                    init: function ($modal_body) {
+                        var $this = $(this);
+                        $modal_body
+                            .trigger('modal:loaded')
+                            .html(`<div class="modal__export__excel" style="width: 100%; min-height: 180px;"></div>`)
+                            .trigger('modal:centrify')
+                            .append('');
+                    },
+                    destroy: function () {}
+                });
+
+                // кнопки Отменить и Экспорт
+                $('.modal__export__excel').append(`
+                    <div class="modal-export__header">
+                        <h3 class="modal-export__header-title">Экспорт</h3>
+                        <div class="modal-export__header-buttons">
+                            <button type="button" class="button-input button-cancel modal__cancel__btn" tabindex="" style="">
+                                <span>Отменить</span>
+                            </button>
+                            <button type="button" class="button-input button-input_blue modal-export__create-button modal__export__btn" tabindex="">
+                                <span class="button-input-inner">
+                                    <span class="button-input-inner__text">Экспорт</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                `);
+
+                // картинки экспорта
+                $('.modal__export__excel').append(`
+                    <div class="modal-export__formats">
+                        <label class="modal-export__format" for="export_excel" style="cursor: auto;">
+                            <div class="modal-export__format-icon">
+                                <svg class="svg-icon svg-common--export--excel-dims">
+                                    <use xlink:href="#common--export--excel"></use>
+                                </svg>
+                            </div>
+                            <div class="modal-export__format-content">
+                                <div class="modal-export__format-title">Excel</div>
+                                <div class="modal-export__format-text">Экспорт в файл формата Microsoft Excel</div>
+                            </div>
+                        </label>
+                    </div>
+                `);
+
+                // кнопка Отменить
+                $('.export__excel .modal__cancel__btn').unbind('click');
+                $('.export__excel .modal__cancel__btn').bind('click', function () {
+                    if ($('.export__excel').length) $('.export__excel').remove();
+                });
+
+                // кнопка Экспорт
+                $('.export__excel .modal__export__btn').bind('click', function () {
+                    params = ['bb'];
+
+                    // отключаем кнопку
+                    $(this).removeClass('button-input_blue');
+                    $(this).addClass('button-input-disabled');
+                    $(this).unbind('click');
+
+                    // создаем excel файл на сервере
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'post',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'export_excel',
+                            'params': params
+                        },
+                        dataType: 'json',
+                        success: function (data) {
+                            console.log(data);
+
+                            // очищаем окно экспорта
+                            if ($('.modal__export__excel .modal-export__header').length) {
+                                $('.modal__export__excel .modal-export__header').remove();
+                            }
+
+                            if ($('.modal__export__excel .modal-export__formats').length) {
+                                $('.modal__export__excel .modal-export__formats').remove();
+                            }
+
+                            // вставляем данные загрузки документа
+                            $('.modal__export__excel').append(`
+                                <h2 class="modal-body__caption head_2">Экспорт завершен</h2>
+                                
+                                <div class="modal-export__last-file" style="display: flex; flex-direction: row; align-items: center;">
+                                    <svg class="svg-icon svg-common--export--load-file-dims" style="width: 29px; height: 35px;">
+                                        <use xlink:href="#common--export--load-file"></use>
+                                    </svg>
+                                    <div class="modal-export__file-container" style="display: flex; flex-direction: column; flex: 1 0; align-items: flex-start; margin-left: 8px;">
+                                        <div class="modal-export__file-info" style="display: flex; width: 100%; justify-content: space-between;">
+                                            <a class="modal-export__file-name" download="amocrm_export_leads_2023-04-01.xlsx" href="/download/export/544fbc4b-8610-4f08-ad4b-7d34dfaecbbd">export_2023-04-01.xlsx</a>
+                                            <span class="modal-export__file-size">5.49&nbsp;КБ&nbsp;/&nbsp;5&nbsp;строк</span>
+                                        </div>
+                                        <span class="modal-export__file-time" style="margin-left: 8px;">01.04.2023 в 15:06</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="modal-body__actions">
+                                    <a download="amocrm_export_leads_2023-04-01.xlsx" href="/download/export/544fbc4b-8610-4f08-ad4b-7d34dfaecbbd">
+                                        <button type="button" class="button-input button-input_blue modal-export__save-button" tabindex="">
+                                            <span class="button-input-inner ">
+                                                <svg class="svg-icon svg-common--export--download-dims">
+                                                    <use xlink:href="#common--export--download"></use>
+                                                </svg>
+                                                <span class="button-input-inner__text">Скачать файл</span>
+                                            </span>
+                                        </button>
+                                    </a>
+                                </div>
+                            `);
+
+                            $('.modal__export__excel').css('min-height', '150px');
+                        }
+                    });
+                });
             });
         }
 

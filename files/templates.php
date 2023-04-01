@@ -675,3 +675,27 @@
 
         print_r(json_encode($result));
     }
+
+    // экспорт в excel
+    if ($_POST['method'] == 'export_excel' && $Config->CheckToken()) {
+        // создаем документ
+        require_once __DIR__ . '/../PHPExcel/Classes/PHPExcel.php';
+        require_once __DIR__ . '/../PHPExcel/Classes/PHPExcel/Writer/Excel2007.php';
+        $xls = new PHPExcel();
+
+        echo json_encode('bb');
+
+
+
+//        // создаем новый лист
+//        $xls->setActiveSheetIndex(0);
+//        $sheet = $xls->getActiveSheet();
+//        $sheet->setTitle('Название листа');
+//
+//        // сохраняем в файл
+//        $file = new DateTime();
+//        $file = '/export_' . $file->format('Y-m-d') . '.xlsx';
+//
+//        $objWriter = new PHPExcel_Writer_Excel2007($xls);
+//        $objWriter->save(__DIR__ . $file);
+    }
