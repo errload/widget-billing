@@ -834,6 +834,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         const modalTimer = function () {
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
+
                 // очищаем интервал
                 self.clearIntervals();
 
@@ -845,27 +846,225 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
 
 
-                // функция добавления ссылки на добавления таймера
-                const addLinkTimer = function () {
-                    $('.modal__timer').append(`
-                            <a href="" class="modal__add__timer" style="margin-top: 5px; text-decoration: none; color: #1375ab;">
-                                Добавить таймер
+                // функция добавления таймера
+                const addTimer = function (timer_ID = null, link_task = null) {
+                    // если ID не передан, создаем временный рандомный
+                    if (!timer_ID) {
+                        let random_ID = Math.floor(Math.random() * 999999);
+
+                        if ($('.modal__timer .timer__item').length) {
+                            while ($(`.modal__timer .timer__item[data-id="${random_ID}"]`).length) {
+                                random_ID = Math.floor(Math.random() * 999999);
+                            }
+                        }
+
+                        timer_ID = random_ID;
+                    }
+
+                    // ссылка на задачу
+                    var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                        name: 'modal-input-link-task',
+                        class_name: 'modal__input__link__task',
+                        value: '',
+                        placeholder: 'вставьте ссылку на задачу'
+                    });
+
+                    // кнопки таймера
+                    var startTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                            class_name: 'start__timer__btn',
+                            text: 'Старт',
+                        }),
+                        pauseTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                            class_name: 'pause__timer__btn',
+                            text: 'Пауза',
+                        }),
+                        stopTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                            class_name: 'stop__timer__btn',
+                            text: 'Стоп',
+                        });
+
+                    // таймер
+                    var timerWrapper = `
+                        <div class="modal__link__task__wrapper" style="width: 100%; margin-top: 15px;">
+                            <span style="width: 100%;">Ссылка на задачу:</span><br/>
+                            ${ inputLinkTask }
+                        </div>
+                        <div class="modal__timer__wrapper" style="width: 100%; margin-top: 10px; display: flex; flex-direction: row;">
+                            <span style="font-size: 24px; margin-right: 20px;" class="time__timer">00:00:00</span>
+                            <div class="btns__timer" style="display: flex; flex-direction: row;">
+                                ${ startTimerBtn } ${ pauseTimerBtn } ${ stopTimerBtn }
+                            </div>
+                        </div>
+                    `;
+
+                    // вставляем таймер
+                    $('.modal__timer .modal__link__add__timer__wrapper').before(`
+                        <div class="timer__item" data-id="${ timer_ID }" style="width: 100%;">${ timerWrapper }</div>
+                    `);
+
+                    // выравниваем кнопки и инпут
+                    $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css({ 'width': '100%', 'margin-top': '3px' });
+                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
+                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
+                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
+
+                    // возвращаем актуальный цвет рамки в случае ошибки
+                    $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).unbind('input');
+                    $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).bind('input', () => {
+                        $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css('border-color', '#dbdedf');
+                    });
+
+                    // показываем актуальную ссылку на задачу, если таймер был ранее запущен
+                    if (!link_task) $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val('');
+                    else {
+                        $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val(link_task);
+                        $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css('display', 'none');
+                        $(`.timer__item[data-id="${ timer_ID }"] .modal__link__task__wrapper`).append(`
+                            <a href="${ link_task }" class="modal__link__task" style="
+                                margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                                ${ link_task }
                             </a>
                         `);
+                    }
 
-                    $('.modal__timer .modal__add__timer').unbind('click');
-                    $('.modal__timer .modal__add__timer').bind('click', function (e) {
-                        e.preventDefault();
-                        console.log('add timer');
+                    // события кнопок
+                    timerStart();
+                    timerPause();
+                }
+
+
+
+
+
+
+
+
+                // функция кнопки старт
+                const timerStart = function (e) {
+                    $('.start__timer__btn').unbind('click');
+                    $('.start__timer__btn').bind('click', function (e) {
+                        self.clearIntervals();
+
+                        // ID таймера
+                        let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
+
+                        // если ссылки на задачу нет, отключаем кнопку
+                        if ($(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val().trim().length === 0) {
+                            $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css('border-color', '#f37575');
+                            $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val('').focus();
+                            return false;
+                        }
+
+                        $.ajax({
+                            url: url_link_t,
+                            method: 'post',
+                            data: {
+                                'domain': document.domain,
+                                'method': 'timer_start',
+                                'essence_id': essenseID,
+                                'user_id': userID,
+                                'link_task': $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val().trim(),
+                                'timezone': timezone,
+                                'timer_ID': timer_ID
+                            },
+                            dataType: 'json',
+                            success: function (data) {
+                                // присваиваем таймеру ID записи
+                                $(`.timer__item[data-id="${ timer_ID }"]`).attr('data-id', data.id);
+
+                                // показываем кнопки паузы и стоп
+                                $(`.timer__item[data-id="${ data.id }"] .start__timer__btn`).css('display', 'none');
+                                $(`.timer__item[data-id="${ data.id }"] .pause__timer__btn`).css('display', 'block');
+                                $(`.timer__item[data-id="${ data.id }"] .stop__timer__btn`).css('display', 'block');
+
+                                // обновляем ссылку на задачу
+                                $(`.timer__item[data-id="${ data.id }"] .modal__input__link__task`).val(data.link_task);
+                                $(`.timer__item[data-id="${ data.id }"] .modal__input__link__task`).css('display', 'none');
+                                if (!$(`.timer__item[data-id="${ data.id }"] .modal__link__task`).length) {
+                                    $(`.timer__item[data-id="${ data.id }"] .modal__link__task__wrapper`).append(`<a href="${ data.link_task }" class="modal__link__task" style="
+                                            margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                                            ${ data.link_task }
+                                        </a>
+                                    `);
+                                }
+
+                                // получаем время таймера
+                                var date = new Date();
+                                var time = data.time_work.split(' ');
+                                time = time[1].split(':');
+                                date.setHours(time[0]);
+                                date.setMinutes(time[1]);
+                                date.setSeconds(time[2]);
+
+                                // запускаем интервал
+                                interval = setInterval(() => {
+                                    // если время максимальное, останавливаем таймер
+                                    if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
+                                        clearInterval(interval);
+
+                                        // показываем кнопку сохранить
+                                        $(`.timer__item[data-id="${ data.id }"] .start__timer__btn`).css('display', 'none');
+                                        $(`.timer__item[data-id="${ data.id }"] .pause__timer__btn`).css('display', 'none');
+                                        $(`.timer__item[data-id="${ data.id }"] .stop__timer__btn`).css('display', 'block');
+                                        $(`.timer__item[data-id="${ data.id }"] .stop__timer__btn`).text('Сохранить');
+
+                                        // обновляем время на сервере на максимальное
+                                        $.ajax({
+                                            url: url_link_t,
+                                            method: 'post',
+                                            data: {
+                                                'domain': document.domain,
+                                                'method': 'timer_auto_stop',
+                                                'timer_id': data.id
+                                            },
+                                            dataType: 'json',
+                                            success: function (data) {}
+                                        });
+
+                                        return false;
+                                    }
+
+                                    // +1 сек к времени в интервале
+                                    date.setSeconds(date.getSeconds() + 1);
+                                    $(`.timer__item[data-id="${ data.id }"] .modal__timer__wrapper .time__timer`).text(date.toLocaleTimeString());
+                                }, 1000);
+                            }
+                        });
                     });
                 }
 
-                // функция удаления ссылки на добавление таймера
-                const removeLinkTimer = function () {
-                    if ($('.modal__timer .modal__add__timer').length) {
-                        $('.modal__timer .modal__add__timer').remove();
-                    }
+                // функция кнопки пауза
+                const timerPause = function (e) {
+                    $('.pause__timer__btn').unbind('click');
+                    $('.pause__timer__btn').bind('click', function (e) {
+                        self.clearIntervals();
+
+                        // ID таймера
+                        let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
+
+                        // показываем кнопки старт и стоп
+                        $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'block');
+                        $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
+                        $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+
+                        // обновляем значение таймера на сервере
+                        $.ajax({
+                            url: url_link_t,
+                            method: 'post',
+                            data: {
+                                'domain': document.domain,
+                                'method': 'timer_pause',
+                                'essence_id': essenseID,
+                                'user_id': userID,
+                                'link_task': $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val().trim()
+                            },
+                            dataType: 'json',
+                            success: function (data) {}
+                        });
+                    });
                 }
+
+
 
 
 
@@ -898,10 +1097,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                                    <div class="modal__timer" style="width: 100%; min-height: 280px; border: 0px solid red;">
-                                        <h2 class="modal__body__caption head_2">Таймер</h2>
-                                    </div>
-                                `)
+                                <div class="modal__timer" style="width: 100%; min-height: 280px; border: 0px solid red;">
+                                    <h2 class="modal__body__caption head_2">Таймер</h2>
+                                </div>
+                            `)
                             .trigger('modal:centrify')
                             .append('');
                     },
@@ -921,11 +1120,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.modal__link__task__wrapper').css('display', 'none');
                             $('.modal__timer__wrapper').css('display', 'none');
                             $('.modal__body__caption').after(`
-                                    <div class="noIsAuth" style="
-                                        display: flex; align-items: center; justify-content: center; height: 150px;">
-                                        Виджет не авторизован<br/>
-                                    </div>
-                                `);
+                                <div class="noIsAuth" style="
+                                    display: flex; align-items: center; justify-content: center; height: 150px;">
+                                    Виджет не авторизован<br/>
+                                </div>
+                            `);
                         }
                     }
                 });
@@ -937,13 +1136,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 $('.modal__timer').append(`
-                        <div class="right__title" style="position: absolute; right: 23px; margin-top: -20px; display: flex; flex-direction: row;">
-                            <div class="right__history" style="padding-right: 12px; border-right: 1px solid #dbdedf; display: none;">
-                                <a href="" class="hystory__link" style="text-decoration: none; color: #1375ab;">История</a>
-                            </div>
-                            <div class="right__close" style="padding-left: 5px;">${ cancelBtn }</div>
+                    <div class="right__title" style="position: absolute; right: 23px; margin-top: -20px; display: flex; flex-direction: row;">
+                        <div class="right__history" style="padding-right: 12px; border-right: 1px solid #dbdedf; display: none;">
+                            <a href="" class="hystory__link" style="text-decoration: none; color: #1375ab;">История</a>
                         </div>
-                    `);
+                        <div class="right__close" style="padding-left: 5px;">${ cancelBtn }</div>
+                    </div>
+                `);
 
                 $('.modal__cancelBtn__timer').css({ 'margin-top': '-7px', 'padding-bottom': '3px' });
                 $('.right__title .right__history').bind('click', modalHistory);
@@ -953,17 +1152,17 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 // ссылка на проект
                 var linkProjectWrapper = `<div class="modal__link__project__wrapper" style="
-                            width: 100%; margin-top: 20px;
-                        ">
-                        <span style="width: 100%;">Ссылка на проект:</span><br/>
-                        <a href="#" class="modal__link__project" style="
-                            margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
-                        </a>
-                    </div>`;
+                        width: 100%; margin-top: 20px;
+                    ">
+                    <span style="width: 100%;">Ссылка на проект:</span><br/>
+                    <a href="#" class="modal__link__project" style="
+                        margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                    </a>
+                </div>`;
 
                 var changeLinkProject = `<a href="#" class="change__link__project" style="
-                        text-decoration: none; color: #6b6d72;">&nbsp;(изменить)
-                    </a>`;
+                    text-decoration: none; color: #6b6d72;">&nbsp;(изменить)
+                </a>`;
 
                 $('.modal__timer').append(linkProjectWrapper);
                 $('.modal__link__project').attr('href', $('.modal__link__project').text());
@@ -1005,10 +1204,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             dataType: 'json',
                             success: function (data) {
                                 $('.modal__link__project__wrapper').append(`
-                                        <a href="#" class="modal__link__project" style="
-                                            margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
-                                        </a>
-                                    `);
+                                    <a href="#" class="modal__link__project" style="
+                                        margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                                    </a>
+                                `);
                                 $('.modal__link__project').text(data);
                                 $('.modal__link__project').attr('href', data);
                                 $('.modal__link__project').after(changeLinkProject);
@@ -1038,109 +1237,133 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     }
                 });
 
+                // ссылка на добавление таймера
+                $('.modal__timer').append(`
+                    <div class="modal__link__add__timer__wrapper" style="width: 100%; margin-top: 10px;">
+                        <a href="" class="modal__link__add__timer" style="text-decoration: none; color: #1375ab;">
+                            Добавить таймер
+                        </a>
+                    </div>
+                `);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-                // ссылка на задачу
-                var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                    name: 'modal-input-link-task',
-                    class_name: 'modal__input__link__task',
-                    value: '',
-                    placeholder: 'вставьте ссылку на задачу'
+                $('.modal__timer .modal__link__add__timer').unbind('click');
+                $('.modal__timer .modal__link__add__timer').bind('click', function (e) {
+                    e.preventDefault();
+                    addTimer();
                 });
 
-                var linkTaskWrapper = `<div class="modal__link__task__wrapper" style="width: 100%; margin-top: 10px;">
-                        <span style="width: 100%;">Ссылка на задачу:</span><br/>
-                        ${ inputLinkTask }
-                    </div>`;
 
-                $('.modal__timer').append('<div class="timer__item" style="width: 100%;"></div>');
-                $('.modal__timer .timer__item').append(linkTaskWrapper);
-                $('.modal__input__link__task').css({ 'width': '100%', 'margin-top': '3px' });
 
-                // возвращаем актуальный цвет рамки в случае ошибки
-                $('.modal__input__link__task').unbind('input');
-                $('.modal__input__link__task').bind('input', () => {
-                    $('.modal__input__link__task').css('border-color', '#dbdedf');
-                });
 
-                // показываем актуальную ссылку на задачу, если таймер был ранее запущен
+
+
+
+
+
+
+                // поиск запущенных таймеров
                 $.ajax({
                     url: url_link_t,
                     method: 'post',
                     data: {
                         'domain': document.domain,
-                        'method': 'link_task',
+                        'method': 'search_timer',
                         'essence_id': essenseID,
                         'user_id': userID
                     },
                     dataType: 'json',
                     success: function (data) {
-                        if (!data) $('.modal__input__link__task').val('');
+                        // если для сущности и пользователя таймеров нет, создаем новый
+                        if (!data.length) {
+                            addTimer();
+
+                            // показываем кнопку старта
+                            $('.modal__timer .time__timer').text('00:00:00');
+                            $('.modal__timer .start__timer__btn').css('display', 'block');
+                            $('.modal__timer .pause__timer__btn').css('display', 'none');
+                            $('.modal__timer .stop__timer__btn').css('display', 'none');
+                        }
+
+                        // иначе отображаем
                         else {
-                            $('.modal__input__link__task').val(data);
-                            $('.modal__input__link__task').css('display', 'none');
-                            $('.modal__link__task__wrapper').append(`
-                                    <a href="${ data }" class="modal__link__task" style="
-                                        margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
-                                        ${ data }
-                                    </a>
-                                `);
+                            console.log(data)
+
+                            $.each(data, function () {
+                                let timer_ID = this[0],
+                                    link_task = this[8],
+                                    time_work = this[12],
+                                    status = this[13];
+
+                                // таймер
+                                addTimer(timer_ID, link_task);
+
+                                // обновленное время
+                                var date = new Date();
+                                var time = time_work.split(' ');
+                                time = time[1].split(':');
+                                date.setHours(time[0]);
+                                date.setMinutes(time[1]);
+                                date.setSeconds(time[2]);
+                                $(`.timer__item[data-id="${ timer_ID }"] .time__timer`).text(date.toLocaleTimeString());
+
+                                if (status === 'pause') {
+                                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'block');
+                                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
+                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+                                }
+
+                                if (status === 'stop') {
+                                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
+                                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
+                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).text('Сохранить');
+                                }
+
+                                // если таймер запущен, запускаем интервал
+                                if (status === 'start') {
+                                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
+                                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'block');
+                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+
+                                    interval = setInterval(() => {
+                                        // если время максимальное, останавливаем таймер
+                                        if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
+                                            clearInterval(interval);
+                                            // показываем кнопку сохранить
+                                            $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
+                                            $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
+                                            $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+                                            $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).text('Сохранить');
+
+                                            // обновляем время на сервере на максимальное
+                                            $.ajax({
+                                                url: url_link_t,
+                                                method: 'post',
+                                                data: {
+                                                    'domain': document.domain,
+                                                    'method': 'timer_auto_stop',
+                                                    'timer_id': timer_ID
+                                                },
+                                                dataType: 'json',
+                                                success: function (data) {}
+                                            });
+
+                                            return false;
+                                        }
+
+                                        // +1 сек к времени в интервале
+                                        date.setSeconds(date.getSeconds() + 1);
+                                        $(`.timer__item[data-id="${ timer_ID }"] .time__timer`).text(date.toLocaleTimeString());
+                                    }, 1000);
+                                }
+                            });
                         }
                     }
                 });
 
-                /* ###################################################################### */
 
-                // таймер
-                var startTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                        class_name: 'start__timer__btn',
-                        text: 'Старт',
-                    }),
-                    pauseTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                        class_name: 'pause__timer__btn',
-                        text: 'Пауза',
-                    }),
-                    stopTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                        class_name: 'stop__timer__btn',
-                        text: 'Стоп',
-                    });
 
-                var timerWrapper = `<div class="modal__timer__wrapper" style="width: 100%; margin-top: 10px; display: flex; flex-direction: row;">
-                        <span style="font-size: 24px; margin-right: 20px;" class="time__timer">00:00:00</span>
-                        <div class="btns__timer" style="display: flex; flex-direction: row;">
-                            ${ startTimerBtn } ${ pauseTimerBtn } ${ stopTimerBtn }
-                        </div>
-                    </div>`;
 
-                $('.modal__timer .timer__item').append(timerWrapper);
-                $('.start__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
-                $('.pause__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
-                $('.stop__timer__btn').css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
-
-                // ссылка на добавление таймера
-                $('.modal__timer .timer__item').after(`
-                        <a href="" class="modal__add__timer" style="margin-top: 5px; text-decoration: none; color: #1375ab;">
-                            Добавить таймер
-                        </a>
-                    `);
-
-                $('.modal__timer .modal__add__timer').unbind('click');
-                $('.modal__timer .modal__add__timer').bind('click', function (e) {
-                    e.preventDefault();
-                    console.log('add timer');
-                });
 
 
 

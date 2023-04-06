@@ -119,8 +119,8 @@
 
     /* ##################################################################### */
 
-    // получаем ссылку на задачу
-    if ($_POST['method'] == 'link_task' && $Config->CheckToken()) {
+    // получение существующих таймеров
+    if ($_POST['method'] == 'search_timer' && $Config->CheckToken()) {
         $select = '
             SELECT * 
             FROM billing_timer 
@@ -130,135 +130,239 @@
         ';
 
         $result = $mysqli->query($select);
-        if (!$result->num_rows) $result = '';
-        else {
-            $result = $result->fetch_array();
-            $result = $result['link_task'];
-        }
 
-        echo json_encode($result);
-    }
-
-    /* ##################################################################### */
-
-    // данные таймера
-    if ($_POST['method'] == 'timer' && $Config->CheckToken()) {
-        $select = '
-            SELECT * 
-            FROM billing_timer 
-            WHERE user_id = "' . $_POST['user_id'] . '" 
-                AND essence_id = "' . $_POST['essence_id'] . '"
-                AND status != "finish"
-        ';
-
-        $result = $mysqli->query($select);
         if (!$result->num_rows) {
             echo json_encode(false);
             return false;
         }
-        $result = $result->fetch_assoc();
 
-        if ($result['status'] === 'start') {
+        $result = $result->fetch_all();
+
+        foreach ($result as $key => $timer) {
             // разнца между стартом и паузой
-            $time_start = new DateTime($result['time_start'], new DateTimeZone($result['timezone']));
-            $time_now = new DateTime('now', new DateTimeZone($result['timezone']));
-            $time_diff = $time_now->diff($time_start);
+            if ($timer[13] === 'start') {
+                // разнца между стартом и паузой
+                $time_start = new DateTime($timer[12], new DateTimeZone($timer[10]));
+                $time_now = new DateTime('now', new DateTimeZone($timer[10]));
+                $time_diff = $time_now->diff($time_start);
 
-            // добавляем разницу к таймеру
-            $time_work = new DateTime($result['time_work']);
-            $dateInterval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
-            $time_work->add($dateInterval)->format('d.m.Y H:i:s');
-        } else $time_work = new DateTime($result['time_work']);
+                // добавляем разницу к таймеру
+                $time_work = new DateTime($timer[12]);
+                $dateInterval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
+                $time_work->add($dateInterval)->format('d.m.Y H:i:s');
+            } else $time_work = new DateTime($timer[12]);
 
-        // если разница больше суток, дату ставим 23:59:59 как максимальную
-        if ($time_work->format('d.m.Y') !== '01.01.2000') {
-            $time_work = new DateTime('01.01.2000 23:59:59');
+            // если разница больше суток, дату ставим 23:59:59 как максимальную
+            if ($time_work->format('d.m.Y') !== '01.01.2000') {
+                $time_work = new DateTime('01.01.2000 23:59:59');
 
-            // обновляем время таймера
-            $update = '
-                UPDATE billing_timer
-                SET time_start = "",
-                    time_work = "' . $time_work->format('d.m.Y H:i:s') . '",
-                    status = "stop"
-                WHERE essence_id = "' . $_POST['essence_id'] . '"
-                    AND user_id = "' . $_POST['user_id'] . '"
-                    AND status != "finish"
-            ';
-            $mysqli->query($update);
+                // обновляем время таймера
+                $update = '
+                    UPDATE billing_timer
+                    SET time_start = "",
+                        time_work = "' . $time_work->format('d.m.Y H:i:s') . '",
+                        status = "stop"
+                    WHERE id = "' . $timer[0] . '"
+                ';
+
+                $mysqli->query($update);
+            }
+
+            // новое значение времени
+            $result[$key][12] = $time_work->format('d.m.Y H:i:s');
         }
 
-        $result = $mysqli->query($select)->fetch_assoc();
-        echo json_encode(['time_work' => $time_work->format('d.m.Y H:i:s'), 'status' => $result['status']]);
+        print_r(json_encode($result));
     }
+
+
+
+
+
+
+
+
+
+    /* ##################################################################### */
+
+//    // получаем ссылку на задачу
+//    if ($_POST['method'] == 'link_task' && $Config->CheckToken()) {
+//        $select = '
+//            SELECT *
+//            FROM billing_timer
+//            WHERE user_id = "' . $_POST['user_id'] . '"
+//                AND essence_id = "' . $_POST['essence_id'] . '"
+//                AND status != "finish"
+//        ';
+//
+//        $result = $mysqli->query($select);
+//        if (!$result->num_rows) $result = '';
+//        else {
+//            $result = $result->fetch_array();
+//            $result = $result['link_task'];
+//        }
+//
+//        echo json_encode($result);
+//    }
+
+    /* ##################################################################### */
+
+//    // данные таймера
+//    if ($_POST['method'] == 'timer' && $Config->CheckToken()) {
+//        $select = '
+//            SELECT *
+//            FROM billing_timer
+//            WHERE user_id = "' . $_POST['user_id'] . '"
+//                AND essence_id = "' . $_POST['essence_id'] . '"
+//                AND status != "finish"
+//        ';
+//
+//        $result = $mysqli->query($select);
+//
+//        if (!$result->num_rows) {
+//            echo json_encode(false);
+//            return false;
+//        }
+//
+//        $result = $result->fetch_assoc();
+//
+//        if ($result['status'] === 'start') {
+//            // разнца между стартом и паузой
+//            $time_start = new DateTime($result['time_start'], new DateTimeZone($result['timezone']));
+//            $time_now = new DateTime('now', new DateTimeZone($result['timezone']));
+//            $time_diff = $time_now->diff($time_start);
+//
+//            // добавляем разницу к таймеру
+//            $time_work = new DateTime($result['time_work']);
+//            $dateInterval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
+//            $time_work->add($dateInterval)->format('d.m.Y H:i:s');
+//        } else $time_work = new DateTime($result['time_work']);
+//
+//        // если разница больше суток, дату ставим 23:59:59 как максимальную
+//        if ($time_work->format('d.m.Y') !== '01.01.2000') {
+//            $time_work = new DateTime('01.01.2000 23:59:59');
+//
+//            // обновляем время таймера
+//            $update = '
+//                UPDATE billing_timer
+//                SET time_start = "",
+//                    time_work = "' . $time_work->format('d.m.Y H:i:s') . '",
+//                    status = "stop"
+//                WHERE essence_id = "' . $_POST['essence_id'] . '"
+//                    AND user_id = "' . $_POST['user_id'] . '"
+//                    AND status != "finish"
+//            ';
+//            $mysqli->query($update);
+//        }
+//
+//        $result = $mysqli->query($select)->fetch_assoc();
+//        echo json_encode(['time_work' => $time_work->format('d.m.Y H:i:s'), 'status' => $result['status']]);
+//    }
 
     // timer start
     if ($_POST['method'] == 'timer_start' && $Config->CheckToken()) {
-        // текущее время
-        $tz = $_POST['timezone'];
-        $dt = new DateTime('now', new DateTimeZone($tz));
-        $dt->setTimestamp(time());
-
+        // ставим остальные запущенные таймеры на паузу
         $select = '
             SELECT * 
             FROM billing_timer 
             WHERE user_id = "' . $_POST['user_id'] . '" 
                 AND essence_id = "' . $_POST['essence_id'] . '"
-                AND status != "finish"
-        ';
-        $insert = '
-            INSERT INTO billing_timer 
-            VALUES(
-                null,
-                "' . $_POST['essence_id'] . '",
-                "' . $_POST['user_id'] . '",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "' . $_POST['link_task'] . '",
-                "' . $dt->format('d.m.Y H:i:s') . '",
-                "' . $_POST['timezone'] . '",
-                "' . $dt->format('d.m.Y H:i:s') . '",
-                "01.01.2000 00:00:00",
-                "start"
-            )
+                AND status = "start"
         ';
 
-        $result = $mysqli->query($select);
-        if (!$result->num_rows) {
-            $mysqli->query($insert);
-            $result = $mysqli->query($select);
+        $result = $mysqli->query($select)->fetch_all();
+
+        if (count($result)) {
+            foreach ($result as $timer) {
+                // разнца между стартом и паузой
+                $time_start = new DateTime($timer[11], new DateTimeZone($timer[10]));
+                $time_now = new DateTime('now', new DateTimeZone($timer[10]));
+                $time_diff = $time_now->diff($time_start);
+
+                // добавляем разницу к таймеру
+                $time_work = new DateTime($timer[12]);
+                $dateInterval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
+                $time_work->add($dateInterval)->format('d.m.Y H:i:s');
+
+                // если разница больше суток, дату ставим 23:59:59 как максимальную
+                if ($time_work->format('d.m.Y') !== '01.01.2000') {
+                    $time_work = new DateTime('01.01.2000 23:59:59');
+                }
+
+                // обновляем значение в таблице
+                $update = '
+                    UPDATE billing_timer
+                    SET time_start = "",
+                        status = "pause",
+                        time_work = "' . $time_work->format('d.m.Y H:i:s') . '"
+                    WHERE id = "' . $timer[0] . '"
+                ';
+
+                $mysqli->query($update);
+            }
         }
-        $result = $result->fetch_assoc();
 
-        // обновляем время старта
-        $update = '
-            UPDATE billing_timer
-            SET time_start = "' . $dt->format('d.m.Y H:i:s') . '",
-                status = "start"
-            WHERE essence_id = "' . $_POST['essence_id'] . '"
-                AND user_id = "' . $_POST['user_id'] . '"
-                AND status != "finish"
-        ';
+        // текущее время
+        $tz = $_POST['timezone'];
+        $dt = new DateTime('now', new DateTimeZone($tz));
+        $dt->setTimestamp(time());
+        $timer_ID = $_POST['timer_ID'];
 
-        $mysqli->query($update);
+        $select = 'SELECT * FROM billing_timer WHERE id = "' . $timer_ID . '"';
+        $result = $mysqli->query($select);
+
+        // если первый старт, создаем запись
+        if (!$result->num_rows) {
+            $insert = '
+                INSERT INTO billing_timer
+                VALUES(
+                    null,
+                    "' . $_POST['essence_id'] . '",
+                    "' . $_POST['user_id'] . '",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "' . $_POST['link_task'] . '",
+                    "' . $dt->format('d.m.Y H:i:s') . '",
+                    "' . $_POST['timezone'] . '",
+                    "' . $dt->format('d.m.Y H:i:s') . '",
+                    "01.01.2000 00:00:00",
+                    "start"
+                )
+            ';
+
+            $mysqli->query($insert);
+            $timer_ID = $mysqli->insert_id;
+
+        // иначе обновляем
+        } else {
+            $update = '
+                UPDATE billing_timer
+                SET time_start = "' . $dt->format('d.m.Y H:i:s') . '",
+                    status = "start"
+                WHERE id = "' . $timer_ID . '"
+            ';
+
+            $mysqli->query($update);
+        }
+
+        $select = 'SELECT * FROM billing_timer WHERE id = "' . $timer_ID . '"';
         $result = $mysqli->query($select)->fetch_assoc();
 
-        echo json_encode($result);
+        print_r(json_encode($result));
     }
 
     // timer auto stop
-    if ($_POST['method'] == 'stop_auto_stop' && $Config->CheckToken()) {
+    if ($_POST['method'] == 'timer_auto_stop' && $Config->CheckToken()) {
         // обновляем время старта
         $update = '
                 UPDATE billing_timer
                 SET time_start = "",
                     status = "stop",
                     time_work = "01.01.2000 23:59:59"
-                WHERE essence_id = "' . $_POST['essence_id'] . '"
-                    AND user_id = "' . $_POST['user_id'] . '"
-                    AND status != "finish"
+                WHERE id = "' . $_POST['timer_id'] . '"
             ';
 
         $mysqli->query($update);
@@ -271,6 +375,7 @@
             FROM billing_timer 
             WHERE user_id = "' . $_POST['user_id'] . '" 
                 AND essence_id = "' . $_POST['essence_id'] . '"
+                AND link_task = "' . $_POST['link_task'] . '"
                 AND status != "finish"
         ';
         $result = $mysqli->query($select)->fetch_assoc();
@@ -298,6 +403,7 @@
                 time_work = "' . $time_work->format('d.m.Y H:i:s') . '"
             WHERE essence_id = "' . $_POST['essence_id'] . '"
                 AND user_id = "' . $_POST['user_id'] . '"
+                AND link_task = "' . $_POST['link_task'] . '"
                 AND status != "finish"
         ';
 
