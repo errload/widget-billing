@@ -550,6 +550,9 @@
         if ($result['time_work'] !== $_POST['time_work']) $is_change_time = true;
         else $is_change_time = false;
 
+        // если время раньше было изменено, оставляем измененным
+        if ($result['is_change_time'] == 1) $is_change_time = true;
+
         $new_price = 0;
         if ((int) $result['price'] > (int) $_POST['price']) {
             $new_price += (int) $result['price'] - (int) $_POST['price'];

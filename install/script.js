@@ -238,7 +238,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             );
 
                             // время работы
-                            time_edit = `${ time_edit_H }:${ time_edit_i }`;
+                            time_edit = `${ time_edit_H }:${ time_edit_i }:${ time_edit_s }`;
                             $('.time_work__details__item').text('');
 
                             $('.value.time_work__details__item').append(`
@@ -248,6 +248,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     class="modal__input__time_work__edit__details text-input"
                                     placeholder="введите время работы"
                                     value="${ time_edit }"
+                                    step="2"
                                 />
                             `);
 
@@ -347,7 +348,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     'service': $('.modal__input__service__edit__details').val(),
                                     'price': parseInt($('.modal__input__price__edit__details').val()) || 0,
                                     'link_task': $('.modal__input__link__task__edit__details').val(),
-                                    'time_work': `${ $('.modal__input__time_work__edit__details').val() }:${ time_edit_s }`,
+                                    'time_work': $('.modal__input__time_work__edit__details').val(),
                                     'comment': $('.modal__textarea__comment__edit__details').val().trim()
                                 },
                                 dataType: 'json',
@@ -385,6 +386,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         ">${ timer.link_task }</a> 
                                     `);
                                     $('.time_work__details__item').text(timer.time_work);
+
+                                    time_edit = timer.time_work;
+                                    time_edit_H = time_edit.split(':')[0];
+                                    time_edit_i = time_edit.split(':')[1];
+                                    time_edit_s = time_edit.split(':')[2];
 
                                     $(`.title__user__details__item`).css('padding-top', '10px');
                                     $(`.title__client__details__item`).css('padding-top', '10px');
