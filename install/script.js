@@ -1564,7 +1564,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                                     $.each(data.custom_fields_values, function () {
                                         // если не сотрудник истории, пропускаем
-                                        if (this.field_name !== AMOCRM.constant('user').name) return;
+                                        if (this.field_name !== manager.text()) return;
                                         // цена сотрудника
                                         self.price_manager = this.values[0].value;
                                     });
