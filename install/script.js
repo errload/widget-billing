@@ -123,7 +123,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 text: 'Редактировать'
                             }),
                             saveEditBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                class_name: 'modal__saveEditBtn__details',
+                                class_name: 'modal__saveEditBtn__details button-input_blue',
                                 text: 'Сохранить'
                             }),
                             editBtnWrapper = `<div class="modal__body__actions__details" style="width: 100%;"></div>`;
@@ -136,15 +136,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         /* ###################################################################### */
 
-                        // время работы для для подсчета разницы после изменения
-                        let old_time, new_time, price,
-                            time_edit = $('.time_work__details__item').text().trim();
+                        // время работы для для подсчета разницы даты после редактирования
+                        let old_time, new_time, price, time_edit;
 
                         // редактирование истории
                         $('.modal__editBtn__details').unbind('click');
                         $('.modal__editBtn__details').bind('click', function () {
                             $('.modal__editBtn__details').css('display', 'none');
                             $('.modal__saveEditBtn__details').css('display', 'block');
+
+                            // если кнопка сохранения не синяя, красим
+                            if (!$('.modal__saveEditBtn__details').hasClass('button-input_blue')) {
+                                $('.modal__saveEditBtn__details').addClass('button-input_blue');
+                            }
 
                             const toEdit = function (class_text, class_input, name_input, value, placeholder) {
                                 var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
@@ -221,7 +225,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             // время работы
                             time_edit = $('.time_work__details__item').text().trim();
-                            time_edit = `${ time_edit.split(':')[0] }:${ time_edit.split(':')[1] }:${ time_edit.split(':')[2] }`;
                             $('.time_work__details__item').text('');
 
                             $('.value.time_work__details__item').append(`
@@ -252,6 +255,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             var link_task = $('.modal__input__link__task__edit__details');
                             var time_work = $('.modal__input__time_work__edit__details');
                             var isError = false;
+
+                            // убираем синий цвет у кнопки сохранения
+                            $('.modal__saveEditBtn__details').removeClass('button-input_blue');
 
                             // красим поля в случае ошибки
                             if (!link_task.val().trim().length) {
@@ -316,10 +322,16 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             if (isError) return false;
 
                             // поиск цены сотрудника в кастомных полях
+                            let entity_url, entity_ID = AMOCRM.data.current_card.id;
+                            if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
+                            if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
+
                             $.ajax({
-                                url: '/api/v4/leads/23562931',
+                                url: entity_url,
                                 method: 'get',
                                 success: function (data) {
+                                    if (!data.custom_fields_values) return;
+
                                     $.each(data.custom_fields_values, function () {
                                         // если не сотрудник истории, пропускаем
                                         if (this.field_name !== user.val().trim()) return;
@@ -337,7 +349,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                                     // если время было изменено
                                     if (new_time !== old_time) {
-
                                         // считаем разницу во времени
                                         const getDate = function (date) {
                                             return new Date(0, 0, 0, date.split(':')[0], date.split(':')[1], date.split(':')[2]);
@@ -902,7 +913,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 var interval,
                     services = [],
                     rights = false,
-                    priceManager = 0,
                     userID = AMOCRM.constant('user').id,
                     essenseID = AMOCRM.data.current_card.id,
                     timezone = AMOCRM.constant('account').timezone;
@@ -1412,6 +1422,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                                         // обновляем массив списка услуг
                                         services = [];
+
                                         $.each($('.modal_input__edit__service'), function () {
                                             if (!$(this).val().trim().length) return;
                                             services.push($(this).val().trim());
@@ -1480,7 +1491,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // кнопки Сохранить и Закрыть
                         var saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                class_name: 'modal__saveBtn__timer',
+                                class_name: 'modal__saveBtn__timer button-input_blue',
                                 text: 'Сохранить'
                             }),
                             cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
@@ -1540,36 +1551,62 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             /* ###################################################################### */
 
-                            // стоимость выбранного сотрудника
-                            if (self.config_settings.priceManager && self.config_settings.priceManager[managerID]) {
-                                priceManager = self.config_settings.priceManager[managerID];
-                            }
+                            // поиск цены сотрудника в кастомных полях
+                            let entity_url, entity_ID = AMOCRM.data.current_card.id;
+                            if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
+                            if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
 
-                            // сохраняем результат в БД
                             $.ajax({
-                                url: url_link_t,
-                                method: 'post',
-                                data: {
-                                    'domain': document.domain,
-                                    'method': 'timer_save',
-                                    'essence_id': essenseID,
-                                    'timer_id': timer_ID,
-                                    'priceManager': priceManager,
-                                    'user': manager.text(),
-                                    'client': client.val().trim(),
-                                    'service': service.text(),
-                                    'comment': $('.modal__textarea__comment').val().trim()
+                                url: entity_url,
+                                method: 'get',
+                                success: function (data) {
+                                    if (!data.custom_fields_values) return;
+
+                                    $.each(data.custom_fields_values, function () {
+                                        // если не сотрудник истории, пропускаем
+                                        if (this.field_name !== AMOCRM.constant('user').name) return;
+                                        // цена сотрудника
+                                        self.price_manager = this.values[0].value;
+                                    });
+
+                                    // преобразуем в число
+                                    self.price_manager = parseInt(self.price_manager) || 0;
+
+                                    // сохраняем результат в БД
+                                    $.ajax({
+                                        url: url_link_t,
+                                        method: 'post',
+                                        data: {
+                                            'domain': document.domain,
+                                            'method': 'timer_save',
+                                            'essence_id': essenseID,
+                                            'timer_id': timer_ID,
+                                            'priceManager': self.price_manager,
+                                            'user': manager.text(),
+                                            'client': client.val().trim(),
+                                            'service': service.text(),
+                                            'comment': $('.modal__textarea__comment').val().trim()
+                                        },
+                                        dataType: 'json',
+                                        success: function (data) {}
+                                    });
+
+                                    $('.modal__saveBtn__timer').removeClass('button-input_blue');
+                                    $('.modal__saveBtn__timer').unbind('click');
+
+                                    setTimeout(() => {
+                                        // очищаем таймер
+                                        $('.timer__stop').remove();
+                                        $(`.timer__item[data-id="${ timer_ID }"]`).remove();
+
+                                        // если удален последний таймер, добавляем пустой
+                                        if (!$('.modal__timer .timer__item').length) addTimer();
+                                    }, '1500');
+
+                                    self.price_manager = 0;
                                 },
-                                dataType: 'json',
-                                success: function (data) {}
+                                timeout: 2000
                             });
-
-                            // очищаем таймер
-                            $('.timer__stop').remove();
-                            $(`.timer__item[data-id="${ timer_ID }"]`).remove();
-
-                            // если удален последний таймер, добавляем пустой
-                            if (!$('.modal__timer .timer__item').length) addTimer();
                         });
                     });
                 }
@@ -1897,37 +1934,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     return;
                 }
 
-                // стоимость сотрудника
-                var inputPrice = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                    name: 'input-price',
-                    class_name: 'input__price',
-                    value: '0',
-                    placeholder: 'введите стоимость сотрудника',
-                    max_length: 50
-                });
-
-                // вставляем и ровняем инпут type=number
-                $('.widget_settings_block__controls').before(`
-                    <div class="widget_settings_block__item_field input__price__wrapper" style="margin-top: 10px; width: 100%;">
-                        <div class="widget_settings_block__title_field" title="">
-                            Стоимость сотрудника в минуту (р.):
-                        </div>
-                    <div class="widget_settings_block__input_field" style="width: 100%;">${ inputPrice }</div>
-                    </div>
-                `);
-                $('.input__price').attr('type', 'number');
-                $('.input__price').css('width', '100%');
-
-                $('.input__price').unbind('change');
-                $('.input__price').bind('change', function () {
-                    var priceManager = parseInt($(this).val()) || 0;
-
-                    if (!self.config_settings.priceManager) self.config_settings.priceManager = {};
-                    self.config_settings.priceManager[managerID] = priceManager;
-                    self.saveConfigSettings();
-                    $(this).val(priceManager);
-                });
-
                 // ддобавление чекбокса
                 const addCheckbox = function (value, dataValue) {
                     checkbox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
@@ -1977,13 +1983,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 $(this).trigger('click');
                             }
                         });
-                    });
-                }
-
-                if (self.config_settings.priceManager) {
-                    $.each(self.config_settings.priceManager, function (key, value) {
-                        if (key !== managerID) return;
-                        $('.input__price').val(value);
                     });
                 }
 
