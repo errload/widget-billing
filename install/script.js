@@ -102,7 +102,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             text-decoration: none; color: #1375ab; word-break: break-all;
                         ">${ data.link_task }</a>                                    
                     `, 'link__task__details__item');
-                    addHistoryItem('Время работы', data.time_work);
+                    addHistoryItem('Время работы', data.time_work, 'time_work__details__item');
+
+                    $('.value.time_work__details__item').css('width', '50%');
+                    $('.value.time_work__details__item').after(`
+                        <div class="is__change__time_work" style="width: calc(50% - 30px); padding: 10px; text-align: right; color: #92989b;"></div>
+                    `);
+
+                    // если время изменено, показываем блок "(изменено)"
+                    if (data.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
 
                     /* ###################################################################### */
 
@@ -126,6 +134,29 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.modal__body__actions__details').css('margin-top', '10px');
 
                         /* ###################################################################### */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        // время работы для редактирования
+                        let time_edit = $('.time_work__details__item').text().trim();
+                        let time_edit_H = time_edit.split(':')[0];
+                        let time_edit_i = time_edit.split(':')[1];
+                        let time_edit_s = time_edit.split(':')[2];
 
                         // редактирование истории
                         $('.modal__editBtn__details').unbind('click');
@@ -205,6 +236,23 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 $('.link__task__details__item').text().trim(),
                                 'введите ссылку на задачу'
                             );
+
+                            // время работы
+                            time_edit = `${ time_edit_H }:${ time_edit_i }`;
+                            $('.time_work__details__item').text('');
+
+                            $('.value.time_work__details__item').append(`
+                                <input 
+                                    type="time" 
+                                    name="modal-input-time_work-edit-details" 
+                                    class="modal__input__time_work__edit__details text-input"
+                                    placeholder="введите время работы"
+                                    value="${ time_edit }"
+                                />
+                            `);
+
+                            $('.modal__input__time_work__edit__details').css('width', '100%');
+                            $('.title__time_work__details__item').css('padding-top', '19px');
                         });
 
                         /* ###################################################################### */
@@ -218,6 +266,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             var comment = $('.modal__textarea__comment__edit__details');
                             var price = $('.modal__input__price__edit__details');
                             var link_task = $('.modal__input__link__task__edit__details');
+                            var time_work = $('.modal__input__time_work__edit__details');
                             var isError = false;
 
                             // красим поля в случае ошибки
@@ -237,6 +286,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 isError = true;
                                 $('.modal__input__price__edit__details').css('border-color', '#f37575');
                             }
+
                             // возвращаем естесственные цвета
                             $('.modal__input__price__edit__details').unbind('change');
                             $('.modal__input__price__edit__details').bind('change', function () {
@@ -248,6 +298,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 isError = true;
                                 $('.modal__input__service__edit__details').css('border-color', '#f37575');
                             }
+
                             // возвращаем естесственные цвета
                             $('.modal__input__service__edit__details').unbind('change');
                             $('.modal__input__service__edit__details').bind('change', function () {
@@ -259,6 +310,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 isError = true;
                                 $('.modal__input__client__edit__details').css('border-color', '#f37575');
                             }
+
                             // возвращаем естесственные цвета
                             $('.modal__input__client__edit__details').unbind('change');
                             $('.modal__input__client__edit__details').bind('change', function () {
@@ -270,6 +322,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 isError = true;
                                 $('.modal__input__user__edit__details').css('border-color', '#f37575');
                             }
+
                             // возвращаем естесственные цвета
                             $('.modal__input__user__edit__details').unbind('change');
                             $('.modal__input__user__edit__details').bind('change', function () {
@@ -294,6 +347,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     'service': $('.modal__input__service__edit__details').val(),
                                     'price': parseInt($('.modal__input__price__edit__details').val()) || 0,
                                     'link_task': $('.modal__input__link__task__edit__details').val(),
+                                    'time_work': `${ $('.modal__input__time_work__edit__details').val() }:${ time_edit_s }`,
                                     'comment': $('.modal__textarea__comment__edit__details').val().trim()
                                 },
                                 dataType: 'json',
@@ -318,6 +372,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     $('.modal__textarea__comment__edit__details').remove();
                                     $('.modal__input__price__edit__details').remove();
                                     $('.modal__input__link__task__edit__details').remove();
+                                    $('.modal__input__time_work__edit__details').remove();
 
                                     $('.user__details__item').text(timer.user);
                                     $('.client__details__item').text(timer.client);
@@ -329,6 +384,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                             text-decoration: none; color: #1375ab; word-break: break-all;
                                         ">${ timer.link_task }</a> 
                                     `);
+                                    $('.time_work__details__item').text(timer.time_work);
 
                                     $(`.title__user__details__item`).css('padding-top', '10px');
                                     $(`.title__client__details__item`).css('padding-top', '10px');
@@ -336,6 +392,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     $(`.title__comment__details__item`).css('padding-top', '10px');
                                     $(`.title__price__details__item`).css('padding-top', '10px');
                                     $(`.title__link__task__details__item`).css('padding-top', '10px');
+                                    $(`.time_work__details__item`).css('padding-top', '10px');
+                                    $(`.title.title__time_work__details__item`).css('padding-top', '10px');
+
+                                    // если время изменено, показываем блок "(изменено)"
+                                    if (timer.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
 
                                     // меняем итоговую сумму внизу истории
                                     var price = 0;
@@ -349,6 +410,20 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.modal__editBtn__details').css('display', 'block');
                             $('.modal__saveEditBtn__details').css('display', 'none');
                         });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     }
                 }
             });
@@ -1916,6 +1991,24 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
             });
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         /* ###################################################################### */
 

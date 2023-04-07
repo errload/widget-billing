@@ -181,9 +181,9 @@
     if ($_POST['method'] == 'timer_start' && $Config->CheckToken()) {
         // ставим остальные запущенные таймеры на паузу
         $select = '
-            SELECT * 
-            FROM billing_timer 
-            WHERE user_id = "' . $_POST['user_id'] . '" 
+            SELECT *
+            FROM billing_timer
+            WHERE user_id = "' . $_POST['user_id'] . '"
                 AND essence_id = "' . $_POST['essence_id'] . '"
                 AND status = "start"
         ';
@@ -247,7 +247,8 @@
                     "' . $_POST['timezone'] . '",
                     "' . $dt->format('d.m.Y H:i:s') . '",
                     "01.01.2000 00:00:00",
-                    "start"
+                    "start",
+                    "0"
                 )
             ';
 
@@ -545,6 +546,10 @@
         $select_timer = 'SELECT * FROM billing_timer WHERE id = "' . $_POST['history_id'] . '"';
         $result = $mysqli->query($select_timer)->fetch_assoc();
 
+        // проверяем было ли изменено время
+        if ($result['time_work'] !== $_POST['time_work']) $is_change_time = true;
+        else $is_change_time = false;
+
         $new_price = 0;
         if ((int) $result['price'] > (int) $_POST['price']) {
             $new_price += (int) $result['price'] - (int) $_POST['price'];
@@ -564,7 +569,9 @@
                 service = "' . $_POST['service'] . '",
                 comment = "' . $comment . '",
                 link_task = "' . $_POST['link_task'] . '",
-                price = "' . $_POST['price'] . '"
+                price = "' . $_POST['price'] . '",
+                time_work = "' . $_POST['time_work'] . '",
+                is_change_time = "' . $is_change_time . '"
             WHERE id = "' . $_POST['history_id'] . '"
         ';
         $mysqli->query($update);
