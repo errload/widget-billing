@@ -15,6 +15,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         this.filter_all_sum = null; // общая сумма для экспорта
         this.price_manager = 0;
 
+        // получаем настройки для поиска поля депозита
+        this.getDepositTitle = function () {
+            let deposit_title = '';
+            self.getConfigSettings();
+
+            if (self.config_settings.deposit_title && self.config_settings.deposit_title.length) {
+                deposit_title = self.config_settings.deposit_title;
+            }
+
+            return deposit_title;
+        }
+
+
         // получение настроек
         this.getConfigSettings = function () {
             var config_settings = self.get_settings().config_settings || {};
@@ -362,6 +375,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         }
                                     }
 
+                                    // получаем настройки для поиска поля депозита
+                                    let deposit_title = self.getDepositTitle();
+
                                     // обновляем данные в БД
                                     $.ajax({
                                         url: url_link_t,
@@ -377,7 +393,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                             'price': price,
                                             'link_task': $('.modal__input__link__task__edit__details').val(),
                                             'time_work': $('.modal__input__time_work__edit__details').val(),
-                                            'comment': $('.modal__textarea__comment__edit__details').val().trim()
+                                            'comment': $('.modal__textarea__comment__edit__details').val().trim(),
+                                            'deposit_title': deposit_title
                                         },
                                         dataType: 'json',
                                         success: function (data) {
@@ -602,6 +619,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
             deposit.unbind('change');
             deposit.bind('change', function () {
+                // получаем настройки для поиска поля депозита
+                let deposit_title = self.getDepositTitle();
+
                 $.ajax({
                     url: url_link_t,
                     method: 'post',
@@ -609,7 +629,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         'domain': document.domain,
                         'method': 'change_deposit',
                         'essence_id': essenseID,
-                        'deposit': deposit.val()
+                        'deposit': deposit.val(),
+                        'deposit_title': deposit_title
                     },
                     dataType: 'json',
                     success: function (data) {
@@ -1572,6 +1593,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     // преобразуем в число
                                     self.price_manager = parseInt(self.price_manager) || 0;
 
+                                    // получаем настройки для поиска поля депозита
+                                    let deposit_title = self.getDepositTitle();
+
                                     // сохраняем результат в БД
                                     $.ajax({
                                         url: url_link_t,
@@ -1585,7 +1609,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                             'user': manager.text(),
                                             'client': client.val().trim(),
                                             'service': service.text(),
-                                            'comment': $('.modal__textarea__comment').val().trim()
+                                            'comment': $('.modal__textarea__comment').val().trim(),
+                                            'deposit_title': deposit_title
                                         },
                                         dataType: 'json',
                                         success: function (data) {}
@@ -1884,13 +1909,98 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         /* ###################################################################### */
 
+
+
+
+
+
+
+
+
+
+
+
         // настройка прав доступа
         this.accessRight = function () {
             self.getConfigSettings();
 
+            // div для полей покупателей
+            var select_fields_rapper = `<div class="widget_settings_block__item_field select__fields__wrapper" style="margin-top: 10px;"></div>`;
+            $('.widget_settings_block__controls').before(select_fields_rapper);
+
+            // список полей покупателей
+            const ajaxFields = function (url) {
+                let fields = [];
+                fields.push({ option: 'Выберите поле' });
+
+                $.ajax({
+                    url: url,
+                    success: function (data) {
+                        $.each(data._embedded.custom_fields, function () {
+                            fields.push({ id: this.id, option: this.name });
+                        });
+
+                        if (data._links.next) ajaxFields(data._links.next.href);
+                        else {
+                            // селект с полями
+                            var select_fields = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                                items: fields,
+                                class_name: 'select__fields'
+                            });
+
+                            $('.select__fields__wrapper').append(`
+                                <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+                                    Настройка поля для депозита:
+                                </div>
+                                <div class="widget_settings_block__input_field" style="width: 100%;">
+                                    ${ select_fields }
+                                </div>
+                            `);
+
+                            $('.select__managers__wrapper .control--select--button').css('width', '100%');
+                            $('.select__managers__wrapper ul').css({
+                                'margin-left': '13px',
+                                'width': '100%',
+                                'min-width': $('.select__managers__wrapper').outerWidth() - 13
+                            });
+
+                            // если ранее значение было, отмечаем
+                            if (self.config_settings.deposit_title && self.config_settings.deposit_title.length) {
+                                $.each($('.select__fields__wrapper ul li'), function () {
+                                    if ($(this).hasClass('control--select--list--item-selected')) {
+                                        $(this).removeClass('control--select--list--item-selected');
+                                    }
+
+                                    if ($(this).find('span').text().trim() === self.config_settings.deposit_title) {
+                                        $(this).addClass('control--select--list--item-selected');
+                                        $('.control--select--button-inner').text(self.config_settings.deposit_title);
+                                    }
+                                });
+                            }
+
+                            // обновляем права пользователя
+                            $('.select__fields__wrapper ul li').unbind('click');
+                            $('.select__fields__wrapper ul li').bind('click', function () {
+                                if (!self.config_settings.deposit_title) self.config_settings.deposit_title = '';
+
+                                let deposit_title = $(this).find('span').text().trim();
+                                if (deposit_title === 'Выберите поле') deposit_title = '';
+
+                                self.config_settings.deposit_title = deposit_title;
+                                self.saveConfigSettings();
+                            });
+                        }
+                    },
+                    timeout: 5000
+                });
+            }
+
+            ajaxFields('/api/v4/customers/custom_fields?limit=50');
+
             // список активных пользователей
             var managers = [], checkbox;
             managers.push({ option: 'Выберите пользователя' });
+
             $.each(AMOCRM.constant('managers'), function () {
                 if (!this.active) return;
                 managers.push({ id: this.id, option: this.title });
@@ -1901,6 +2011,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 items: managers,
                 class_name: 'select__managers'
             });
+
             var selectManagersWrapper = `
                 <div class="widget_settings_block__item_field select__managers__wrapper" style="margin-top: 10px;">
                     <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
@@ -2004,6 +2115,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
             });
         }
+
+
 
 
 
