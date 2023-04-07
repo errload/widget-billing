@@ -830,31 +830,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // функция добавления таймера
                 const addTimer = function (timer_ID = null, link_task = null) {
                     // если таймер добавлен и не запущен, выходим
-                    if ($('.timer__item .modal__input__link__task').length) {
-                        let is_input = false;
-
-                        $.each($('.timer__item .modal__input__link__task'), function () {
-                            if ($(this).css('display') === 'inline-block') is_input = true;
-                        });
-
-                        if (is_input) {
-                            $('.timer__item .modal__input__link__task').focus();
-                            return false;
-                        }
+                    if ($('.modal__timer .timer__item[data-id="new_ID"]').length) {
+                        $('.timer__item .modal__input__link__task').focus();
+                        return false;
                     }
 
-                    // если ID не передан, создаем временный рандомный
-                    if (!timer_ID) {
-                        let random_ID = Math.floor(Math.random() * 999999);
-
-                        if ($('.modal__timer .timer__item').length) {
-                            while ($(`.modal__timer .timer__item[data-id="${random_ID}"]`).length) {
-                                random_ID = Math.floor(Math.random() * 999999);
-                            }
-                        }
-
-                        timer_ID = random_ID;
-                    }
+                    // если ID не передан, создаем временный
+                    if (!timer_ID) timer_ID = 'new_ID';
 
                     // ссылка на задачу
                     var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
