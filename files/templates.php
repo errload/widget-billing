@@ -551,7 +551,7 @@
         else $is_change_time = false;
 
         // если время раньше было изменено, оставляем измененным
-        if ($result['is_change_time'] == 1) $is_change_time = true;
+        if ($result['is_change_time']) $is_change_time = true;
 
         $new_price = 0;
         if ((int) $result['price'] > (int) $_POST['price']) {

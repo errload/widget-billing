@@ -13,6 +13,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         this.filter_results = []; // результирующий массив для экспорта
         this.filter_all_time = null; // общее время для экспорта
         this.filter_all_sum = null; // общая сумма для экспорта
+        this.price_manager = 0;
 
         // получение настроек
         this.getConfigSettings = function () {
@@ -135,28 +136,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         /* ###################################################################### */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                        // время работы для редактирования
-                        let time_edit = $('.time_work__details__item').text().trim();
-                        let time_edit_H = time_edit.split(':')[0];
-                        let time_edit_i = time_edit.split(':')[1];
-                        let time_edit_s = time_edit.split(':')[2];
+                        // время работы для для подсчета разницы после изменения
+                        let old_time, new_time, price,
+                            time_edit = $('.time_work__details__item').text().trim();
 
                         // редактирование истории
                         $('.modal__editBtn__details').unbind('click');
@@ -238,7 +220,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             );
 
                             // время работы
-                            time_edit = `${ time_edit_H }:${ time_edit_i }:${ time_edit_s }`;
+                            time_edit = $('.time_work__details__item').text().trim();
+                            time_edit = `${ time_edit.split(':')[0] }:${ time_edit.split(':')[1] }:${ time_edit.split(':')[2] }`;
                             $('.time_work__details__item').text('');
 
                             $('.value.time_work__details__item').append(`
@@ -265,7 +248,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             var client = $('.modal__input__client__edit__details');
                             var service = $('.modal__input__service__edit__details');
                             var comment = $('.modal__textarea__comment__edit__details');
-                            var price = $('.modal__input__price__edit__details');
+                            price = $('.modal__input__price__edit__details');
                             var link_task = $('.modal__input__link__task__edit__details');
                             var time_work = $('.modal__input__time_work__edit__details');
                             var isError = false;
@@ -332,103 +315,128 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                             if (isError) return false;
 
-                            /* ###################################################################### */
-
-                            // обновляем данные в БД
+                            // поиск цены сотрудника в кастомных полях
                             $.ajax({
-                                url: url_link_t,
-                                method: 'post',
-                                data: {
-                                    'domain': document.domain,
-                                    'method': 'edit_history_details',
-                                    'history_id': historyID,
-                                    'essence_id': AMOCRM.data.current_card.id,
-                                    'user': $('.modal__input__user__edit__details').val(),
-                                    'client': $('.modal__input__client__edit__details').val(),
-                                    'service': $('.modal__input__service__edit__details').val(),
-                                    'price': parseInt($('.modal__input__price__edit__details').val()) || 0,
-                                    'link_task': $('.modal__input__link__task__edit__details').val(),
-                                    'time_work': $('.modal__input__time_work__edit__details').val(),
-                                    'comment': $('.modal__textarea__comment__edit__details').val().trim()
-                                },
-                                dataType: 'json',
+                                url: '/api/v4/leads/23562931',
+                                method: 'get',
                                 success: function (data) {
-                                    var timer = data[0];
-                                    var deposit = data[1];
-
-                                    // обновляем сумму депозита
-                                    if (!rights || !rights.includes('isEditDeposit')) {
-                                        $('.history__wrapper__flex .deposit div').text(deposit + 'р.');
-                                        $('.modal__input__history__deposit').val(deposit);
-                                    } else $('.modal__input__history__deposit').val(deposit);
-
-                                    // обновляем историю
-                                    $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
-                                    $(`.link__details[data-id="${ timer.id }"] .user__price .user__sum`).text(timer.price);
-
-                                    // обновляем детализацию
-                                    $('.modal__input__user__edit__details').remove();
-                                    $('.modal__input__client__edit__details').remove();
-                                    $('.modal__input__service__edit__details').remove();
-                                    $('.modal__textarea__comment__edit__details').remove();
-                                    $('.modal__input__price__edit__details').remove();
-                                    $('.modal__input__link__task__edit__details').remove();
-                                    $('.modal__input__time_work__edit__details').remove();
-
-                                    $('.user__details__item').text(timer.user);
-                                    $('.client__details__item').text(timer.client);
-                                    $('.service__details__item').text(timer.service);
-                                    $('.comment__details__item').text(timer.comment);
-                                    $('.price__details__item').text(timer.price + 'р.');
-                                    $('.link__task__details__item').html(`
-                                        <a href="${ timer.link_task }" target="_blank" style="
-                                            text-decoration: none; color: #1375ab; word-break: break-all;
-                                        ">${ timer.link_task }</a> 
-                                    `);
-                                    $('.time_work__details__item').text(timer.time_work);
-
-                                    time_edit = timer.time_work;
-                                    time_edit_H = time_edit.split(':')[0];
-                                    time_edit_i = time_edit.split(':')[1];
-                                    time_edit_s = time_edit.split(':')[2];
-
-                                    $(`.title__user__details__item`).css('padding-top', '10px');
-                                    $(`.title__client__details__item`).css('padding-top', '10px');
-                                    $(`.title__service__details__item`).css('padding-top', '10px');
-                                    $(`.title__comment__details__item`).css('padding-top', '10px');
-                                    $(`.title__price__details__item`).css('padding-top', '10px');
-                                    $(`.title__link__task__details__item`).css('padding-top', '10px');
-                                    $(`.time_work__details__item`).css('padding-top', '10px');
-                                    $(`.title.title__time_work__details__item`).css('padding-top', '10px');
-
-                                    // если время изменено, показываем блок "(изменено)"
-                                    if (timer.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
-
-                                    // меняем итоговую сумму внизу истории
-                                    var price = 0;
-                                    $.each($('.user__price .user__sum'), function () {
-                                        price += parseInt($(this).text());
+                                    $.each(data.custom_fields_values, function () {
+                                        // если не сотрудник истории, пропускаем
+                                        if (this.field_name !== user.val().trim()) return;
+                                        // цена сотрудника
+                                        self.price_manager = this.values[0].value;
                                     });
-                                    $('.result__sum .result__price').text(price);
-                                }
+
+                                    // преобразуем в число
+                                    self.price_manager = parseInt(self.price_manager) || 0;
+
+                                    // считаем разницу во времени
+                                    new_time = time_work.val();
+                                    old_time = time_edit;
+                                    price = parseInt(price.val()) || 0;
+
+                                    // если время было изменено
+                                    if (new_time !== old_time) {
+
+                                        // считаем разницу во времени
+                                        const getDate = function (date) {
+                                            return new Date(0, 0, 0, date.split(':')[0], date.split(':')[1], date.split(':')[2]);
+                                        }
+
+                                        // если новая дата больше старой, прибавляем к стоимости работы, иначе онимаем
+                                        if (getDate(new_time) > getDate(old_time)) {
+                                            price += ((getDate(new_time) - getDate(old_time)) / 60000) * self.price_manager;
+                                        } else if (getDate(new_time) < getDate(old_time)) {
+                                            price -= ((getDate(old_time) - getDate(new_time)) / 60000) * self.price_manager;
+                                        }
+                                    }
+
+                                    // обновляем данные в БД
+                                    $.ajax({
+                                        url: url_link_t,
+                                        method: 'post',
+                                        data: {
+                                            'domain': document.domain,
+                                            'method': 'edit_history_details',
+                                            'history_id': historyID,
+                                            'essence_id': AMOCRM.data.current_card.id,
+                                            'user': $('.modal__input__user__edit__details').val(),
+                                            'client': $('.modal__input__client__edit__details').val(),
+                                            'service': $('.modal__input__service__edit__details').val(),
+                                            'price': price,
+                                            'link_task': $('.modal__input__link__task__edit__details').val(),
+                                            'time_work': $('.modal__input__time_work__edit__details').val(),
+                                            'comment': $('.modal__textarea__comment__edit__details').val().trim()
+                                        },
+                                        dataType: 'json',
+                                        success: function (data) {
+                                            var timer = data[0];
+                                            var deposit = data[1];
+
+                                            // обновляем сумму депозита
+                                            if (!rights || !rights.includes('isEditDeposit')) {
+                                                $('.history__wrapper__flex .deposit div').text(deposit + 'р.');
+                                                $('.modal__input__history__deposit').val(deposit);
+                                            } else $('.modal__input__history__deposit').val(deposit);
+
+                                            // обновляем историю
+                                            $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
+                                            $(`.link__details[data-id="${ timer.id }"] .user__price .user__sum`).text(timer.price);
+
+                                            // обновляем детализацию
+                                            $('.modal__input__user__edit__details').remove();
+                                            $('.modal__input__client__edit__details').remove();
+                                            $('.modal__input__service__edit__details').remove();
+                                            $('.modal__textarea__comment__edit__details').remove();
+                                            $('.modal__input__price__edit__details').remove();
+                                            $('.modal__input__link__task__edit__details').remove();
+                                            $('.modal__input__time_work__edit__details').remove();
+
+                                            $('.user__details__item').text(timer.user);
+                                            $('.client__details__item').text(timer.client);
+                                            $('.service__details__item').text(timer.service);
+                                            $('.comment__details__item').text(timer.comment);
+                                            $('.price__details__item').text(timer.price + 'р.');
+                                            $('.link__task__details__item').html(`
+                                                <a href="${ timer.link_task }" target="_blank" style="
+                                                    text-decoration: none; color: #1375ab; word-break: break-all;
+                                                ">${ timer.link_task }</a>
+                                            `);
+                                            $('.time_work__details__item').text(timer.time_work);
+
+                                            $(`.title__user__details__item`).css('padding-top', '10px');
+                                            $(`.title__client__details__item`).css('padding-top', '10px');
+                                            $(`.title__service__details__item`).css('padding-top', '10px');
+                                            $(`.title__comment__details__item`).css('padding-top', '10px');
+                                            $(`.title__price__details__item`).css('padding-top', '10px');
+                                            $(`.title__link__task__details__item`).css('padding-top', '10px');
+                                            $(`.time_work__details__item`).css('padding-top', '10px');
+                                            $(`.title.title__time_work__details__item`).css('padding-top', '10px');
+
+                                            // если время изменено, показываем блок "(изменено)"
+                                            if (timer.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
+
+                                            // меняем итоговую сумму внизу истории
+                                            price = 0;
+
+                                            $.each($('.user__price .user__sum'), function () {
+                                                price += parseInt($(this).text());
+                                            });
+
+                                            $('.result__sum .result__price').text(price);
+                                            time_edit = $('.time_work__details__item').text().trim();
+                                        }
+                                    });
+
+
+                                    $('.modal__editBtn__details').css('display', 'block');
+                                    $('.modal__saveEditBtn__details').css('display', 'none');
+                                    self.price_manager = 0;
+                                },
+                                timeout: 2000
                             });
 
-                            $('.modal__editBtn__details').css('display', 'block');
-                            $('.modal__saveEditBtn__details').css('display', 'none');
                         });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                     }
                 }
