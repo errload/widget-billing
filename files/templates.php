@@ -455,7 +455,7 @@
             $field_type = null;
 
             foreach ($customFields as $item) {
-                if ($item->getFieldName() === $_POST['deposit_title']) {
+                if (mb_strtolower($item->getFieldName()) === mb_strtolower($_POST['deposit_title'])) {
                     $field_ID = $item->getFieldId();
                     $field_type = $item->getFieldType();
 
@@ -584,7 +584,7 @@
             $field_type = null;
 
             foreach ($customFields as $item) {
-                if ($item->getFieldName() === $_POST['deposit_title']) {
+                if (mb_strtolower($item->getFieldName()) === mb_strtolower($_POST['deposit_title'])) {
                     $field_ID = $item->getFieldId();
                     $field_type = $item->getFieldType();
 
@@ -716,7 +716,7 @@
             $field_type = null;
 
             foreach ($customFields as $item) {
-                if ($item->getFieldName() === $_POST['deposit_title']) {
+                if (mb_strtolower($item->getFieldName()) === mb_strtolower($_POST['deposit_title'])) {
                     $field_ID = $item->getFieldId();
                     $field_type = $item->getFieldType();
 
