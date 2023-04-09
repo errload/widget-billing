@@ -753,7 +753,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                                 <div class="link__details" data-id="" style="
                                                     display: flex; flex-direction: row; justify-content: space-between;
                                                     width: calc(100% - 10px); border-top: 1px solid #c7efc2; border-bottom: 1px solid #c7efc2;
-                                                    margin-bottom: 2px;background: #ECFFEA; padding: 1px 10px; cursor: auto;
+                                                    margin-bottom: 2px; background: #ECFFEA; padding: 1px 10px; cursor: auto;
                                                     ">
                                                     <div>
                                                         <span class="user__created_at" style="color: #979797; font-size: 13px;">
@@ -2876,12 +2876,18 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     autor = this[3],
                                     time = this[12],
                                     sum = this[7],
-                                    link = this[8];
+                                    link = this[8],
+                                    event = false; // событие как пополнение депозита
+
+                                if (this[3] === 'Пополнение депозита') {
+                                    event = true;
+                                    time = '00:00:00';
+                                }
 
                                 date = date.split(' ')[0];
 
                                 // общая сумма списания
-                                all_sum += parseInt(sum);
+                                if (!event) all_sum += parseInt(sum);
 
                                 // прибавляем время каждой записи к нулевому значению
                                 timestamp = new Date(2000, 0, 1, time.split(':')[0], time.split(':')[1], time.split(':')[2]).getTime();
@@ -2903,8 +2909,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         </div>
                                         
                                         <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
-                                            <div class="content-table__item__inner" title="${ time }">
-                                                <span class="block-selectable time">${ time }</span>
+                                            <div class="content-table__item__inner" title="${ event ? '' : time }">
+                                                <span class="block-selectable time">${ event ? '' : time }</span>
                                             </div>
                                         </div>
                                         
@@ -3952,9 +3958,16 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // кнопка Экспорт
                 $('.export__excel .modal__export__btn').bind('click', function () {
                     // отключаем кнопку
-                    $(this).removeClass('button-input_blue');
-                    $(this).addClass('button-input-disabled');
                     $(this).unbind('click');
+                    $('.export__excel .modal__export__btn').addClass('button-input-loading');
+                    $('.export__excel .modal__export__btn').attr('data-loading', 'Y');
+                    $('.export__excel .modal__export__btn .button-input-inner').css('display', 'none');
+                    $('.export__excel .modal__export__btn').append(`
+                        <div class="button-input__spinner">
+                            <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+                        </div>
+                    `);
+                    $('.export__excel .modal__export__btn').unbind('click');
 
                     // создаем excel файл на сервере
                     $.ajax({

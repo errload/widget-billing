@@ -879,6 +879,7 @@
         // создаем документ
         require_once __DIR__ . '/../PHPExcel/Classes/PHPExcel.php';
         require_once __DIR__ . '/../PHPExcel/Classes/PHPExcel/Writer/Excel2007.php';
+
         $xls = new PHPExcel();
         $file = new DateTime();
 
@@ -928,60 +929,94 @@
         $sheet->getStyle('G1')->getFont()->setBold(true);
         $sheet->getStyle('H1')->getFont()->setBold(true);
 
-        $bb = [];
         // если массив не пустой, пишем значения
         if ($_POST['params']['filter_results']) {
             for ($i = 0; $i < count($_POST['params']['filter_results']); $i++) {
                 $row = $i + 2;
 
-                $date = explode(' ', $_POST['params']['filter_results'][$i]['9'])[0];
-                $autor = $_POST['params']['filter_results'][$i]['3'];
-                $client = $_POST['params']['filter_results'][$i]['4'];
-                $time = $_POST['params']['filter_results'][$i]['12'];
-                $comment = $_POST['params']['filter_results'][$i]['6'];
-                $price = $_POST['params']['filter_results'][$i]['7'];
-                $service = $_POST['params']['filter_results'][$i]['5'];
-                $link = $_POST['params']['filter_results'][$i]['8'];
+                if ($_POST['params']['filter_results'][$i]['3'] === 'Пополнение депозита') {
+                    $date = explode(' ', $_POST['params']['filter_results'][$i]['9'])[0];
+                    $autor = $_POST['params']['filter_results'][$i]['3'];
+                    $price = $_POST['params']['filter_results'][$i]['7'];
 
-                $bb[] = [$date, $autor, $client, $time, $comment, $price, $service, $link];
+                    // запись в строку
+                    $sheet->setCellValue('A' . $row, $date);
+                    $sheet->mergeCells('B' . $row . ':E' . $row);
+                    $sheet->setCellValue('B' . $row, $autor);
+                    $sheet->setCellValue('F' . $row, $price);
 
-                // запись в строку
-                $sheet->setCellValue('A' . $row, $date);
-                $sheet->setCellValue('B' . $row, $autor);
-                $sheet->setCellValue('C' . $row, $client);
-                $sheet->setCellValue('D' . $row, $time);
-                $sheet->setCellValue('E' . $row, $comment);
-                $sheet->setCellValue('F' . $row, $price);
-                $sheet->setCellValue('G' . $row, $service);
+                    // авто переносы строк для столбцов
+                    $sheet->getStyle('A' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('B' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('F' . $row)->getAlignment()->setWrapText(true);
 
-                // ссылка
-                $sheet->setCellValue('H' . $row, $link);
-                $sheet->getCell('H' . $row)->getHyperlink()->setUrl($link);
+                    // выравнивание по центру по вертикали
+                    $sheet->getStyle('A' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('B' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('F' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
 
-                // синий цвет ссылки
-                $sheet->getStyle('H' . $row)->applyFromArray(
-                    array('font' => array('color' => array('rgb' => '0000FF')))
-                );
+                    // красим ячейки
+                    $bg = array(
+                        'fill' => array(
+                            'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                            'color' => array('rgb' => 'c7efc2')
+                        )
+                    );
 
-                // авто переносы строк для столбцов
-                $sheet->getStyle('A' . $row)->getAlignment()->setWrapText(true);
-                $sheet->getStyle('B' . $row)->getAlignment()->setWrapText(true);
-                $sheet->getStyle('C' . $row)->getAlignment()->setWrapText(true);
-                $sheet->getStyle('D' . $row)->getAlignment()->setWrapText(true);
-                $sheet->getStyle('E' . $row)->getAlignment()->setWrapText(true);
-                $sheet->getStyle('F' . $row)->getAlignment()->setWrapText(true);
-                $sheet->getStyle('G' . $row)->getAlignment()->setWrapText(true);
-                $sheet->getStyle('H' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('A' . $row)->applyFromArray($bg);
+                    $sheet->getStyle('B' . $row)->applyFromArray($bg);
+                    $sheet->getStyle('F' . $row)->applyFromArray($bg);
+                    $sheet->getStyle('G' . $row)->applyFromArray($bg);
+                    $sheet->getStyle('H' . $row)->applyFromArray($bg);
 
-                // выравнивание по центру по вертикали
-                $sheet->getStyle('A' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-                $sheet->getStyle('B' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-                $sheet->getStyle('C' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-                $sheet->getStyle('D' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-                $sheet->getStyle('E' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-                $sheet->getStyle('F' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-                $sheet->getStyle('G' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-                $sheet->getStyle('H' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                } else {
+                    $date = explode(' ', $_POST['params']['filter_results'][$i]['9'])[0];
+                    $autor = $_POST['params']['filter_results'][$i]['3'];
+                    $client = $_POST['params']['filter_results'][$i]['4'];
+                    $time = $_POST['params']['filter_results'][$i]['12'];
+                    $comment = $_POST['params']['filter_results'][$i]['6'];
+                    $price = $_POST['params']['filter_results'][$i]['7'];
+                    $service = $_POST['params']['filter_results'][$i]['5'];
+                    $link = $_POST['params']['filter_results'][$i]['8'];
+
+                    // запись в строку
+                    $sheet->setCellValue('A' . $row, $date);
+                    $sheet->setCellValue('B' . $row, $autor);
+                    $sheet->setCellValue('C' . $row, $client);
+                    $sheet->setCellValue('D' . $row, $time);
+                    $sheet->setCellValue('E' . $row, $comment);
+                    $sheet->setCellValue('F' . $row, $price);
+                    $sheet->setCellValue('G' . $row, $service);
+
+                    // ссылка
+                    $sheet->setCellValue('H' . $row, $link);
+                    $sheet->getCell('H' . $row)->getHyperlink()->setUrl($link);
+
+                    // синий цвет ссылки
+                    $sheet->getStyle('H' . $row)->applyFromArray(
+                        array('font' => array('color' => array('rgb' => '0000FF')))
+                    );
+
+                    // авто переносы строк для столбцов
+                    $sheet->getStyle('A' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('B' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('C' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('D' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('E' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('F' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('G' . $row)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle('H' . $row)->getAlignment()->setWrapText(true);
+
+                    // выравнивание по центру по вертикали
+                    $sheet->getStyle('A' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('B' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('C' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('D' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('E' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('F' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('G' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                    $sheet->getStyle('H' . $row)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                }
             }
 
             // общее количество затраченного времени
