@@ -158,10 +158,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.modal__editBtn__details').css('display', 'none');
                             $('.modal__saveEditBtn__details').css('display', 'block');
 
-                            // если кнопка сохранения не синяя, красим
-                            if (!$('.modal__saveEditBtn__details').hasClass('button-input_blue')) {
-                                $('.modal__saveEditBtn__details').addClass('button-input_blue');
-                            }
+                            // возвращаем стандартные аттрибуты кнопки
+                            if ($('.modal__saveEditBtn__details').hasClass('button-input-loading')) $('.modal__saveBtn__timer').removeClass('button-input-loading')
+                            $('.modal__saveEditBtn__details').attr('data-loading', '');
+                            if ($('.modal__saveEditBtn__details .button-input-inner').css('display') === 'none') $('.modal__saveEditBtn__details .button-input-inner').css('display', 'block');
+                            if ($('.modal__saveEditBtn__details .button-input__spinner').length) $('.modal__saveEditBtn__details .button-input__spinner').remove();
 
                             const toEdit = function (class_text, class_input, name_input, value, placeholder) {
                                 var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
@@ -269,9 +270,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             var time_work = $('.modal__input__time_work__edit__details');
                             var isError = false;
 
-                            // убираем синий цвет у кнопки сохранения
-                            $('.modal__saveEditBtn__details').removeClass('button-input_blue');
-
                             // красим поля в случае ошибки
                             if (!link_task.val().trim().length) {
                                 link_task.val('').focus();
@@ -333,6 +331,17 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             });
 
                             if (isError) return false;
+
+                            // меняем аттрибуты кнопки
+                            $('.modal__saveEditBtn__details').addClass('button-input-loading');
+                            $('.modal__saveEditBtn__details').attr('data-loading', 'Y');
+                            $('.modal__saveEditBtn__details .button-input-inner').css('display', 'none');
+                            $('.modal__saveEditBtn__details').append(`
+                                <div class="button-input__spinner">
+                                    <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+                                </div>
+                            `);
+                            $('.modal__editBtn__details').css('display', 'none');
 
                             // поиск цены сотрудника в кастомных полях
                             let entity_url, entity_ID = AMOCRM.data.current_card.id;
@@ -453,12 +462,12 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                                             $('.result__sum .result__price').text(price);
                                             time_edit = $('.time_work__details__item').text().trim();
+
+                                            $('.modal__editBtn__details').css('display', 'block');
+                                            $('.modal__saveEditBtn__details').css('display', 'none');
                                         }
                                     });
 
-
-                                    $('.modal__editBtn__details').css('display', 'block');
-                                    $('.modal__saveEditBtn__details').css('display', 'none');
                                     self.price_manager = 0;
                                 },
                                 timeout: 2000
@@ -1616,7 +1625,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         success: function (data) {}
                                     });
 
-                                    $('.modal__saveBtn__timer').removeClass('button-input_blue');
+                                    $('.modal__saveBtn__timer').addClass('button-input-loading');
+                                    $('.modal__saveBtn__timer').attr('data-loading', 'Y');
+                                    $('.modal__saveBtn__timer .button-input-inner').css('display', 'none');
+                                    $('.modal__saveBtn__timer').append(`
+                                        <div class="button-input__spinner">
+                                            <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+                                        </div>
+                                    `);
                                     $('.modal__saveBtn__timer').unbind('click');
 
                                     setTimeout(() => {
