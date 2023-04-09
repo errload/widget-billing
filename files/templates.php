@@ -536,17 +536,17 @@
         $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
 
         $update = '
-            UPDATE billing_deposit 
-            SET deposit = "' . $_POST['deposit'] . '" 
+            UPDATE billing_deposit
+            SET deposit = "' . $_POST['deposit'] . '"
             WHERE essence_id = "' . $_POST['essence_id'] . '"
         ';
 
         $insert = '
-            INSERT INTO billing_deposit 
+            INSERT INTO billing_deposit
             VALUES(
-                null, 
-                "' . $_POST['essence_id'] . '", 
-                "' . $_POST['deposit'] . '", 
+                null,
+                "' . $_POST['essence_id'] . '",
+                "' . $_POST['deposit'] . '",
                 ""
             )
         ';

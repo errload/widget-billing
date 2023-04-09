@@ -411,10 +411,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                             var deposit = data[1];
 
                                             // обновляем сумму депозита
-                                            if (!rights || !rights.includes('isEditDeposit')) {
-                                                $('.history__wrapper__flex .deposit div').text(deposit + 'р.');
-                                                $('.modal__input__history__deposit').val(deposit);
-                                            } else $('.modal__input__history__deposit').val(deposit);
+                                            $('.deposit .deposit__sum__int').text(deposit);
 
                                             // обновляем историю
                                             $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
@@ -532,6 +529,29 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         /* ###################################################################### */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // история таймеров
         const modalHistory = function (e) {
             e.preventDefault();
@@ -566,30 +586,38 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
             /* ###################################################################### */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // сумма депозита
-            var inputHistoryDeposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                    name: 'modal-input-history-deposit',
-                    class_name: 'modal__input__history__deposit',
-                    value: 0,
-                    placeholder: 'укажите сумму депозита'
-                }),
-                editHistoryBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                    class_name: 'modal__editBtn__history',
-                    text: 'Редактировать историю'
-                }),
-                historyDepositWrapper = `<div class="modal__history__deposit__wrapper" style="width: 100%; margin-top: 20px;">
-                    <div class="history__wrapper__flex" style="display: flex; flex-direction: row;">
-                        <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
-                            <span>Сумма депозита:</span>
-                            <div>${ inputHistoryDeposit }</div>
-                        </div>
-                        <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
-                            <a href="" class="link__filter" style="
-                                text-decoration: none; color: #1375ab; word-break: break-all;">Фильтр
-                            </a>
+            let historyDepositWrapper = `<div class="modal__history__deposit__wrapper" style="width: 100%; margin-top: 20px;">
+                <div class="history__wrapper__flex" style="display: flex; flex-direction: row;">
+                    <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
+                        <span>Сумма депозита:</span>
+                        <div class="deposit__sum" style="margin-top: 8px;">
+                            <span class="deposit__sum__int" style="font-weight: bold;">0</span> р.
                         </div>
                     </div>
-                </div>`;
+                    <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
+                        <a href="" class="link__filter" style="
+                            text-decoration: none; color: #1375ab; word-break: break-all;">Фильтр
+                        </a>
+                    </div>
+                </div>
+            </div>`;
 
             $('.modal__timer__history').append(historyDepositWrapper);
             $('.modal__input__history__deposit').css({ 'margin-bottom': '10px', 'width': '150px' });
@@ -608,54 +636,138 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 },
                 dataType: 'json',
                 success: function (data) {
-                    $('.modal__input__history__deposit').val(data)
+                    $('.deposit__sum .deposit__sum__int').text(data);
 
-                    if (!rights || !rights.includes('isEditDeposit')) {
-                        $('.modal__input__history__deposit').css('display', 'none');
-                        $('.history__wrapper__flex .deposit div').text(data + 'р.');
-                        $('.history__wrapper__flex .deposit div').css({
-                            'margin-left': '5px',
-                            'margin-top': '8px',
-                            'padding-bottom': '15px'
+                    if (rights && rights.includes('isEditDeposit')) {
+                        $('.modal__history__deposit__wrapper .deposit').append(`
+                            <div class="modal__addDepositBtn__wrapper">
+                                <button type="button" class="button-input modal__addDepositBtn">
+                                    <span class="button-input-inner">
+                                        <span class="button-input-inner__text">+</span>
+                                    </span>
+                                </button>
+                            </div>
+                        `);
+
+                        $('.modal__addDepositBtn__wrapper').css({ 'margin-left': '10px' });
+                        $('.modal__addDepositBtn').css({ 'padding': '10px 12px 8px' });
+                        $('.modal__addDepositBtn .button-input-inner__text').css({ 'font-size': '18px', 'font-weight': 'normal' });
+                        $('.history__wrapper__flex').css('margin-bottom', '10px');
+
+                        // добавление депозита
+                        $('.modal__addDepositBtn').unbind('click');
+                        $('.modal__addDepositBtn').bind('click', function () {
+                            // модалка добавления суммы депозита
+                            new Modal({
+                                class_name: 'timer__deposit_change',
+                                init: function ($modal_body) {
+                                    var $this = $(this);
+                                    $modal_body
+                                        .trigger('modal:loaded')
+                                        .html(`
+                                            <div class="modal__timer__add__deposit" style="width: 100%; height: 125px;">
+                                                <h2 class="modal__body__caption head_2">Добавление депозита</h2>
+                                            </div>
+                                        `)
+                                        .trigger('modal:centrify')
+                                        .append('');
+                                },
+                                destroy: function () {}
+                            });
+
+                            // инпут депозита
+                            let input_deposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                                name: 'modal-input-add-deposit',
+                                class_name: 'modal__input__add__deposit',
+                                placeholder: 'укажите сумму депозита'
+                            });
+
+                            $('.modal__timer__add__deposit').append(input_deposit);
+                            $('.modal__input__add__deposit').css({ 'width': '100%', 'margin-top': '10px' });
+                            $('.modal__input__add__deposit').attr('type', 'number');
+                            $('.modal__input__add__deposit').focus();
+
+                            // кнопки Сохранить и Закрыть
+                            let saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                                    class_name: 'modal__saveDepositBtn__timer button-input_blue',
+                                    text: 'Сохранить'
+                                }),
+                                cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                                    class_name: 'modal__cancelDepositBtn__timer',
+                                    text: 'Закрыть'
+                                }),
+                                btnWrapper = `<div class="modal__body__actions__add__deposit" style="width: 100%;">
+                                    ${ saveBtn } ${ cancelBtn }
+                                </div>`;
+
+                            $('.modal__timer__add__deposit').append(btnWrapper);
+                            $('.modal__body__actions__add__deposit').css('margin-top', '20px');
+
+                            // добавление депозита
+                            $('.modal__saveDepositBtn__timer').unbind('click');
+                            $('.modal__saveDepositBtn__timer').bind('click', function (e) {
+                                // проверка на значение
+                                if (!$('.modal__input__add__deposit').val().trim().length) {
+                                    $('.modal__input__add__deposit').css('border-color', '#f57d7d');
+                                    $('.modal__input__add__deposit').focus();
+                                    return false;
+                                }
+
+                                // анимация выполнения кнопки
+                                $('.modal__saveDepositBtn__timer').addClass('button-input-loading');
+                                $('.modal__saveDepositBtn__timer').attr('data-loading', 'Y');
+                                $('.modal__saveDepositBtn__timer .button-input-inner').css('display', 'none');
+                                $('.modal__saveDepositBtn__timer').append(`
+                                    <div class="button-input__spinner">
+                                        <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+                                    </div>
+                                `);
+                                $('.modal__saveDepositBtn__timer').unbind('click');
+
+                                // получаем настройки для поиска поля депозита
+                                let deposit_title = self.getDepositTitle();
+                                let deposit_sum = parseInt($('.deposit .deposit__sum__int').text().trim()) + parseInt($('.modal__input__add__deposit').val().trim());
+
+                                // меняем депозит
+                                $.ajax({
+                                    url: url_link_t,
+                                    method: 'post',
+                                    data: {
+                                        'domain': document.domain,
+                                        'method': 'change_deposit',
+                                        'essence_id': essenseID,
+                                        'deposit': deposit_sum,
+                                        'deposit_title': deposit_title
+                                    },
+                                    dataType: 'json',
+                                    success: function (data) {
+                                        // обновляем значение депозита
+                                        $('.deposit .deposit__sum__int').text(data);
+                                        $('.timer__deposit_change').remove();
+                                    }
+                                });
+                            });
                         });
                     }
                 }
             });
 
-            // редактирование депозита
-            var deposit = $('.modal__input__history__deposit');
-            deposit.bind('input', () => deposit.css('border-color', '#dbdedf'));
-
-            deposit.unbind('change');
-            deposit.bind('change', function () {
-                // получаем настройки для поиска поля депозита
-                let deposit_title = self.getDepositTitle();
-
-                $.ajax({
-                    url: url_link_t,
-                    method: 'post',
-                    data: {
-                        'domain': document.domain,
-                        'method': 'change_deposit',
-                        'essence_id': essenseID,
-                        'deposit': deposit.val(),
-                        'deposit_title': deposit_title
-                    },
-                    dataType: 'json',
-                    success: function (data) {
-                        // обновляем значение депозита
-                        deposit.val(data);
-
-                        // красим поле в зеленый цвет
-                        deposit.css({ 'transition-duration': '0s', 'border-color': '#2bd153' });
-                        setTimeout(() => {
-                            deposit.css({ 'transition-duration': '1s', 'border-color': '#dbdedf' });
-                        }, 1000);
-                    }
-                });
-            });
-
             /* ###################################################################### */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             // фильтр поиска
             $('.link__filter').unbind('click');
@@ -1625,6 +1737,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                         success: function (data) {}
                                     });
 
+                                    // анимация выполнения кнопки
                                     $('.modal__saveBtn__timer').addClass('button-input-loading');
                                     $('.modal__saveBtn__timer').attr('data-loading', 'Y');
                                     $('.modal__saveBtn__timer .button-input-inner').css('display', 'none');
@@ -1635,6 +1748,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     `);
                                     $('.modal__saveBtn__timer').unbind('click');
 
+                                    // пауза для эффекта сохранения
                                     setTimeout(() => {
                                         // очищаем таймер
                                         $('.timer__stop').remove();
