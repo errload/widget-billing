@@ -514,10 +514,13 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 success: function (data) {
                     if (!data) data = 0;
                     if ($('.result__sum').length) $('.result__sum').remove();
+
                     $('.x__bottom').before(`
                         <div class="result__sum" style="display: flex; flex-direction: row; justify-content: flex-end;">
                             Итого: &nbsp<div class="result__price">${ sum ? sum : data }</div>р.
-                        </div>`);
+                        </div>
+                    `);
+
                     $('.result__sum').css({
                         'width': '100%',
                         'padding': '20px 20px 10px 0',
@@ -729,23 +732,50 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 let deposit_sum = parseInt($('.deposit .deposit__sum__int').text().trim()) + parseInt($('.modal__input__add__deposit').val().trim());
 
                                 // меняем депозит
-                                $.ajax({
-                                    url: url_link_t,
-                                    method: 'post',
-                                    data: {
-                                        'domain': document.domain,
-                                        'method': 'change_deposit',
-                                        'essence_id': essenseID,
-                                        'deposit': deposit_sum,
-                                        'deposit_title': deposit_title
-                                    },
-                                    dataType: 'json',
-                                    success: function (data) {
-                                        // обновляем значение депозита
-                                        $('.deposit .deposit__sum__int').text(data);
-                                        $('.timer__deposit_change').remove();
-                                    }
-                                });
+                                if (parseInt($('.modal__input__add__deposit').val().trim()) !== 0) {
+                                    $.ajax({
+                                        url: url_link_t,
+                                        method: 'post',
+                                        data: {
+                                            'domain': document.domain,
+                                            'method': 'change_deposit',
+                                            'essence_id': essenseID,
+                                            'user_id': AMOCRM.constant('user').id,
+                                            'deposit_sum': deposit_sum,
+                                            'deposit': $('.modal__input__add__deposit').val().trim(),
+                                            'deposit_title': deposit_title,
+                                            'timezone': AMOCRM.constant('account').timezone
+                                        },
+                                        dataType: 'json',
+                                        success: function (data) {
+                                            // добавляем пополнение депозита в историю
+                                            $('.modal__history__deposit__wrapper').after(`
+                                                <div class="link__details" data-id="" style="
+                                                    display: flex; flex-direction: row; justify-content: space-between;
+                                                    width: calc(100% - 10px); border-top: 1px solid #c7efc2; border-bottom: 1px solid #c7efc2;
+                                                    margin-bottom: 2px;background: #ECFFEA; padding: 1px 10px; cursor: auto;
+                                                    ">
+                                                    <div>
+                                                        <span class="user__created_at" style="color: #979797; font-size: 13px;">
+                                                            ${new Date().toLocaleDateString()}
+                                                        </span><br/>
+                                                        <div class="user__title">Пополнение депозита</div>
+                                                    </div>
+                                                    <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
+                                                        <div class="user__sum">${ $('.modal__input__add__deposit').val().trim() }</div>
+                                                        <div class="user_valute">р.</div>
+                                                    </div>
+                                                </div>                                        
+                                            `);
+
+                                            // обновляем значение депозита
+                                            $('.deposit .deposit__sum__int').text(data);
+                                            // закрываем окно
+                                            $('.timer__deposit_change').remove();
+                                        }
+                                    });
+                                } else $('.timer__deposit_change').remove();
+
                             });
                         });
                     }
@@ -939,8 +969,23 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 $('.x__bottom').before(historyItem);
                                 $('.link__details').unbind('click');
                                 $('.link__details').bind('click', self.showDetails);
-                                result_sum += parseInt(history_sum);
+                                if (history_user !== 'Пополнение депозита') result_sum += parseInt(history_sum);
                             });
+
+                            // красим пополнение депозита в зеленый цвет
+                            if ($('.modal__timer__history .link__details').length) {
+                                $.each($('.modal__timer__history .link__details'), function () {
+                                    if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
+
+                                    $(this).unbind('click');
+                                    $(this).css({
+                                        'border-top': '1px solid #c7efc2',
+                                        'border-bottom': '1px solid #c7efc2',
+                                        'background': '#ECFFEA',
+                                        'cursor': 'auto'
+                                    });
+                                });
+                            }
 
                             // меняем итоговую сумму внизу истории
                             self.resultSum(result_sum);
@@ -952,6 +997,25 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
 
             /* ###################################################################### */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             // получаем данные
             $.ajax({
@@ -1013,6 +1077,21 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.link__details').unbind('click');
                         $('.link__details').bind('click', self.showDetails);
                     });
+
+                    // красим пополнение депозита в зеленый цвет
+                    if ($('.modal__timer__history .link__details').length) {
+                        $.each($('.modal__timer__history .link__details'), function () {
+                            if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
+
+                            $(this).unbind('click');
+                            $(this).css({
+                                'border-top': '1px solid #c7efc2',
+                                'border-bottom': '1px solid #c7efc2',
+                                'background': '#ECFFEA',
+                                'cursor': 'auto'
+                            });
+                        });
+                    }
 
                     // итоговая сумма истории
                     $('.modal__timer__history').append(`<div class="x__bottom"></div>`);

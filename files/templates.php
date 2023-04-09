@@ -532,29 +532,61 @@
 
     // обновляем депозит
     if ($_POST['method'] == 'change_deposit' && $Config->CheckToken()) {
-
-        $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
-
-        $update = '
-            UPDATE billing_deposit
-            SET deposit = "' . $_POST['deposit'] . '"
-            WHERE essence_id = "' . $_POST['essence_id'] . '"
-        ';
+        // добавляем запись с добавлением депозита в таймер
+        $tz = $_POST['timezone'];
+        $dt = new DateTime('now', new DateTimeZone($tz));
+        $dt->setTimestamp(time());
 
         $insert = '
-            INSERT INTO billing_deposit
+            INSERT INTO billing_timer
             VALUES(
                 null,
                 "' . $_POST['essence_id'] . '",
+                "' . $_POST['user_id'] . '",
+                "Пополнение депозита",
+                "",
+                "",
+                "",
                 "' . $_POST['deposit'] . '",
-                ""
+                "",
+                "' . $dt->format('d.m.Y H:i:s') . '",
+                "' . $_POST['timezone'] . '",
+                "",
+                "",
+                "finish",
+                "0"
             )
         ';
 
+        $mysqli->query($insert);
+
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
         $result = $mysqli->query($select);
-        if (!$result->num_rows) $mysqli->query($insert);
-        else $mysqli->query($update);
-        $result = $mysqli->query($select)->fetch_array();
+
+        if (!$result->num_rows) {
+            $insert = '
+                INSERT INTO billing_deposit
+                VALUES(
+                    null,
+                    "' . $_POST['essence_id'] . '",
+                    "' . $_POST['deposit_sum'] . '",
+                    ""
+                )
+            ';
+
+            $mysqli->query($insert);
+        } else {
+            $update = '
+                UPDATE billing_deposit
+                SET deposit = "' . $_POST['deposit_sum'] . '"
+                WHERE essence_id = "' . $_POST['essence_id'] . '"
+            ';
+
+            $mysqli->query($update);
+        }
+
+        $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_id'] . '"';
+        $result = $mysqli->query($select)->fetch_assoc();
 
         // ищем ID сущности в покупателях
         $is_customer = true;
@@ -597,7 +629,7 @@
             if (!$field_ID) return;
 
             // обновляем поле
-            $customFields = $Config->SetFieldValue($customFields, $field_type, $field_ID, $_POST['deposit']);
+            $customFields = $Config->SetFieldValue($customFields, $field_type, $field_ID, $_POST['deposit_sum']);
 
             if ($is_customer) $apiClient->customers()->updateOne($customer);
             else $apiClient->leads()->updateOne($customer);
@@ -625,7 +657,7 @@
             echo json_encode(false);
             return false;
         } else while ($row = $result->fetch_assoc()) $history[] = [
-            $row['id'], $row['created_at'], $row['user'], $row['price']
+            $row['id'], $row['created_at'], $row['user'], $row['price'], $row['service']
         ];
 
         echo json_encode($history);
@@ -780,6 +812,7 @@
             SELECT SUM(price) AS result__sum 
             FROM billing_timer 
             WHERE essence_id = "' . $_POST['essence_id'] . '"
+                AND user != "Пополнение депозита"
         ';
 
         $result = $mysqli->query($select)->fetch_assoc();
