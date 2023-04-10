@@ -1,21 +1,36 @@
 // billing
 define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function($, _, Twig, Modal) {
     var CustomWidget_WidgetBilling = function() {
-        var self = this,
+        let self = this,
             system = self.system,
             url_link_t = 'https://integratorgroup.k-on.ru/andreev/billing/templates.php';
 
-        // настройки прав доступа, стоимость сотрудника
-        this.config_settings = {};
-        this.userID = AMOCRM.constant('user').id;
-        this.filter_date = null;
-        this.filter_managers = [];
+        this.config_settings = {}; // настройки виджета
+        this.user_ID = null; // ID пользователя
+        this.essense_ID = null; // сущность
+        this.timezone = AMOCRM.constant('account').timezone; // timezone AMO
+        this.filter_date = null; // даты для фильтра
+        this.filter_managers = []; // сотрудники для фильтра
         this.filter_results = []; // результирующий массив для экспорта
         this.filter_all_time = null; // общее время для экспорта
         this.filter_all_sum = null; // общая сумма для экспорта
         this.price_manager = 0;
 
-        // получаем настройки для поиска поля депозита
+        // получаем настройки
+        this.getConfigSettings = function () {
+            let config_settings = self.get_settings().config_settings || {};
+            if (typeof config_settings !== 'string') config_settings = JSON.stringify(config_settings);
+            config_settings = JSON.parse(config_settings);
+            self.config_settings = config_settings;
+        }
+
+        // сохраняем настройки
+        this.saveConfigSettings = function () {
+            $(`#${ self.get_settings().widget_code }_custom`).val(JSON.stringify(self.config_settings));
+            $(`#${ self.get_settings().widget_code }_custom`).trigger('change');
+        }
+
+        // название поле депозита из настроек
         this.getDepositTitle = function () {
             let deposit_title = '';
             self.getConfigSettings();
@@ -27,4020 +42,4311 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             return deposit_title;
         }
 
-
-        // получение настроек
-        this.getConfigSettings = function () {
-            var config_settings = self.get_settings().config_settings || {};
-            if (typeof config_settings !== 'string') config_settings = JSON.stringify(config_settings);
-            config_settings = JSON.parse(config_settings);
-            self.config_settings = config_settings;
-        }
-
-        // сохранение настроек
-        this.saveConfigSettings = function () {
-            $(`#${ self.get_settings().widget_code }_custom`).val(JSON.stringify(self.config_settings));
-            $(`#${ self.get_settings().widget_code }_custom`).trigger('change');
-        }
-
-        // очищаем интервалы
+        // очищаем интервалыы
         this.clearIntervals = function () {
-            var maxInterval = setInterval(() => {}, 1);
-            for (var i = 0; i < maxInterval; i++) clearInterval(i);
+            let maxInterval = setInterval(() => {}, 1);
+            for (let i = 0; i < maxInterval; i++) clearInterval(i);
         }
 
-        // детальный просмотр истории таймера
-        this.showDetails = function (e) {
-            var historyID = $(e.target).attr('data-id');
-            if (!historyID) historyID = $(e.target).closest('.link__details').attr('data-id');
-
-            new Modal({
-                class_name: 'hystory__details',
-                init: function ($modal_body) {
-                    var $this = $(this);
-                    $modal_body
-                        .trigger('modal:loaded')
-                        .html(`
-                            <div class="modal__hystory__details" data-id="${ historyID }" style="width: 100%; min-height: 550px;">
-                                <h2 class="modal-body__caption head_2">Детализация</h2>
-                            </div>
-                        `)
-                        .trigger('modal:centrify')
-                        .append('');
-                },
-                destroy: function () {}
-            });
-
-            /* ###################################################################### */
-
-            // добавляем элементы истории
-            const addHistoryItem = function (title, value, class_item = '') {
-                var historyItem = `
-                    <div class="flex__history" style="
-                        display: flex;
-                        flex-direction: row;
-                        background: #fcfcfc;
-                        border-top: 1px solid #dbdedf;
-                        border-bottom: 1px solid #dbdedf;
-                        margin-bottom: 2px;
-                    ">
-                        <div class="title title__${ class_item }" style="
-                            width: 200px; text-align: right; padding: 10px; color: #92989b;">
-                            ${ title }
-                        </div>
-                        <div class="value ${ class_item }" style="width: 100%; padding: 10px 10px 10px 0;">
-                            ${ value }
-                        </div>
-                    </div>
-                `;
-                $('.modal__hystory__details').append(historyItem);
-            }
-
-            $.ajax({
-                url: url_link_t,
-                method: 'post',
-                data: {
-                    'domain': document.domain,
-                    'method': 'history_details',
-                    'history_id': historyID
-                },
-                dataType: 'json',
-                success: function (data) {
-                    addHistoryItem('Дата таймера', data.created_at.split(' ')[0] + 'г.');
-                    addHistoryItem('Ответственный', data.user, 'user__details__item');
-                    addHistoryItem('Имя клиента', data.client, 'client__details__item');
-                    addHistoryItem('Оказанная услуга', data.service, 'service__details__item');
-                    addHistoryItem('Комментарий', data.comment, 'comment__details__item');
-                    addHistoryItem('Стоимость работы', data.price + 'р.', 'price__details__item');
-                    addHistoryItem('Ссылка на задачу', `
-                        <a href="${ data.link_task }" target="_blank" style="
-                            text-decoration: none; color: #1375ab; word-break: break-all;
-                        ">${ data.link_task }</a>                                    
-                    `, 'link__task__details__item');
-                    addHistoryItem('Время работы', data.time_work, 'time_work__details__item');
-
-                    $('.value.time_work__details__item').css('width', '50%');
-                    $('.value.time_work__details__item').after(`
-                        <div class="is__change__time_work" style="width: calc(50% - 30px); padding: 10px; text-align: right; color: #92989b;"></div>
-                    `);
-
-                    // если время изменено, показываем блок "(изменено)"
-                    if (data.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
-
-                    /* ###################################################################### */
-
-                    // права на редактирование истории
-                    if (rights && rights.includes('isEditHistory')) {
-                        // кнопки Редактировать, Сохранить
-                        var editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                class_name: 'modal__editBtn__details',
-                                text: 'Редактировать'
-                            }),
-                            saveEditBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                class_name: 'modal__saveEditBtn__details button-input_blue',
-                                text: 'Сохранить'
-                            }),
-                            editBtnWrapper = `<div class="modal__body__actions__details" style="width: 100%;"></div>`;
-
-                        $('.modal__hystory__details').append(editBtnWrapper);
-                        $('.modal__body__actions__details').append(editBtn);
-                        $('.modal__body__actions__details').append(saveEditBtn);
-                        $('.modal__saveEditBtn__details').css('display', 'none');
-                        $('.modal__body__actions__details').css('margin-top', '10px');
-
-                        /* ###################################################################### */
-
-                        // время работы для для подсчета разницы даты после редактирования
-                        let old_time, new_time, price, time_edit;
-
-                        // редактирование истории
-                        $('.modal__editBtn__details').unbind('click');
-                        $('.modal__editBtn__details').bind('click', function () {
-                            $('.modal__editBtn__details').css('display', 'none');
-                            $('.modal__saveEditBtn__details').css('display', 'block');
-
-                            // возвращаем стандартные аттрибуты кнопки
-                            if ($('.modal__saveEditBtn__details').hasClass('button-input-loading')) $('.modal__saveBtn__timer').removeClass('button-input-loading')
-                            $('.modal__saveEditBtn__details').attr('data-loading', '');
-                            if ($('.modal__saveEditBtn__details .button-input-inner').css('display') === 'none') $('.modal__saveEditBtn__details .button-input-inner').css('display', 'block');
-                            if ($('.modal__saveEditBtn__details .button-input__spinner').length) $('.modal__saveEditBtn__details .button-input__spinner').remove();
-
-                            const toEdit = function (class_text, class_input, name_input, value, placeholder) {
-                                var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                                    name: name_input,
-                                    class_name: class_input,
-                                    value: '',
-                                    placeholder: placeholder
-                                });
-
-                                $(`.${ class_text }`).text('');
-                                $(`.${ class_text }`).append(input);
-                                $(`.${ class_input }`).val(value);
-                                $(`.${ class_input }`).css('width', '100%');
-                                $(`.title__${ class_text }`).css('padding-top', '19px');
-                            }
-
-                            // ответственный
-                            toEdit(
-                                'user__details__item',
-                                'modal__input__user__edit__details',
-                                'modal-input-client-edit-details',
-                                $('.user__details__item').text().trim(),
-                                'введите имя ответственного'
-                            );
-
-                            // имя клиента
-                            toEdit(
-                                'client__details__item',
-                                'modal__input__client__edit__details',
-                                'modal-input-client-edit-details',
-                                $('.client__details__item').text().trim(),
-                                'введите имя клиента'
-                            );
-
-                            // оказанная услуга
-                            toEdit(
-                                'service__details__item',
-                                'modal__input__service__edit__details',
-                                'modal-input-service-edit-details',
-                                $('.service__details__item').text().trim(),
-                                'введите оказанную услугу'
-                            );
-
-                            var textarea = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
-                                name: 'modal-textarea-comment-edit-details',
-                                class_name: 'modal__textarea__comment__edit__details',
-                                placeholder: 'введите комментарий'
-                            });
-                            var text = $('.comment__details__item').text().trim();
-                            $('.comment__details__item').text('');
-                            $('.comment__details__item').append(textarea);
-                            $('.modal__textarea__comment__edit__details').val(text);
-                            $('.modal__textarea__comment__edit__details').css('width', '100%');
-                            $('.title__comment__details__item').css('padding-top', '19px');
-
-                            // стоимость работы
-                            toEdit(
-                                'price__details__item',
-                                'modal__input__price__edit__details',
-                                'modal-input-price-edit-details',
-                                $('.price__details__item').text().trim().slice(0, -2),
-                                'введите стоимость работы'
-                            );
-                            $('.modal__input__price__edit__details').attr('type', 'number');
-
-                            // ссылка на задачу
-                            toEdit(
-                                'link__task__details__item',
-                                'modal__input__link__task__edit__details',
-                                'modal-input-link__task-edit-details',
-                                $('.link__task__details__item').text().trim(),
-                                'введите ссылку на задачу'
-                            );
-
-                            // время работы
-                            time_edit = $('.time_work__details__item').text().trim();
-                            $('.time_work__details__item').text('');
-
-                            $('.value.time_work__details__item').append(`
-                                <input 
-                                    type="time" 
-                                    name="modal-input-time_work-edit-details" 
-                                    class="modal__input__time_work__edit__details text-input"
-                                    placeholder="введите время работы"
-                                    value="${ time_edit }"
-                                    step="2"
-                                />
-                            `);
-
-                            $('.modal__input__time_work__edit__details').css('width', '100%');
-                            $('.title__time_work__details__item').css('padding-top', '19px');
-                        });
-
-                        /* ###################################################################### */
-
-                        // сохранение истории
-                        $('.modal__saveEditBtn__details').unbind('click');
-                        $('.modal__saveEditBtn__details').bind('click', function () {
-                            var user = $('.modal__input__user__edit__details');
-                            var client = $('.modal__input__client__edit__details');
-                            var service = $('.modal__input__service__edit__details');
-                            var comment = $('.modal__textarea__comment__edit__details');
-                            price = $('.modal__input__price__edit__details');
-                            var link_task = $('.modal__input__link__task__edit__details');
-                            var time_work = $('.modal__input__time_work__edit__details');
-                            var isError = false;
-
-                            // красим поля в случае ошибки
-                            if (!link_task.val().trim().length) {
-                                link_task.val('').focus();
-                                isError = true;
-                                $('.modal__input__link__task__edit__details').css('border-color', '#f37575');
-                            }
-                            // возвращаем естесственные цвета
-                            $('.modal__input__link__task__edit__details').unbind('change');
-                            $('.modal__input__link__task__edit__details').bind('change', function () {
-                                $('.modal__input__link__task__edit__details').css('border-color', '#dbdedf');
-                            });
-
-                            if (!price.val().trim().length) {
-                                price.val('').focus();
-                                isError = true;
-                                $('.modal__input__price__edit__details').css('border-color', '#f37575');
-                            }
-
-                            // возвращаем естесственные цвета
-                            $('.modal__input__price__edit__details').unbind('change');
-                            $('.modal__input__price__edit__details').bind('change', function () {
-                                $('.modal__input__price__edit__details').css('border-color', '#dbdedf');
-                            });
-
-                            if (!service.val().trim().length) {
-                                service.val('').focus();
-                                isError = true;
-                                $('.modal__input__service__edit__details').css('border-color', '#f37575');
-                            }
-
-                            // возвращаем естесственные цвета
-                            $('.modal__input__service__edit__details').unbind('change');
-                            $('.modal__input__service__edit__details').bind('change', function () {
-                                $('.modal__input__service__edit__details').css('border-color', '#dbdedf');
-                            });
-
-                            if (!client.val().trim().length) {
-                                client.val('').focus();
-                                isError = true;
-                                $('.modal__input__client__edit__details').css('border-color', '#f37575');
-                            }
-
-                            // возвращаем естесственные цвета
-                            $('.modal__input__client__edit__details').unbind('change');
-                            $('.modal__input__client__edit__details').bind('change', function () {
-                                $('.modal__input__client__edit__details').css('border-color', '#dbdedf');
-                            });
-
-                            if (!user.val().trim().length) {
-                                user.val('').focus();
-                                isError = true;
-                                $('.modal__input__user__edit__details').css('border-color', '#f37575');
-                            }
-
-                            // возвращаем естесственные цвета
-                            $('.modal__input__user__edit__details').unbind('change');
-                            $('.modal__input__user__edit__details').bind('change', function () {
-                                $('.modal__input__user__edit__details').css('border-color', '#dbdedf');
-                            });
-
-                            if (isError) return false;
-
-                            // меняем аттрибуты кнопки
-                            $('.modal__saveEditBtn__details').addClass('button-input-loading');
-                            $('.modal__saveEditBtn__details').attr('data-loading', 'Y');
-                            $('.modal__saveEditBtn__details .button-input-inner').css('display', 'none');
-                            $('.modal__saveEditBtn__details').append(`
-                                <div class="button-input__spinner">
-                                    <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
-                                </div>
-                            `);
-                            $('.modal__editBtn__details').css('display', 'none');
-
-                            // поиск цены сотрудника в кастомных полях
-                            let entity_url, entity_ID = AMOCRM.data.current_card.id;
-                            if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
-                            if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
-
-                            $.ajax({
-                                url: entity_url,
-                                method: 'get',
-                                success: function (data) {
-                                    if (!data.custom_fields_values) return;
-
-                                    $.each(data.custom_fields_values, function () {
-                                        // если не сотрудник истории, пропускаем
-                                        if (this.field_name !== user.val().trim()) return;
-                                        // цена сотрудника
-                                        self.price_manager = this.values[0].value;
-                                    });
-
-                                    // преобразуем в число
-                                    self.price_manager = parseInt(self.price_manager) || 0;
-
-                                    // считаем разницу во времени
-                                    new_time = time_work.val();
-                                    old_time = time_edit;
-                                    price = parseInt(price.val()) || 0;
-
-                                    // если время было изменено
-                                    if (new_time !== old_time) {
-                                        // считаем разницу во времени
-                                        const getDate = function (date) {
-                                            return new Date(0, 0, 0, date.split(':')[0], date.split(':')[1], date.split(':')[2]);
-                                        }
-
-                                        // если новая дата больше старой, прибавляем к стоимости работы, иначе онимаем
-                                        if (getDate(new_time) > getDate(old_time)) {
-                                            price += ((getDate(new_time) - getDate(old_time)) / 60000) * self.price_manager;
-                                        } else if (getDate(new_time) < getDate(old_time)) {
-                                            price -= ((getDate(old_time) - getDate(new_time)) / 60000) * self.price_manager;
-                                        }
-                                    }
-
-                                    // получаем настройки для поиска поля депозита
-                                    let deposit_title = self.getDepositTitle();
-
-                                    // обновляем данные в БД
-                                    $.ajax({
-                                        url: url_link_t,
-                                        method: 'post',
-                                        data: {
-                                            'domain': document.domain,
-                                            'method': 'edit_history_details',
-                                            'history_id': historyID,
-                                            'essence_id': AMOCRM.data.current_card.id,
-                                            'user': $('.modal__input__user__edit__details').val(),
-                                            'client': $('.modal__input__client__edit__details').val(),
-                                            'service': $('.modal__input__service__edit__details').val(),
-                                            'price': price,
-                                            'link_task': $('.modal__input__link__task__edit__details').val(),
-                                            'time_work': $('.modal__input__time_work__edit__details').val(),
-                                            'comment': $('.modal__textarea__comment__edit__details').val().trim(),
-                                            'deposit_title': deposit_title
-                                        },
-                                        dataType: 'json',
-                                        success: function (data) {
-                                            var timer = data[0];
-                                            var deposit = data[1];
-
-                                            // обновляем сумму депозита
-                                            $('.deposit .deposit__sum__int').text(deposit);
-
-                                            // обновляем историю
-                                            $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
-                                            $(`.link__details[data-id="${ timer.id }"] .user__price .user__sum`).text(timer.price);
-
-                                            // обновляем детализацию
-                                            $('.modal__input__user__edit__details').remove();
-                                            $('.modal__input__client__edit__details').remove();
-                                            $('.modal__input__service__edit__details').remove();
-                                            $('.modal__textarea__comment__edit__details').remove();
-                                            $('.modal__input__price__edit__details').remove();
-                                            $('.modal__input__link__task__edit__details').remove();
-                                            $('.modal__input__time_work__edit__details').remove();
-
-                                            $('.user__details__item').text(timer.user);
-                                            $('.client__details__item').text(timer.client);
-                                            $('.service__details__item').text(timer.service);
-                                            $('.comment__details__item').text(timer.comment);
-                                            $('.price__details__item').text(timer.price + 'р.');
-                                            $('.link__task__details__item').html(`
-                                                <a href="${ timer.link_task }" target="_blank" style="
-                                                    text-decoration: none; color: #1375ab; word-break: break-all;
-                                                ">${ timer.link_task }</a>
-                                            `);
-                                            $('.time_work__details__item').text(timer.time_work);
-
-                                            $(`.title__user__details__item`).css('padding-top', '10px');
-                                            $(`.title__client__details__item`).css('padding-top', '10px');
-                                            $(`.title__service__details__item`).css('padding-top', '10px');
-                                            $(`.title__comment__details__item`).css('padding-top', '10px');
-                                            $(`.title__price__details__item`).css('padding-top', '10px');
-                                            $(`.title__link__task__details__item`).css('padding-top', '10px');
-                                            $(`.time_work__details__item`).css('padding-top', '10px');
-                                            $(`.title.title__time_work__details__item`).css('padding-top', '10px');
-
-                                            // если время изменено, показываем блок "(изменено)"
-                                            if (timer.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
-
-                                            // меняем итоговую сумму внизу истории
-                                            price = 0;
-
-                                            $.each($('.user__price .user__sum'), function () {
-                                                price += parseInt($(this).text());
-                                            });
-
-                                            $('.result__sum .result__price').text(price);
-                                            time_edit = $('.time_work__details__item').text().trim();
-
-                                            $('.modal__editBtn__details').css('display', 'block');
-                                            $('.modal__saveEditBtn__details').css('display', 'none');
-                                        }
-                                    });
-
-                                    self.price_manager = 0;
-                                },
-                                timeout: 2000
-                            });
-
-                        });
-
-                    }
-                }
-            });
-
-            /* ###################################################################### */
-
-            // кнопка Закрыть
-            $('.modal__hystory__details').css('position', 'relative');
-            var cancelBtn = `
-                <a href="#" class="modal__cancelBtn__details" style="
-                    text-decoration: none;
-                    color: #92989b;
-                    font-size: 14px;
-                    font-weight: bold;
-                    top: 3px;
-                    right: 0;
-                    position: absolute;
-                ">Закрыть</a>
-            `;
-            $('.modal__hystory__details').append(cancelBtn);
-            $('.modal__cancelBtn__details').bind('click', function (e) {
-                e.preventDefault();
-                $('.hystory__details').remove();
-            });
-        }
-
-        /* ###################################################################### */
-
-        // итоговая сумма истории
-        this.resultSum = function (sum = null) {
-            $.ajax({
-                url: url_link_t,
-                method: 'post',
-                data: {
-                    'domain': document.domain,
-                    'method': 'get_sum',
-                    'essence_id': AMOCRM.data.current_card.id
-                },
-                dataType: 'json',
-                success: function (data) {
-                    if (!data) data = 0;
-                    if ($('.result__sum').length) $('.result__sum').remove();
-
-                    $('.x__bottom').before(`
-                        <div class="result__sum" style="display: flex; flex-direction: row; justify-content: flex-end;">
-                            Итого: &nbsp<div class="result__price">${ sum ? sum : data }</div>р.
-                        </div>
-                    `);
-
-                    $('.result__sum').css({
-                        'width': '100%',
-                        'padding': '20px 20px 10px 0',
-                        'text-align': 'right'
-                    });
-                }
-            });
-        }
-
-        /* ###################################################################### */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // история таймеров
-        const modalHistory = function (e) {
-            e.preventDefault();
-            var essenseID = AMOCRM.data.current_card.id,
-                userID = AMOCRM.constant('user').id;
-
-            // права доступа
-            self.getConfigSettings();
-            if (self.config_settings.rights && self.config_settings.rights[userID]) {
-                rights = self.config_settings.rights[userID];
-            }
-
-            // запуск модалки истории
-            new Modal({
-                class_name: 'timer__history',
-                init: function ($modal_body) {
-                    var $this = $(this);
-                    $modal_body
-                        .trigger('modal:loaded')
-                        .html(`
-                            <div class="modal__timer__history" style="width: 100%; height: 600px;">
-                                <h2 class="modal__body__caption head_2">История таймеров</h2>
-                            </div>
-                        `)
-                        .trigger('modal:centrify')
-                        .append('');
-                },
-                destroy: function () {}
-            });
-            $('.timer__history .modal-body').css('overflow', 'auto');
-            $('.modal__timer__history').css('position', 'relative');
-
-            /* ###################################################################### */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            // сумма депозита
-            let historyDepositWrapper = `<div class="modal__history__deposit__wrapper" style="width: 100%; margin-top: 20px;">
-                <div class="history__wrapper__flex" style="display: flex; flex-direction: row;">
-                    <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
-                        <span>Сумма депозита:</span>
-                        <div class="deposit__sum" style="margin-top: 8px;">
-                            <span class="deposit__sum__int" style="font-weight: bold;">0</span> р.
-                        </div>
-                    </div>
-                    <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
-                        <a href="" class="link__filter" style="
-                            text-decoration: none; color: #1375ab; word-break: break-all;">Фильтр
-                        </a>
-                    </div>
-                </div>
-            </div>`;
-
-            $('.modal__timer__history').append(historyDepositWrapper);
-            $('.modal__input__history__deposit').css({ 'margin-bottom': '10px', 'width': '150px' });
-            $('.history__wrapper__flex .deposit span').css('margin-top', '8px');
-            $('.history__wrapper__flex .deposit div').css('margin-left', '5px');
-            $('.modal__input__history__deposit').attr('type', 'number');
-
-            // получаем сумму депозита
-            $.ajax({
-                url: url_link_t,
-                method: 'post',
-                data: {
-                    'domain': document.domain,
-                    'method': 'get_deposit',
-                    'essence_id': essenseID
-                },
-                dataType: 'json',
-                success: function (data) {
-                    $('.deposit__sum .deposit__sum__int').text(data);
-
-                    if (rights && rights.includes('isEditDeposit')) {
-                        $('.modal__history__deposit__wrapper .deposit').append(`
-                            <div class="modal__addDepositBtn__wrapper">
-                                <button type="button" class="button-input modal__addDepositBtn">
-                                    <span class="button-input-inner">
-                                        <span class="button-input-inner__text">+</span>
-                                    </span>
-                                </button>
-                            </div>
-                        `);
-
-                        $('.modal__addDepositBtn__wrapper').css({ 'margin-left': '10px' });
-                        $('.modal__addDepositBtn').css({ 'padding': '10px 12px 8px' });
-                        $('.modal__addDepositBtn .button-input-inner__text').css({ 'font-size': '18px', 'font-weight': 'normal' });
-                        $('.history__wrapper__flex').css('margin-bottom', '10px');
-
-                        // добавление депозита
-                        $('.modal__addDepositBtn').unbind('click');
-                        $('.modal__addDepositBtn').bind('click', function () {
-                            // модалка добавления суммы депозита
-                            new Modal({
-                                class_name: 'timer__deposit_change',
-                                init: function ($modal_body) {
-                                    var $this = $(this);
-                                    $modal_body
-                                        .trigger('modal:loaded')
-                                        .html(`
-                                            <div class="modal__timer__add__deposit" style="width: 100%; height: 125px;">
-                                                <h2 class="modal__body__caption head_2">Добавление депозита</h2>
-                                            </div>
-                                        `)
-                                        .trigger('modal:centrify')
-                                        .append('');
-                                },
-                                destroy: function () {}
-                            });
-
-                            // инпут депозита
-                            let input_deposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                                name: 'modal-input-add-deposit',
-                                class_name: 'modal__input__add__deposit',
-                                placeholder: 'укажите сумму депозита'
-                            });
-
-                            $('.modal__timer__add__deposit').append(input_deposit);
-                            $('.modal__input__add__deposit').css({ 'width': '100%', 'margin-top': '10px' });
-                            $('.modal__input__add__deposit').attr('type', 'number');
-                            $('.modal__input__add__deposit').focus();
-
-                            // кнопки Сохранить и Закрыть
-                            let saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                    class_name: 'modal__saveDepositBtn__timer button-input_blue',
-                                    text: 'Сохранить'
-                                }),
-                                cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                                    class_name: 'modal__cancelDepositBtn__timer',
-                                    text: 'Закрыть'
-                                }),
-                                btnWrapper = `<div class="modal__body__actions__add__deposit" style="width: 100%;">
-                                    ${ saveBtn } ${ cancelBtn }
-                                </div>`;
-
-                            $('.modal__timer__add__deposit').append(btnWrapper);
-                            $('.modal__body__actions__add__deposit').css('margin-top', '20px');
-
-                            // добавление депозита
-                            $('.modal__saveDepositBtn__timer').unbind('click');
-                            $('.modal__saveDepositBtn__timer').bind('click', function (e) {
-                                // проверка на значение
-                                if (!$('.modal__input__add__deposit').val().trim().length) {
-                                    $('.modal__input__add__deposit').css('border-color', '#f57d7d');
-                                    $('.modal__input__add__deposit').focus();
-                                    return false;
-                                }
-
-                                // анимация выполнения кнопки
-                                $('.modal__saveDepositBtn__timer').addClass('button-input-loading');
-                                $('.modal__saveDepositBtn__timer').attr('data-loading', 'Y');
-                                $('.modal__saveDepositBtn__timer .button-input-inner').css('display', 'none');
-                                $('.modal__saveDepositBtn__timer').append(`
-                                    <div class="button-input__spinner">
-                                        <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
-                                    </div>
-                                `);
-                                $('.modal__saveDepositBtn__timer').unbind('click');
-
-                                // получаем настройки для поиска поля депозита
-                                let deposit_title = self.getDepositTitle();
-                                let deposit_sum = parseInt($('.deposit .deposit__sum__int').text().trim()) + parseInt($('.modal__input__add__deposit').val().trim());
-
-                                // меняем депозит
-                                if (parseInt($('.modal__input__add__deposit').val().trim()) !== 0) {
-                                    $.ajax({
-                                        url: url_link_t,
-                                        method: 'post',
-                                        data: {
-                                            'domain': document.domain,
-                                            'method': 'change_deposit',
-                                            'essence_id': essenseID,
-                                            'user_id': AMOCRM.constant('user').id,
-                                            'deposit_sum': deposit_sum,
-                                            'deposit': $('.modal__input__add__deposit').val().trim(),
-                                            'deposit_title': deposit_title,
-                                            'timezone': AMOCRM.constant('account').timezone
-                                        },
-                                        dataType: 'json',
-                                        success: function (data) {
-                                            // добавляем пополнение депозита в историю
-                                            $('.modal__history__deposit__wrapper').after(`
-                                                <div class="link__details" data-id="" style="
-                                                    display: flex; flex-direction: row; justify-content: space-between;
-                                                    width: calc(100% - 10px); border-top: 1px solid #c7efc2; border-bottom: 1px solid #c7efc2;
-                                                    margin-bottom: 2px; background: #ECFFEA; padding: 1px 10px; cursor: auto;
-                                                    ">
-                                                    <div>
-                                                        <span class="user__created_at" style="color: #979797; font-size: 13px;">
-                                                            ${new Date().toLocaleDateString()}
-                                                        </span><br/>
-                                                        <div class="user__title">Пополнение депозита</div>
-                                                    </div>
-                                                    <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
-                                                        <div class="user__sum">${ $('.modal__input__add__deposit').val().trim() }</div>
-                                                        <div class="user_valute">р.</div>
-                                                    </div>
-                                                </div>                                        
-                                            `);
-
-                                            // обновляем значение депозита
-                                            $('.deposit .deposit__sum__int').text(data);
-                                            // закрываем окно
-                                            $('.timer__deposit_change').remove();
-                                        }
-                                    });
-                                } else $('.timer__deposit_change').remove();
-
-                            });
-                        });
-                    }
-                }
-            });
-
-            /* ###################################################################### */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            // фильтр поиска
-            $('.link__filter').unbind('click');
-            $('.link__filter').bind('click', function (e) {
-                e.preventDefault();
-
+        /**
+         *
+         * ****************************************** TIMER ************************************************************
+         *
+         */
+
+            // запуск модалки
+        const timerOpen = function () {
                 new Modal({
-                    class_name: 'timer__filter',
+                    class_name: 'modal__timer__wrapper',
                     init: function ($modal_body) {
-                        var $this = $(this);
+                        let $this = $(this);
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                            <div class="modal__history__filter" style="width: 100%; height: 175px;">
-                                <h2 class="modal__body__caption__filter head_2">Фильтр поиска</h2>
+                            <div class="modal__timer" style="width: 100%; min-height: 250px;">
+                                <h2 class="modal__body__caption head_2">Таймер</h2>
                             </div>
                         `)
                             .trigger('modal:centrify')
                             .append('');
                     },
-                    destroy: function () {}
-                });
-
-                // даты от - до
-                var modalInputFrom = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
-                        class_name: 'modal__filter__input__from',
-                        input_class: 'input__modal__filter__input__from',
-                        value: '',
-                        placeholder: 'введите значение от:'
-                    }),
-                    modalInputTo = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
-                        class_name: 'modal__filter__input__to',
-                        input_class: 'input__modal__filter__input__to',
-                        value: '',
-                        placeholder: 'введите значение до:'
-                    }),
-                    linkFilterWrapper = `<div class="modal__filter__input__wrapper" style="width: 100%; margin-top: 20px;">
-                        <span style="width: 100%;">Введите дату поиска (от - до):</span><br/>
-                        <div class="modal__filter__input__flex" style="
-                            display: flex;
-                            flex-direction: row;
-                            width: 100%;
-                            margin-top: 3px;
-                        ">
-                            <div class="date_from">${ modalInputFrom }</div>
-                            <div style="padding: 8px 10px 0; color: #dbdedf;">-</div>
-                            <div class="date_to">${ modalInputTo }</div>
-                        </div>
-                    </div>`;
-                $('.modal__history__filter').append(linkFilterWrapper);
-
-                // кнопки Показать, Закрыть
-                var showBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                        class_name: 'modal__showBtn__filter',
-                        text: 'Показать'
-                    }),
-                    cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                        class_name: 'modal__cancelBtn__filter',
-                        text: 'Закрыть'
-                    }),
-                    actionBtnWrapper = `<div class="modal__body__actions__filter" style="
-                        width: 100%; margin-top: 20px;">
-                        ${ showBtn } ${ cancelBtn }
-                    </div>`;
-
-                $('.modal__history__filter').append(actionBtnWrapper);
-                $('.modal__body__caption__filter').css('margin-top', '20px');
-
-                /* ###################################################################### */
-
-                // показ интервала истории
-                $('.modal__showBtn__filter').unbind('click');
-                $('.modal__showBtn__filter').bind('click', function () {
-                    var filter_from = $('.input__modal__filter__input__from');
-                    var filter_to = $('.input__modal__filter__input__to');
-                    var isErrorFilter = false;
-
-                    if (!filter_from.val().length) {
-                        filter_from.css('border-color', '#f37575');
-                        isErrorFilter = true;
+                    destroy: function () {
                     }
-
-                    if (!filter_to.val().length) {
-                        filter_to.css('border-color', '#f37575');
-                        isErrorFilter = true;
-                    }
-
-                    // возвращаем естесственные цвета
-                    filter_from.unbind('click');
-                    filter_from.bind('click', function () { filter_from.css('border-color', '#dbdedf') });
-                    filter_to.unbind('click');
-                    filter_to.bind('click', function () { filter_to.css('border-color', '#dbdedf') });
-
-                    if (isErrorFilter) return false;
-
-                    $.ajax({
-                        url: url_link_t,
-                        method: 'post',
-                        data: {
-                            'domain': document.domain,
-                            'method': 'filter_history',
-                            'essence_id': essenseID,
-                            'from': filter_from.val(),
-                            'to': filter_to.val(),
-                        },
-                        dataType: 'json',
-                        success: function (data) {
-                            // очищаем прежний вывод
-                            $.each($('.link__details'), function () { this.remove(); });
-                            if ($('.filter__no__result').length) $('.filter__no__result').remove();
-
-                            // добавляем надпись фильтра дат
-                            if ($('.filter__timers__title').length) $('.filter__timers__title').remove();
-                            $('.modal__history__deposit__wrapper').after(`
-                                <div class="filter__timers__title" style="
-                                    width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
-                                    Фильтр таймеров с ${ filter_from.val() }г. по ${ filter_to.val() }г.:
-                                </div>
-                            `);
-
-                            if (!data) {
-                                if ($('.history__no__result').length) $('.history__no__result').remove();
-
-                                $('.result__sum').text('Итого: 0р.');
-                                $('.filter__timers__title').after(`
-                                    <div class="filter__no__result" style="
-                                        width: 100%; text-align: center; padding: 30px 0 10px;">
-                                        Фильтр не дал результатов.
-                                    </div>
-                                `);
-                                return;
-                            }
-
-                            // выводим результат
-                            var result_sum = 0;
-                            $.each(data, function () {
-                                var history_id = this[0],
-                                    history_created_at = this[1].split(' ')[0],
-                                    history_user = this[2],
-                                    history_price = this[3],
-                                    history_sum = this[4];
-
-                                var historyItem = `
-                                    <div class="link__details" data-id="${history_id}" style="
-                                        display: flex;
-                                        flex-direction: row;
-                                        justify-content: space-between;
-                                        width: calc(100% - 10px);
-                                        border-top: 1px solid #dbdedf;
-                                        border-bottom: 1px solid #dbdedf;
-                                        margin-bottom: 2px;
-                                        background: #fcfcfc;
-                                        padding: 1px 10px;
-                                        cursor: pointer;
-                                        ">
-                                        <div>
-                                            <span class="user__created_at" style="color: #979797; font-size: 13px;">
-                                                ${ history_created_at }
-                                            </span><br/>
-                                            <div class="user__title">${ history_user }</div>
-                                        </div>
-                                        <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
-                                            <div class="user__sum">${ history_price }</div>
-                                            <div class="user_valute">р.</div>
-                                        </div>
-                                    </div>
-                                `;
-
-                                $('.x__bottom').before(historyItem);
-                                $('.link__details').unbind('click');
-                                $('.link__details').bind('click', self.showDetails);
-                                if (history_user !== 'Пополнение депозита') result_sum += parseInt(history_sum);
-                            });
-
-                            // красим пополнение депозита в зеленый цвет
-                            if ($('.modal__timer__history .link__details').length) {
-                                $.each($('.modal__timer__history .link__details'), function () {
-                                    if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
-
-                                    $(this).unbind('click');
-                                    $(this).css({
-                                        'border-top': '1px solid #c7efc2',
-                                        'border-bottom': '1px solid #c7efc2',
-                                        'background': '#ECFFEA',
-                                        'cursor': 'auto'
-                                    });
-                                });
-                            }
-
-                            // меняем итоговую сумму внизу истории
-                            self.resultSum(result_sum);
-                        }
-                    });
-
-                    $('.timer__filter').remove();
                 });
-            });
+            }
 
-            /* ###################################################################### */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            // получаем данные
+        // проверка авторизации
+        const isAuth = function () {
             $.ajax({
                 url: url_link_t,
-                method: 'post',
+                method: 'POST',
                 data: {
                     'domain': document.domain,
-                    'method': 'hystory',
-                    'essence_id': essenseID
+                    'method': 'is_auth'
                 },
-                dataType: 'json',
+                dataType: 'html',
                 success: function (data) {
-                    if ($('.history__no__result').length) $('.history__no__result').remove();
-
                     if (!data) {
-                        $('.result__sum').text('Итого: 0р.');
-                        $('.modal__history__deposit__wrapper').after(`
-                            <div class="history__no__result" style="
-                                width: 100%; text-align: center; padding: 30px 0 10px;">
-                                Таймеров не найдено.
+                        $('.hystory__link').css('display', 'none');
+                        $('.modal__timer .modal__body__caption').after(`
+                            <div class="not__auth" style="
+                                display: flex; align-items: center; justify-content: center; height: 150px;">
+                                Виджет не авторизован<br/>
                             </div>
                         `);
                     }
-
-                    // добавляем историю таймеров (дата, ответственный, сумма)
-                    $.each(data, function () {
-                        var history_id = this[0],
-                            history_created_at = this[1].split(' ')[0],
-                            history_user = this[2],
-                            history_price = this[3];
-
-                        var historyItem = `
-                            <div class="link__details" data-id="${ history_id }" style="
-                                display: flex;
-                                flex-direction: row;
-                                justify-content: space-between;
-                                width: calc(100% - 10px);
-                                border-top: 1px solid #dbdedf;
-                                border-bottom: 1px solid #dbdedf;
-                                margin-bottom: 2px;
-                                background: #fcfcfc;
-                                padding: 1px 10px;
-                                cursor: pointer;
-                                ">
-                                <div>
-                                    <span class="user__created_at" style="color: #979797; font-size: 13px;">
-                                        ${ history_created_at }
-                                    </span><br/>
-                                    <div class="user__title">${ history_user }</div>
-                                </div>
-                                <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
-                                    <div class="user__sum">${ history_price }</div>
-                                    <div class="user_valute">р.</div>
-                                </div>
-                            </div>
-                        `;
-
-                        $('.modal__timer__history').append(historyItem);
-                        $('.link__details').unbind('click');
-                        $('.link__details').bind('click', self.showDetails);
-                    });
-
-                    // красим пополнение депозита в зеленый цвет
-                    if ($('.modal__timer__history .link__details').length) {
-                        $.each($('.modal__timer__history .link__details'), function () {
-                            if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
-
-                            $(this).unbind('click');
-                            $(this).css({
-                                'border-top': '1px solid #c7efc2',
-                                'border-bottom': '1px solid #c7efc2',
-                                'background': '#ECFFEA',
-                                'cursor': 'auto'
-                            });
-                        });
-                    }
-
-                    // итоговая сумма истории
-                    $('.modal__timer__history').append(`<div class="x__bottom"></div>`);
-                    self.resultSum();
-
-                    // отступ снизу
-                    $('.modal__timer__history').append('<div style="height: 30px;"></div>');
                 }
-            });
-
-            /* ###################################################################### */
-
-            // кнопка Закрыть
-            hystoryCancelBtn = `
-                <a href="#" class="hystory__cancel__btn" style="
-                    text-decoration: none;
-                    color: #92989b;
-                    font-size: 14px;
-                    font-weight: bold;
-                    top: 3px;
-                    right: 0;
-                    position: absolute;
-                ">Закрыть</a>
-            `;
-
-            $('.modal__timer__history').append(hystoryCancelBtn);
-            $('.hystory__cancel__btn').bind('click', function (e) {
-                e.preventDefault();
-                $('.timer__history').remove();
             });
         }
 
-        /* ###################################################################### */
+        // ссылка на проект
+        const addLinkProject = function (rights) {
+            $('.modal__timer').append(`
+                <div class="link__project__wrapper" style="width: 100%; margin-top: 20px;">
+                    <span style="width: 100%;">Ссылка на проект:</span><br/>
+                </div>
+            `);
 
-        // модалка таймера
-        const modalTimer = function () {
-            $('.billing__link').bind('click', function (e) {
-                e.preventDefault();
-
-                var interval,
-                    services = [],
-                    rights = false,
-                    userID = AMOCRM.constant('user').id,
-                    essenseID = AMOCRM.data.current_card.id,
-                    timezone = AMOCRM.constant('account').timezone;
-
-                // права доступа и стоимость сотрудника из настроек
-                self.getConfigSettings();
-                if (self.config_settings.rights && self.config_settings.rights[userID]) {
-                    rights = self.config_settings.rights[userID];
-                }
-
-                // очищаем интервал
-                self.clearIntervals();
-
-                // функция добавления таймера
-                const addTimer = function (timer_ID = null, link_task = null) {
-                    // если таймер добавлен и не запущен, выходим
-                    if ($('.modal__timer .timer__item[data-id="new_ID"]').length) {
-                        $('.timer__item .modal__input__link__task').focus();
-                        return false;
-                    }
-
-                    // если ID не передан, создаем временный
-                    if (!timer_ID) timer_ID = 'new_ID';
-
-                    // ссылка на задачу
-                    var inputLinkTask = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                        name: 'modal-input-link-task',
-                        class_name: 'modal__input__link__task',
-                        value: '',
-                        placeholder: 'вставьте ссылку на задачу'
-                    });
-
-                    // кнопки таймера
-                    var startTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                            class_name: 'start__timer__btn',
-                            text: 'Старт',
-                        }),
-                        pauseTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                            class_name: 'pause__timer__btn',
-                            text: 'Пауза',
-                        }),
-                        stopTimerBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                            class_name: 'stop__timer__btn',
-                            text: 'Стоп',
-                        });
-
-                    // таймер
-                    var timerWrapper = `
-                        <div class="modal__link__task__wrapper" style="width: 100%; margin-top: 15px;">
-                            <span style="width: 100%;">Ссылка на задачу:</span><br/>
-                            ${ inputLinkTask }
-                        </div>
-                        <div class="modal__timer__wrapper" style="width: 100%; margin-top: 10px; display: flex; flex-direction: row;">
-                            <span style="font-size: 24px; margin-right: 20px;" class="time__timer">00:00:00</span>
-                            <div class="btns__timer" style="display: flex; flex-direction: row;">
-                                ${ startTimerBtn } ${ pauseTimerBtn } ${ stopTimerBtn }
-                            </div>
-                        </div>
-                    `;
-
-                    // вставляем таймер
-                    $('.modal__timer .modal__link__add__timer__wrapper').before(`
-                        <div class="timer__item" data-id="${ timer_ID }" style="width: 100%;">${ timerWrapper }</div>
-                    `);
-
-                    // выравниваем кнопки и инпут
-                    $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css({ 'width': '100%', 'margin-top': '3px' });
-                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'block' });
-                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
-                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css({ 'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none' });
-
-                    // возвращаем актуальный цвет рамки в случае ошибки
-                    $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).unbind('input');
-                    $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).bind('input', () => {
-                        $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css('border-color', '#dbdedf');
-                    });
-
-                    // показываем актуальную ссылку на задачу, если таймер был ранее запущен
-                    if (!link_task) $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val('');
-                    else {
-                        $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val(link_task);
-                        $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css('display', 'none');
-                        $(`.timer__item[data-id="${ timer_ID }"] .modal__link__task__wrapper`).append(`
-                            <a href="${ link_task }" class="modal__link__task" style="
-                                margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
-                                ${ link_task }
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'get_link_project',
+                    'essence_ID': self.essense_ID
+                },
+                dataType: 'json',
+                success: function (data) {
+                    // если ссылка в БД есть, добавляем
+                    if (data.length) {
+                        $('.modal__timer .link__project__wrapper').append(`
+                            <a href="${ data }" class="link__project" style="margin-top: 3px; 
+                                text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                                ${ data }
                             </a>
                         `);
                     }
 
-                    // события кнопок
-                    timerStart();
-                    timerPause();
-                    timerStop();
-                }
-
-                // функция кнопки старт
-                const timerStart = function (e) {
-                    $('.start__timer__btn').unbind('click');
-                    $('.start__timer__btn').bind('click', function (e) {
-                        // ID таймера
-                        let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
-
-                        // если ссылки на задачу нет, отключаем кнопку
-                        if ($(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val().trim().length === 0) {
-                            $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).css('border-color', '#f37575');
-                            $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val('').focus();
-                            return false;
-                        }
-
-                        // очищаем интервал
-                        self.clearIntervals();
-
-                        $.ajax({
-                            url: url_link_t,
-                            method: 'post',
-                            data: {
-                                'domain': document.domain,
-                                'method': 'timer_start',
-                                'essence_id': essenseID,
-                                'user_id': userID,
-                                'link_task': $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val().trim(),
-                                'timezone': timezone,
-                                'timer_ID': timer_ID
-                            },
-                            dataType: 'json',
-                            success: function (data) {
-                                // присваиваем таймеру ID записи
-                                $(`.timer__item[data-id="${ timer_ID }"]`).attr('data-id', data.id);
-
-                                // ставим все запущенные таймеры на паузу
-                                $.each($('.modal__timer .timer__item'), function () {
-                                    // пропускаем текущий
-                                    if ($(this).attr('data-id') === data.id) return;
-
-                                    if ($(this).find('.pause__timer__btn').css('display') === 'block') {
-                                        // показываем кнопки старт и стоп
-                                        $(this).find('.start__timer__btn').css('display', 'block');
-                                        $(this).find('.pause__timer__btn').css('display', 'none');
-                                        $(this).find('.stop__timer__btn').css('display', 'block');
-                                    }
-                                });
-
-                                // показываем кнопки паузы и стоп
-                                $(`.timer__item[data-id="${ data.id }"] .start__timer__btn`).css('display', 'none');
-                                $(`.timer__item[data-id="${ data.id }"] .pause__timer__btn`).css('display', 'block');
-                                $(`.timer__item[data-id="${ data.id }"] .stop__timer__btn`).css('display', 'block');
-
-                                // обновляем ссылку на задачу
-                                $(`.timer__item[data-id="${ data.id }"] .modal__input__link__task`).val(data.link_task);
-                                $(`.timer__item[data-id="${ data.id }"] .modal__input__link__task`).css('display', 'none');
-                                if (!$(`.timer__item[data-id="${ data.id }"] .modal__link__task`).length) {
-                                    $(`.timer__item[data-id="${ data.id }"] .modal__link__task__wrapper`).append(`<a href="${ data.link_task }" class="modal__link__task" style="
-                                            margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
-                                            ${ data.link_task }
-                                        </a>
-                                    `);
-                                }
-
-                                // получаем время таймера
-                                var date = new Date();
-                                var time = data.time_work.split(' ');
-                                time = time[1].split(':');
-                                date.setHours(time[0]);
-                                date.setMinutes(time[1]);
-                                date.setSeconds(time[2]);
-
-                                // запускаем интервал
-                                interval = setInterval(() => {
-                                    // если время максимальное, останавливаем таймер
-                                    if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
-                                        clearInterval(interval);
-
-                                        // показываем кнопку сохранить
-                                        $(`.timer__item[data-id="${ data.id }"] .start__timer__btn`).css('display', 'none');
-                                        $(`.timer__item[data-id="${ data.id }"] .pause__timer__btn`).css('display', 'none');
-                                        $(`.timer__item[data-id="${ data.id }"] .stop__timer__btn`).css('display', 'block');
-                                        $(`.timer__item[data-id="${ data.id }"] .stop__timer__btn`).text('Сохранить');
-
-                                        // обновляем время на сервере на максимальное
-                                        $.ajax({
-                                            url: url_link_t,
-                                            method: 'post',
-                                            data: {
-                                                'domain': document.domain,
-                                                'method': 'timer_auto_stop',
-                                                'timer_id': data.id
-                                            },
-                                            dataType: 'json',
-                                            success: function (data) {}
-                                        });
-
-                                        return false;
-                                    }
-
-                                    // +1 сек к времени в интервале
-                                    date.setSeconds(date.getSeconds() + 1);
-                                    $(`.timer__item[data-id="${ data.id }"] .modal__timer__wrapper .time__timer`).text(date.toLocaleTimeString());
-                                }, 1000);
-                            }
-                        });
-                    });
-                }
-
-                // функция кнопки пауза
-                const timerPause = function (e) {
-                    $('.pause__timer__btn').unbind('click');
-                    $('.pause__timer__btn').bind('click', function (e) {
-                        self.clearIntervals();
-
-                        // ID таймера
-                        let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
-
-                        // показываем кнопки старт и стоп
-                        $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'block');
-                        $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
-                        $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
-
-                        // обновляем значение таймера на сервере
-                        $.ajax({
-                            url: url_link_t,
-                            method: 'post',
-                            data: {
-                                'domain': document.domain,
-                                'method': 'timer_pause',
-                                'essence_id': essenseID,
-                                'user_id': userID,
-                                'link_task': $(`.timer__item[data-id="${ timer_ID }"] .modal__input__link__task`).val().trim()
-                            },
-                            dataType: 'json',
-                            success: function (data) {}
-                        });
-                    });
-                }
-
-                // функция кнопки стоп
-                const timerStop = function () {
-                    // timer stop
-                    $('.stop__timer__btn').unbind('click');
-                    $('.stop__timer__btn').bind('click', function (e) {
-                        // ID таймера
-                        let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
-
-                        // если текущий таймер запущен, очищаем интервал
-                        if ($(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display') === 'block') {
-                            self.clearIntervals();
-                        }
-
-                        // показываем кнопку сохранить
-                        $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
-                        $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
-                        $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
-                        $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).text('Сохранить');
-
-                        // обновляем значение таймера на сервере
-                        $.ajax({
-                            url: url_link_t,
-                            method: 'post',
-                            data: {
-                                'domain': document.domain,
-                                'method': 'timer_stop',
-                                'timer_id': timer_ID
-                            },
-                            dataType: 'json',
-                            success: function (data) {}
-                        });
-
-                        /* ###################################################################### */
-
-                        // запуск модалки завершения
-                        new Modal({
-                            class_name: 'timer__stop',
-                            init: function ($modal_body) {
-                                var $this = $(this);
-                                $modal_body
-                                    .trigger('modal:loaded')
-                                    .html(`
-                                    <div class="modal__timer__stop" style="width: 100%; min-height: 385px;">
-                                        <h2 class="modal__body__caption head_2">Сохранение таймера</h2>
-                                    </div>
-                                `)
-                                    .trigger('modal:centrify')
-                                    .append('');
-                            },
-                            destroy: function () {}
-                        });
-
-                        /* ###################################################################### */
-
-                        // выбор ответственного
-                        var managers = [];
-                        managers.push({ id: 'null', option: 'Выберите ответственного' });
-
-                        $.each(AMOCRM.constant('managers'), function () {
-                            if (!this.active) return;
-                            managers.push({ id: this.id, option: this.title });
-                        });
-
-                        var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-                                items: managers,
-                                class_name: 'modal__select__managers'
-                            }),
-                            selectManagersWrapper = `<div class="modal__select__managers__wrapper" style="width: 100%; margin-top: 20px;">
-                                <span style="width: 100%;">Выбор ответственного:</span><br/>
-                                ${ selectManagers }
-                            </div>`;
-
-                        $('.modal__timer__stop').append(selectManagersWrapper);
-                        $('.modal__select__managers').css('margin-top', '3px');
-                        $('.modal__select__managers .control--select--button').css('width', '100%');
-                        $('.modal__select__managers ul').css({
-                            'margin-left': '13px',
-                            'width': 'auto',
-                            'min-width': $('.modal__timer__stop').outerWidth() - 13
-                        });
-
-                        /* ###################################################################### */
-
-                        // имя клиента
-                        var inputClientName = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                            name: 'modal-input-client-name',
-                            class_name: 'modal__input__client__name',
-                            value: '',
-                            placeholder: 'введите имя клиента'
-                        });
-
-                        var inputClientNameWrapper = `<div class="modal__client__name__wrapper" style="width: 100%; margin-top: 10px;">
-                            <span style="width: 100%;">Имя клиента:</span><br/>
-                            ${ inputClientName }
-                        </div>`;
-
-                        $('.modal__timer__stop').append(inputClientNameWrapper);
-                        $('.modal__input__client__name').css({ 'width': '100%', 'margin-top': '3px' });
-
-                        /* ###################################################################### */
-
-                        // выбор услуги
-                        services = [];
-                        services.push({ id: 'null', option: 'Выберите оказанную услугу' });
-                        $.ajax({
-                            url: url_link_t,
-                            method: 'post',
-                            data: {
-                                'domain': document.domain,
-                                'method': 'show_services'
-                            },
-                            dataType: 'json',
-                            success: function (data) {
-                                $.each(data, function () { services.push({ id: this[0], option: this[1] }) });
-
-                                var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-                                        items: services,
-                                        class_name: 'modal__select__services'
-                                    }),
-                                    editBtnServices = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                        class_name: 'editBtn__services',
-                                        text: 'Редактировать'
-                                    }),
-                                    selectServicesWrapper = `<div class="modal__select__services__wrapper" style="width: 100%; margin-top: 10px;">
-                                        <span style="width: 100%;">Список оказанных услуг:</span><br/>
-                                        <div class="select__wrapper__flex" style="display: flex; flex-direction: row;">
-                                            <div class="select" style="width: 70%;"></div>
-                                            <div class="buttonEdit" style="width: 30%; text-align: right;"></div>
-                                        </div>
-                                    </div>`;
-
-                                $('.modal__client__name__wrapper').after(selectServicesWrapper);
-                                $('.modal__select__services__wrapper .select').append(selectServices);
-                                $('.modal__select__services__wrapper .buttonEdit').append(editBtnServices);
-                                $('.modal__select__services').css('margin-top', '3px');
-                                $('.editBtn__services').css('margin-top', '3px');
-                                $('.modal__select__services .control--select--button').css('width', '100%');
-                                $('.modal__select__services ul').css({
-                                    'margin-left': '13px',
-                                    'width': 'auto',
-                                    'min-width': $('.modal__timer__stop').outerWidth() - 13
-                                });
-
-                                // проверяем права на редактирование
-                                if (!rights || !rights.includes('isEditServices')) {
-                                    $('.select__wrapper__flex .select').css('width', '100%');
-                                    $('.select__wrapper__flex .buttonEdit').remove();
-                                }
-
-                                /* ###################################################################### */
-
-                                // редактирование списка услуг
-                                $('.editBtn__services').unbind('click');
-                                $('.editBtn__services').bind('click', function () {
-                                    // запуск модалки редактирования
-                                    new Modal({
-                                        class_name: 'timer__edit__services',
-                                        init: function ($modal_body) {
-                                            var $this = $(this);
-                                            $modal_body
-                                                .trigger('modal:loaded')
-                                                .html(`
-                                                    <div class="modal__timer__edit__services" style="width: 100%; min-height: 450px;">
-                                                        <h2 class="modal__body__caption head_2" style="margin-bottom: 10px;">Редактирование оказанных услуг</h2>
-                                                    </div>
-                                                `)
-                                                .trigger('modal:centrify')
-                                                .append('');
-                                        },
-                                        destroy: function () {}
-                                    });
-
-                                    // ссылка добавления варианта
-                                    linkAddService = `
-                                        <a href="" class="modal__link__add__service" style="
-                                            text-decoration: block;
-                                            color: #1375ab;
-                                            margin-top: 10px;
-                                        ">Добавить</a>
-                                    `;
-
-                                    $('.modal__timer__edit__services').append(linkAddService);
-
-                                    // функция добавления варианта
-                                    const addInput = function (id = '', option = '') {
-                                        var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                                            name: 'modal-input-edit-service',
-                                            class_name: 'modal_input__edit__service',
-                                            value: option,
-                                            placeholder: 'Вариант',
-                                            max_length: 50
-                                        });
-
-                                        // вставляем и ровняем инпут и кнопку удаления
-                                        $('.modal__link__add__service').before(`
-                                            <div class="select__enums__item" style="
-                                                margin-bottom: 4px;
-                                                width: 100%;
-                                                position: relative;
-                                            ">
-                                                <div class="cf-field-enum__remove" title="Удалить" style="width: auto;">
-                                                    <svg class="svg-icon svg-common--trash-dims"><use xlink:href="#common--trash"></use></svg>
-                                                </div>
-                                                ${ input }
-                                            </div>
-                                        `);
-
-                                        $('.modal_input__edit__service').css({ 'padding-right': '25px', 'width': '100%' });
-                                        $('.modal_input__edit__service').attr('data-id', id);
-                                        $('.cf-field-enum__remove').css({
-                                            'position': 'absolute',
-                                            'top': '10px',
-                                            'left': $('.modal_input__edit__service').outerWidth() - 20,
-                                            'cursor': 'pointer'
-                                        });
-
-                                        // удаление инпута
-                                        $('.cf-field-enum__remove').unbind('click');
-                                        $('.cf-field-enum__remove').bind('click', function (e) {
-                                            $(e.target).closest('.select__enums__item').remove();
-                                        });
-                                    }
-
-                                    // выводим ранее сохраненные варианты
-                                    if (services.length > 1) {
-                                        $.each(services, function () {
-                                            if (this.option === 'Выберите оказанную услугу') return;
-                                            addInput(this.id, this.option);
-                                        });
-                                    } else addInput();
-
-                                    // добавление варианта
-                                    $('.modal__link__add__service').unbind('click');
-                                    $('.modal__link__add__service').bind('click', function (e) {
-                                        e.preventDefault();
-                                        if (!$('.modal_input__edit__service').length) addInput();
-                                        else {
-                                            var isEmptyInput = false;
-                                            $.each($('.modal_input__edit__service'), function () {
-                                                if (!$(this).val().trim().length) {
-                                                    $(this).val('').focus();
-                                                    isEmptyInput = true;
-                                                    return false;
-                                                }
-                                            });
-                                            if (!isEmptyInput) addInput();
-                                        }
-                                    });
-
-                                    /* ###################################################################### */
-
-                                    // кнопки Сохранить и Закрыть
-                                    var saveServicesBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                            class_name: 'modal__saveBtn__services',
-                                            text: 'Сохранить'
-                                        }),
-                                        cancelServicesBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                                            class_name: 'modal__cancelBtn__services',
-                                            text: 'Закрыть'
-                                        }),
-                                        btnWrapper = `<div class="modal__body__actions__services" style="width: 100%;">
-                                            ${ saveServicesBtn } ${ cancelServicesBtn }
-                                        </div>`;
-
-                                    $('.modal__timer__edit__services').append(btnWrapper);
-                                    $('.modal__body__actions__services').css('margin-top', '20px');
-
-                                    $('.modal__saveBtn__services').unbind('click');
-                                    $('.modal__saveBtn__services').bind('click', function () {
-                                        $('.modal__select__services').remove();
-                                        $('.modal__select__services__wrapper').css('display', 'none');
-
-                                        // обновляем массив списка услуг
-                                        services = [];
-
-                                        $.each($('.modal_input__edit__service'), function () {
-                                            if (!$(this).val().trim().length) return;
-                                            services.push($(this).val().trim());
-                                        });
-
-                                        // обновляем список услуг в БД
-                                        $.ajax({
-                                            url: url_link_t,
-                                            method: 'post',
-                                            data: {
-                                                'domain': document.domain,
-                                                'method': 'edit_services',
-                                                'services': services
-                                            },
-                                            dataType: 'json',
-                                            success: function (data) {
-                                                services = [];
-                                                services.push({ id: 'null', option: 'Выберите оказанную услугу' });
-                                                $.each(data, function () { services.push({ id: this[0], option: this[1] }) });
-
-                                                var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-                                                    items: services,
-                                                    class_name: 'modal__select__services'
-                                                });
-
-                                                $('.modal__select__services__wrapper .select').append(selectServices);
-                                                $('.modal__select__services__wrapper').css('display', 'block');
-                                                $('.modal__select__services').css('margin-top', '3px');
-                                                $('.modal__select__services .control--select--button').css('width', '100%');
-                                                $('.modal__select__services ul').css({
-                                                    'margin-left': '13px',
-                                                    'width': 'auto',
-                                                    'min-width': $('.modal__timer__stop').outerWidth() - 13
-                                                });
-                                            }
-                                        });
-
-                                        $('.timer__edit__services').remove();
-                                    });
-
-                                    // margin-bottom для отступа
-                                    $('.modal__body__actions__services').append(`
-                                    <div class="modal__bottom" style="position: absolute; height: 100px; width: 100%;"></div>
-                                `);
-                                });
-                            }
-                        });
-
-                        /* ###################################################################### */
-
-                        // комментарий
-                        var textareaComment = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
-                                name: 'modal-textarea-comment',
-                                class_name: 'modal__textarea__comment',
-                                placeholder: 'введите комментарий'
-                            }),
-                            textareaCommentWrapper = `<div class="modal__textarea__comment__wrapper" style="width: 100%; margin-top: 10px;">
-                                <span style="width: 100%;">Комментарий:</span><br/>
-                                ${ textareaComment }
-                            </div>`;
-
-                        $('.modal__timer__stop').append(textareaCommentWrapper);
-                        $('.modal__textarea__comment').css({ 'width': '100%', 'margin-top': '3px' });
-
-                        /* ###################################################################### */
-
-                        // кнопки Сохранить и Закрыть
-                        var saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-                                class_name: 'modal__saveBtn__timer button-input_blue',
-                                text: 'Сохранить'
-                            }),
-                            cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                                class_name: 'modal__cancelBtn__timer',
-                                text: 'Закрыть'
-                            }),
-                            btnWrapper = `<div class="modal__body__actions__stop" style="width: 100%;">
-                                ${ saveBtn } ${ cancelBtn }
-                            </div>`;
-
-                        $('.modal__timer__stop').append(btnWrapper);
-                        $('.modal__body__actions__stop').css('margin-top', '20px');
-
-                        // margin-bottom для отступа
-                        $('.modal__timer__stop').append(`
-                            <div class="modal__bottom" style="position: absolute; height: 70px; width: 100%;"></div>
+                    // проверка прав на редактирование
+                    if (rights && rights.includes('isEditLink')) {
+                        $('.modal__timer .link__project__wrapper').append(`
+                            <a href="" class="edit__link__project" style="text-decoration: none; color: #6b6d72;">
+                                &nbsp;(изменить)
+                            </a>
                         `);
+                    }
 
-                        /* ###################################################################### */
+                    // редактирование ссылки на проект
+                    $('.modal__timer .edit__link__project').unbind('click');
+                    $('.modal__timer .edit__link__project').bind('click', editLinkProject);
+                }
+            });
+        }
 
-                        // сохранение таймера в БД
-                        $('.modal__saveBtn__timer').unbind('click');
-                        $('.modal__saveBtn__timer').bind('click', function () {
-                            // если необходимые поля не выбраны, красим в красный
-                            var manager = $('.modal__select__managers .control--select--button');
-                            var managerID = $('.modal__select__managers .control--select--button').attr('data-value');
-                            var client = $('.modal__input__client__name');
-                            var service = $('.modal__select__services .control--select--button');
-                            var comment = $('.modal__textarea__comment');
-                            var error = false;
+        // редактирование ссылки на проект
+        const editLinkProject = function (e) {
+            e.preventDefault();
 
-                            if (manager.text() === 'Выберите ответственного') {
-                                manager.css('border-color', '#f57d7d');
-                                error = true;
+            // поле ввода изменения ссылки на проект
+            let input_link_project = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                name: 'input-link-project',
+                class_name: 'input__link__project',
+                value: '',
+                placeholder: 'вставьте ссылку на проект'
+            });
+
+            // замена ссылки на поле ввода
+            $('.modal__timer .link__project__wrapper').append(input_link_project);
+            $('.modal__timer .input__link__project').css({ 'width': '100%', 'margin-top': '3px' }).focus();
+            $('.modal__timer .input__link__project').val($('.modal__timer .link__project').text().trim());
+            $('.modal__timer .link__project').remove();
+            $('.modal__timer .edit__link__project').remove();
+
+            // обновление ссылки в БД
+            $('.modal__timer .input__link__project').bind('focusout', updateLinkProject);
+        }
+
+        // обновление ссылки в БД
+        const updateLinkProject = function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'edit_link_project',
+                    'essence_ID': self.essense_ID,
+                    'link_project': $('.modal__timer .input__link__project').val().trim()
+                },
+                dataType: 'json',
+                success: function (data) {
+                    // обновленная ссылка
+                    $('.modal__timer .link__project__wrapper').append(`
+                        <a href="${ data }" class="link__project" style="margin-top: 3px; 
+                            text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                            ${ data }
+                        </a>
+                        <a href="" class="edit__link__project" style="text-decoration: none; color: #6b6d72;">
+                            &nbsp;(изменить)
+                        </a>
+                    `);
+
+                    // удаляем поля ввода
+                    $('.modal__timer .input__link__project').remove();
+                    // редактирование ссылки на проект
+                    $('.modal__timer .edit__link__project').unbind('click');
+                    $('.modal__timer .edit__link__project').bind('click', editLinkProject);
+                }
+            });
+        }
+
+        // ссылка на добавление таймера
+        const linkAddTimer = function () {
+            $('.modal__timer').append(`
+                <div class="link__add__timer__wrapper" style="width: 100%; margin-top: 10px; position: relative;">
+                    <a href="" class="link__add__timer" style="text-decoration: none; color: #1375ab;">
+                        Добавить таймер
+                    </a>
+
+                    <!-- нижняя граница, чтоб не прижималась к низу -->
+                    <div style="position: absolute; width: 100%; height: 80px;"></div>
+                </div>
+            `);
+
+            // добавление таймера
+            $('.modal__timer .link__add__timer').unbind('click');
+            $('.modal__timer .link__add__timer').bind('click', function (e) {
+                e.preventDefault();
+                addTimer();
+            });
+        }
+
+        // отображение запущенных таймеров, или нового
+        const getTimers = function () {
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'get_timers',
+                    'essence_ID': self.essense_ID,
+                    'user_ID': self.user_ID
+                },
+                dataType: 'json',
+                success: function (data) {
+                    // если для сущности и пользователя таймеров нет, создаем новый
+                    if (!data.length) {
+                        addTimer();
+
+                        // показываем кнопку старта
+                        $('.modal__timer .timer__time').text('00:00:00');
+                        $('.modal__timer .timer__start__btn').css('display', 'block');
+                        $('.modal__timer .timer__pause__btn').css('display', 'none');
+                        $('.modal__timer .timer__stop__btn').css('display', 'none');
+                    }
+
+                    // иначе отображаем
+                    else {
+                        $.each(data, function () {
+                            let timer_ID = this[0], link_task = this[8], time_work = this[12], status = this[13];
+
+                            // добавляем таймер
+                            addTimer(timer_ID, link_task);
+
+                            // обновляем время
+                            let date = new Date();
+                            let time = time_work.split(' ');
+
+                            time = time[1].split(':');
+                            date.setHours(time[0]);
+                            date.setMinutes(time[1]);
+                            date.setSeconds(time[2]);
+
+                            $(`.timer__item[data-id="${ timer_ID }"] .timer__time`).text(date.toLocaleTimeString());
+
+                            if (status === 'pause') {
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'block');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css('display', 'none');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).css('display', 'block');
                             }
 
-                            if (!client.val().trim().length) {
-                                client.css('border-color', '#f57d7d');
-                                client.val(client.val().trim());
-                                error = true;
+                            if (status === 'stop') {
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'none');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css('display', 'none');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).css('display', 'block');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).text('Сохранить');
+
+                                // событие на кнопку завершения
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).unbind('click');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).bind('click', timerFinish);
                             }
 
-                            if (service.text() === 'Выберите оказанную услугу') {
-                                service.css('border-color', '#f57d7d');
-                                error = true;
+                            // если таймер запущен, запускаем интервал
+                            if (status === 'start') {
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'none');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css('display', 'block');
+                                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).css('display', 'block');
+
+                                startInterval(date, timer_ID);
                             }
-
-                            // возвращаем естесственные цвета в случае изменения
-                            manager.unbind('click');
-                            manager.bind('click', function () { manager.css('border-color', '#d4d5d8') });
-                            client.unbind('change');
-                            client.bind('change', function () { client.css('border-color', '#d4d5d8') });
-                            service.unbind('click');
-                            service.bind('click', function () { service.css('border-color', '#d4d5d8') });
-
-                            if (error) return false;
-
-                            /* ###################################################################### */
-
-                            // поиск цены сотрудника в кастомных полях
-                            let entity_url, entity_ID = AMOCRM.data.current_card.id;
-                            if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
-                            if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
-
-                            $.ajax({
-                                url: entity_url,
-                                method: 'get',
-                                success: function (data) {
-                                    if (!data.custom_fields_values) return;
-
-                                    $.each(data.custom_fields_values, function () {
-                                        // если не сотрудник истории, пропускаем
-                                        if (this.field_name !== manager.text()) return;
-                                        // цена сотрудника
-                                        self.price_manager = this.values[0].value;
-                                    });
-
-                                    // преобразуем в число
-                                    self.price_manager = parseInt(self.price_manager) || 0;
-
-                                    // получаем настройки для поиска поля депозита
-                                    let deposit_title = self.getDepositTitle();
-
-                                    // сохраняем результат в БД
-                                    $.ajax({
-                                        url: url_link_t,
-                                        method: 'post',
-                                        data: {
-                                            'domain': document.domain,
-                                            'method': 'timer_save',
-                                            'essence_id': essenseID,
-                                            'timer_id': timer_ID,
-                                            'priceManager': self.price_manager,
-                                            'user': manager.text(),
-                                            'client': client.val().trim(),
-                                            'service': service.text(),
-                                            'comment': $('.modal__textarea__comment').val().trim(),
-                                            'deposit_title': deposit_title
-                                        },
-                                        dataType: 'json',
-                                        success: function (data) {}
-                                    });
-
-                                    // анимация выполнения кнопки
-                                    $('.modal__saveBtn__timer').addClass('button-input-loading');
-                                    $('.modal__saveBtn__timer').attr('data-loading', 'Y');
-                                    $('.modal__saveBtn__timer .button-input-inner').css('display', 'none');
-                                    $('.modal__saveBtn__timer').append(`
-                                        <div class="button-input__spinner">
-                                            <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
-                                        </div>
-                                    `);
-                                    $('.modal__saveBtn__timer').unbind('click');
-
-                                    // пауза для эффекта сохранения
-                                    setTimeout(() => {
-                                        // очищаем таймер
-                                        $('.timer__stop').remove();
-                                        $(`.timer__item[data-id="${ timer_ID }"]`).remove();
-
-                                        // если удален последний таймер, добавляем пустой
-                                        if (!$('.modal__timer .timer__item').length) addTimer();
-                                    }, '1500');
-
-                                    self.price_manager = 0;
-                                },
-                                timeout: 2000
-                            });
                         });
+                    }
+                }
+            });
+        }
+
+        // запуск интервала
+        const startInterval = function (date, timer_ID) {
+            let interval = setInterval(() => {
+                // если время максимальное, останавливаем таймер
+                if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
+                    // очищаем интервал
+                    clearInterval(interval);
+
+                    // показываем кнопку сохранить
+                    $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'none');
+                    $(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css('display', 'none');
+                    $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).css('display', 'block');
+                    $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).text('Сохранить');
+
+                    // обновляем время на сервере на максимальное
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'POST',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'auto_stop_timer',
+                            'timer_ID': timer_ID
+                        },
+                        dataType: 'json',
+                        success: function (data) {}
                     });
+
+                    // событие на кнопку завершения
+                    $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).unbind('click');
+                    $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).bind('click', timerFinish);
+
+                    return false;
                 }
 
-                /* ###################################################################### */
+                // +1 сек к времени в интервале
+                date.setSeconds(date.getSeconds() + 1);
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__time`).text(date.toLocaleTimeString());
+            }, 1000);
+        }
 
-                // запуск модалки
-                new Modal({
-                    class_name: 'timer',
-                    init: function ($modal_body) {
-                        var $this = $(this);
-                        $modal_body
-                            .trigger('modal:loaded')
-                            .html(`
-                                <div class="modal__timer" style="width: 100%; min-height: 250px;">
-                                    <h2 class="modal__body__caption head_2">Таймер</h2>
-                                </div>
-                            `)
-                            .trigger('modal:centrify')
-                            .append('');
-                    },
-                    destroy: function () {}
+        // добавление таймера
+        const addTimer = function (timer_ID = null, link_task = null) {
+            // если таймер добавлен и не запущен, выходим
+            if ($('.modal__timer .timer__item[data-id="new_timer_ID"]').length) {
+                $('.modal__timer .input__link__task').focus();
+                return false;
+            }
+
+            // если ID не передан, создаем временный
+            if (!timer_ID) timer_ID = 'new_timer_ID';
+
+            // ссылка на задачу
+            let input_link_task = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                name: 'input-link-task',
+                class_name: 'input__link__task',
+                value: '',
+                placeholder: 'вставьте ссылку на задачу'
+            });
+
+            // кнопки таймера
+            let timer_start_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                    class_name: 'timer_btns timer__start__btn',
+                    text: 'Старт',
+                }),
+                timer_pause_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                    class_name: 'timer_btns timer__pause__btn',
+                    text: 'Пауза',
+                }),
+                timer_stop_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                    class_name: 'timer_btns timer__stop__btn',
+                    text: 'Стоп',
                 });
 
-                // проверка авторизации для запуска таймера
+            // вставляем таймер перед ссылкой
+            $('.modal__timer .link__add__timer__wrapper').before(`
+                <div class="timer__item" data-id="${ timer_ID }" style="width: 100%;">
+                    <div class="input__link__task__wrapper" style="width: 100%; margin-top: 15px;">
+                        <span style="width: 100%;">Ссылка на задачу:</span><br/>
+                        ${ input_link_task }
+                    </div>
+                    <div class="btns__item__wrapper" style="width: 100%; margin-top: 10px; display: flex; 
+                        flex-direction: row;">
+                        <span style="font-size: 24px; margin-right: 20px;" class="timer__time">00:00:00</span>
+                        <div class="timer__buttons" style="display: flex; flex-direction: row;">
+                            ${ timer_start_btn } ${ timer_pause_btn } ${ timer_stop_btn }
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            // выравниваем кнопки и инпут
+            $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).css({ 'width': '100%', 'margin-top': '3px' });
+            $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css({
+                'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'block'
+            });
+            $(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css({
+                'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
+            });
+            $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).css({
+                'margin-left': '5px', 'margin-top': '-2px', 'width': '100px', 'display': 'none'
+            });
+
+            // возвращаем нормальный цвет ссылки в случае ошибки
+            $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).unbind('input');
+            $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).bind('input', () => {
+                $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).css('border-color', '#dbdedf');
+            });
+
+            // показываем актуальную ссылку на задачу, если таймер был запущен ранее
+            if (!link_task) $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val('');
+            else {
+                $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val(link_task);
+                $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).css('display', 'none');
+                $(`.timer__item[data-id="${ timer_ID }"] .input__link__task__wrapper`).append(`
+                    <a href="${ link_task }" class="link__task" style="
+                        margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
+                        ${ link_task }
+                    </a>
+                `);
+            }
+
+            // события кнопок
+            timerStart();
+            timerPause();
+            timerStop();
+        }
+
+        // старт таймера
+        const timerStart = function (e) {
+            $('.modal__timer .timer__start__btn').unbind('click');
+            $('.modal__timer .timer__start__btn').bind('click', function (e) {
+                // ID таймера
+                let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
+
+                // если ссылки на задачу нет, отключаем кнопку
+                if ($(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val().trim().length === 0) {
+                    $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).css('border-color', '#f37575');
+                    $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val('').focus();
+                    return false;
+                }
+
+                // очищаем интервалы
+                self.clearIntervals();
+
+                // сохраняем/обновляем таймер в БД
                 $.ajax({
                     url: url_link_t,
-                    method: 'post',
-                    data: { 'domain': document.domain, 'method': 'isAuth' },
-                    dataType: 'html',
-                    success: function(data) {
-                        if (!data) {
-                            $('.hystory__link').css('display', 'none');
-                            $('.modal__link__project__wrapper').css('display', 'none');
-                            $('.modal__link__task__wrapper').css('display', 'none');
-                            $('.modal__timer__wrapper').css('display', 'none');
-                            $('.modal__body__caption').after(`
-                                <div class="noIsAuth" style="
-                                    display: flex; align-items: center; justify-content: center; height: 150px;">
-                                    Виджет не авторизован<br/>
-                                </div>
+                    method: 'POST',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'start_timer',
+                        'essence_ID': self.essense_ID,
+                        'user_ID': self.user_ID,
+                        'link_task': $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val().trim(),
+                        'timezone': self.timezone,
+                        'timer_ID': timer_ID
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        // присваиваем таймеру ID записи
+                        $(`.timer__item[data-id="${ timer_ID }"]`).attr('data-id', data.id);
+
+                        // ставим все запущенные таймеры на паузу
+                        $.each($('.modal__timer .timer__item'), function () {
+                            // пропускаем текущий
+                            if ($(this).attr('data-id') === data.id) return;
+
+                            if ($(this).find('.timer__pause__btn').css('display') === 'block') {
+                                // показываем кнопки старт и стоп
+                                $(this).find('.timer__start__btn').css('display', 'block');
+                                $(this).find('.timer__pause__btn').css('display', 'none');
+                                $(this).find('.timer__stop__btn').css('display', 'block');
+                            }
+                        });
+
+                        // показываем кнопки паузы и стоп
+                        $(`.timer__item[data-id="${ data.id }"] .timer__start__btn`).css('display', 'none');
+                        $(`.timer__item[data-id="${ data.id }"] .timer__pause__btn`).css('display', 'block');
+                        $(`.timer__item[data-id="${ data.id }"] .timer__stop__btn`).css('display', 'block');
+
+                        // обновляем ссылку на задачу
+                        $(`.timer__item[data-id="${ data.id }"] .input__link__task`).val(data.link_task);
+                        $(`.timer__item[data-id="${ data.id }"] .input__link__task`).css('display', 'none');
+
+                        if (!$(`.timer__item[data-id="${ data.id }"] .link__task`).length) {
+                            $(`.timer__item[data-id="${ data.id }"] .link__task__wrapper`).append(`
+                                <a href="${ data.link_task }" class="link__task" style="
+                                    margin-top: 3px; text-decoration: none; color: #1375ab; 
+                                    word-break: break-all;" target="_blank">
+                                    ${ data.link_task }
+                                </a>
                             `);
                         }
-                    }
-                });
 
-                // ссылка Истории и кнопка Закрыть
-                var cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                    class_name: 'modal__cancelBtn__timer',
-                    text: 'Закрыть'
-                });
+                        // обновляем время
+                        let date = new Date(),
+                            time = data.time_work.split(' ');
 
-                $('.modal__timer').append(`
-                    <div class="right__title" style="position: absolute; right: 23px; margin-top: -20px; display: flex; flex-direction: row;">
-                        <div class="right__history" style="padding-right: 12px; border-right: 1px solid #dbdedf; display: none;">
-                            <a href="" class="hystory__link" style="text-decoration: none; color: #1375ab;">История</a>
-                        </div>
-                        <div class="right__close" style="padding-left: 5px;">${ cancelBtn }</div>
-                    </div>
-                `);
+                        time = time[1].split(':');
+                        date.setHours(time[0]);
+                        date.setMinutes(time[1]);
+                        date.setSeconds(time[2]);
 
-                $('.modal__cancelBtn__timer').css({ 'margin-top': '-7px', 'padding-bottom': '3px' });
-                $('.right__title .right__history').bind('click', modalHistory);
-
-                // отображение истории
-                if (rights && rights.includes('isShowHistory')) $('.right__title .right__history').css('display', 'block');
-
-                // ссылка на проект
-                var linkProjectWrapper = `<div class="modal__link__project__wrapper" style="
-                        width: 100%; margin-top: 20px;
-                    ">
-                    <span style="width: 100%;">Ссылка на проект:</span><br/>
-                    <a href="#" class="modal__link__project" style="
-                        margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
-                    </a>
-                </div>`;
-
-                var changeLinkProject = `<a href="#" class="change__link__project" style="
-                    text-decoration: none; color: #6b6d72;">&nbsp;(изменить)
-                </a>`;
-
-                $('.modal__timer').append(linkProjectWrapper);
-                $('.modal__link__project').attr('href', $('.modal__link__project').text());
-                if (rights && rights.includes('isEditLink')) $('.modal__link__project').after(changeLinkProject);
-
-                // поле ввода изменения ссылки на проект
-                var inputLinkProject = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                    name: 'modal-input-link-project',
-                    class_name: 'modal__input__link__project',
-                    value: '',
-                    placeholder: 'вставьте ссылку на проект'
-                });
-
-                // редактирование ссылки на проект
-                const changeLink = function (e) {
-                    e.preventDefault();
-
-                    // меняем ссылку на поле ввода
-                    $('.modal__link__project__wrapper').append(inputLinkProject);
-                    $('.modal__input__link__project').css({ 'width': '100%', 'margin-top': '3px' }).focus();
-                    $('.modal__input__link__project').val($('.modal__link__project').text().trim());
-                    $('.modal__link__project').remove();
-                    $('.change__link__project').remove();
-
-                    // меняем текст ссылки, удаляем поле ввода и возвращаем ссылку
-                    $('.modal__input__link__project').focusout(function (e) {
-                        e.preventDefault();
-
-                        // обновляем ссылку в БД
-                        $.ajax({
-                            url: url_link_t,
-                            method: 'post',
-                            data: {
-                                'domain': document.domain,
-                                'method': 'change_link_project',
-                                'essence_id': essenseID,
-                                'link_project': $('.modal__input__link__project').val().trim()
-                            },
-                            dataType: 'json',
-                            success: function (data) {
-                                $('.modal__link__project__wrapper').append(`
-                                    <a href="#" class="modal__link__project" style="
-                                        margin-top: 3px; text-decoration: none; color: #1375ab; word-break: break-all;" target="_blank">
-                                    </a>
-                                `);
-                                $('.modal__link__project').text(data);
-                                $('.modal__link__project').attr('href', data);
-                                $('.modal__link__project').after(changeLinkProject);
-                                $('.modal__input__link__project').remove();
-                                $('.change__link__project').bind('click', changeLink);
-                            }
-                        });
-                    });
-                }
-
-                $('.change__link__project').unbind('click');
-                $('.change__link__project').bind('click', changeLink);
-
-                // показываем актуальную ссылку на проект
-                $.ajax({
-                    url: url_link_t,
-                    method: 'post',
-                    data: {
-                        'domain': document.domain,
-                        'method': 'link_project',
-                        'essence_id': essenseID
-                    },
-                    dataType: 'json',
-                    success: function (data) {
-                        $('.modal__link__project').text(data);
-                        $('.modal__link__project').attr('href', data);
-                    }
-                });
-
-                // ссылка на добавление таймера
-                $('.modal__timer').append(`
-                    <div class="modal__link__add__timer__wrapper" style="width: 100%; margin-top: 10px; position: relative;">
-                        <a href="" class="modal__link__add__timer" style="text-decoration: none; color: #1375ab;">
-                            Добавить таймер
-                        </a>
-                        
-                        <!-- нижняя граница, чтоб не прижималась к низу -->
-                        <div style="position: absolute; width: 100%; height: 80px;"></div>
-                    </div>
-                `);
-
-                $('.modal__timer .modal__link__add__timer').unbind('click');
-                $('.modal__timer .modal__link__add__timer').bind('click', function (e) {
-                    e.preventDefault();
-                    addTimer();
-                });
-
-                /* ###################################################################### */
-
-                // поиск запущенных таймеров
-                $.ajax({
-                    url: url_link_t,
-                    method: 'post',
-                    data: {
-                        'domain': document.domain,
-                        'method': 'search_timer',
-                        'essence_id': essenseID,
-                        'user_id': userID
-                    },
-                    dataType: 'json',
-                    success: function (data) {
-                        // если для сущности и пользователя таймеров нет, создаем новый
-                        if (!data.length) {
-                            // добавляем таймер
-                            addTimer();
-
-                            // показываем кнопку старта
-                            $('.modal__timer .time__timer').text('00:00:00');
-                            $('.modal__timer .start__timer__btn').css('display', 'block');
-                            $('.modal__timer .pause__timer__btn').css('display', 'none');
-                            $('.modal__timer .stop__timer__btn').css('display', 'none');
-                        }
-
-                        // иначе отображаем
-                        else {
-                            $.each(data, function () {
-                                let timer_ID = this[0],
-                                    link_task = this[8],
-                                    time_work = this[12],
-                                    status = this[13];
-
-                                // таймер
-                                addTimer(timer_ID, link_task);
-
-                                // обновленное время
-                                var date = new Date();
-                                var time = time_work.split(' ');
-                                time = time[1].split(':');
-                                date.setHours(time[0]);
-                                date.setMinutes(time[1]);
-                                date.setSeconds(time[2]);
-                                $(`.timer__item[data-id="${ timer_ID }"] .time__timer`).text(date.toLocaleTimeString());
-
-                                if (status === 'pause') {
-                                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'block');
-                                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
-                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
-                                }
-
-                                if (status === 'stop') {
-                                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
-                                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
-                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
-                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).text('Сохранить');
-                                }
-
-                                // если таймер запущен, запускаем интервал
-                                if (status === 'start') {
-                                    $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
-                                    $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'block');
-                                    $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
-
-                                    interval = setInterval(() => {
-                                        // если время максимальное, останавливаем таймер
-                                        if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
-                                            clearInterval(interval);
-                                            // показываем кнопку сохранить
-                                            $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
-                                            $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
-                                            $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
-                                            $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).text('Сохранить');
-
-                                            // обновляем время на сервере на максимальное
-                                            $.ajax({
-                                                url: url_link_t,
-                                                method: 'post',
-                                                data: {
-                                                    'domain': document.domain,
-                                                    'method': 'timer_auto_stop',
-                                                    'timer_id': timer_ID
-                                                },
-                                                dataType: 'json',
-                                                success: function (data) {}
-                                            });
-
-                                            return false;
-                                        }
-
-                                        // +1 сек к времени в интервале
-                                        date.setSeconds(date.getSeconds() + 1);
-                                        $(`.timer__item[data-id="${ timer_ID }"] .time__timer`).text(date.toLocaleTimeString());
-                                    }, 1000);
-                                }
-                            });
-                        }
+                        // запускаем интервал
+                        startInterval(date, data.id);
                     }
                 });
             });
         }
 
-        /* ###################################################################### */
+        // пауза таймера
+        const timerPause = function (e) {
+            $('.modal__timer .timer__pause__btn').unbind('click');
+            $('.modal__timer .timer__pause__btn').bind('click', function (e) {
+                // очищаем интервалы
+                self.clearIntervals();
 
+                // ID таймера
+                let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
 
+                // показываем кнопки старт и стоп
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'block');
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css('display', 'none');
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).css('display', 'block');
 
-
-
-
-
-
-
-
-
-
-        // настройка прав доступа
-        this.accessRight = function () {
-            self.getConfigSettings();
-
-            // div для полей покупателей
-            var select_fields_rapper = `<div class="widget_settings_block__item_field select__fields__wrapper" style="margin-top: 10px;"></div>`;
-            $('.widget_settings_block__controls').before(select_fields_rapper);
-
-            // список полей покупателей
-            const ajaxFields = function (url) {
-                let fields = [];
-                fields.push({ option: 'Выберите поле' });
-
+                // обновляем значение таймера на сервере
                 $.ajax({
-                    url: url,
-                    success: function (data) {
-                        $.each(data._embedded.custom_fields, function () {
-                            fields.push({ id: this.id, option: this.name });
-                        });
-
-                        if (data._links.next) ajaxFields(data._links.next.href);
-                        else {
-                            // селект с полями
-                            var select_fields = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-                                items: fields,
-                                class_name: 'select__fields'
-                            });
-
-                            $('.select__fields__wrapper').append(`
-                                <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
-                                    Настройка поля для депозита:
-                                </div>
-                                <div class="widget_settings_block__input_field" style="width: 100%;">
-                                    ${ select_fields }
-                                </div>
-                            `);
-
-                            $('.select__managers__wrapper .control--select--button').css('width', '100%');
-                            $('.select__managers__wrapper ul').css({
-                                'margin-left': '13px',
-                                'width': '100%',
-                                'min-width': $('.select__managers__wrapper').outerWidth() - 13
-                            });
-
-                            // если ранее значение было, отмечаем
-                            if (self.config_settings.deposit_title && self.config_settings.deposit_title.length) {
-                                $.each($('.select__fields__wrapper ul li'), function () {
-                                    if ($(this).hasClass('control--select--list--item-selected')) {
-                                        $(this).removeClass('control--select--list--item-selected');
-                                    }
-
-                                    if ($(this).find('span').text().trim() === self.config_settings.deposit_title) {
-                                        $(this).addClass('control--select--list--item-selected');
-                                        $('.control--select--button-inner').text(self.config_settings.deposit_title);
-                                    }
-                                });
-                            }
-
-                            // обновляем права пользователя
-                            $('.select__fields__wrapper ul li').unbind('click');
-                            $('.select__fields__wrapper ul li').bind('click', function () {
-                                if (!self.config_settings.deposit_title) self.config_settings.deposit_title = '';
-
-                                let deposit_title = $(this).find('span').text().trim();
-                                if (deposit_title === 'Выберите поле') deposit_title = '';
-
-                                self.config_settings.deposit_title = deposit_title;
-                                self.saveConfigSettings();
-                            });
-                        }
+                    url: url_link_t,
+                    method: 'POST',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'pause_timer',
+                        'timer_ID': timer_ID
                     },
-                    timeout: 5000
+                    dataType: 'json',
+                    success: function (data) {}
                 });
-            }
+            });
+        }
 
-            ajaxFields('/api/v4/customers/custom_fields?limit=50');
+        // стоп таймера
+        const timerStop = function (e) {
+            $('.modal__timer .timer__stop__btn').unbind('click');
+            $('.modal__timer .timer__stop__btn').bind('click', function (e) {
+                // ID таймера
+                let timer_ID = $(e.target).closest('.timer__item').attr('data-id');
 
-            // список активных пользователей
-            var managers = [], checkbox;
-            managers.push({ option: 'Выберите пользователя' });
+                // если текущий таймер запущен, очищаем интервалы
+                if ($(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css('display') === 'block') {
+                    self.clearIntervals();
+                }
+
+                // показываем кнопку сохранить
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'none');
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__pause__btn`).css('display', 'none');
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).css('display', 'block');
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).text('Сохранить');
+
+                // обновляем значение таймера на сервере
+                $.ajax({
+                    url: url_link_t,
+                    method: 'POST',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'stop_timer',
+                        'timer_ID': timer_ID
+                    },
+                    dataType: 'json',
+                    success: function (data) {}
+                });
+
+                // событие на кнопку завершения
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).unbind('click');
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__stop__btn`).bind('click', timerFinish);
+
+                // запуск модалки заверщения
+                timerFinish();
+            });
+        }
+
+        // модалка завершения таймера
+        const timerFinish = function () {
+            new Modal({
+                class_name: 'modal__finish__wrapper',
+                init: function ($modal_body) {
+                    let $this = $(this);
+                    $modal_body
+                        .trigger('modal:loaded')
+                        .html(`
+                        <div class="modal__finish" style="width: 100%; min-height: 385px;">
+                            <h2 class="modal__body__caption head_2">Сохранение таймера</h2>
+                        </div>
+                    `)
+                        .trigger('modal:centrify')
+                        .append('');
+                },
+                destroy: function () {}
+            });
+
+            addFinishEmploee(); // выбор ответственного
+            getClients(); // имя клиента
+        }
+
+        // выбор ответственного
+        const addFinishEmploee = function () {
+            let managers = [];
+            managers.push({ id: 'null', option: 'Выберите ответственного' });
 
             $.each(AMOCRM.constant('managers'), function () {
                 if (!this.active) return;
                 managers.push({ id: this.id, option: this.title });
             });
 
-            // селект с пользователями
-            var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+            // селект с сотрудниками
+            let select_managers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
                 items: managers,
                 class_name: 'select__managers'
             });
 
-            var selectManagersWrapper = `
-                <div class="widget_settings_block__item_field select__managers__wrapper" style="margin-top: 10px;">
-                    <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
-                        Настройка прав пользователей:
-                    </div>
-                    <div class="widget_settings_block__input_field" style="width: 100%;">
-                        ${ selectManagers }
-                    </div>
-                </div> 
-            `;
-
-            $('.widget_settings_block__controls').before(selectManagersWrapper);
-            $('.select__managers__wrapper .control--select--button').css('width', '100%');
-            $('.select__managers__wrapper ul').css({
-                'margin-left': '13px',
-                'width': '100%',
-                'min-width': $('.select__managers__wrapper').outerWidth() - 13
-            });
-
-            // выбор пользователя
-            $('.select__managers__wrapper ul li').unbind('click');
-            $('.select__managers__wrapper ul li').bind('click', function () {
-                var managerID = $(this).attr('data-value');
-
-                // очищаем перед запуском чекбоксы
-                $('.modal__rights__checkox__wrapper').remove();
-                $('.input__price__wrapper').remove();
-                if ($(this).find('span').text() === 'Выберите пользователя') {
-                    $('.modal__rights__checkox__wrapper').remove();
-                    $('.input__price__wrapper').remove();
-                    return;
-                }
-
-                // ддобавление чекбокса
-                const addCheckbox = function (value, dataValue) {
-                    checkbox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
-                        class_name: 'modal__rights__checkox',
-                        checked: false,
-                        value: value,
-                        input_class_name: 'modal__rights__checkox__item',
-                        name: 'modal-rights--checkox',
-                        text: value,
-                        dataValue: dataValue
-                    });
-
-                    return checkbox;
-                }
-
-                checkboxWrapper = '<div class="modal__rights__checkox__wrapper" style="width: 100%; margin-top: 10px;"></div>';
-                $('.widget_settings_block__controls').before(checkboxWrapper);
-
-                // ссылка в сущности
-                var isEditLink = addCheckbox('Редактирование ссылки в сущности', 'isEditLink');
-                $('.modal__rights__checkox__wrapper').append(isEditLink);
-                // список в форме на выбор услуги
-                var isEditServices = addCheckbox('Редактирование списка в форме на выбор услуги', 'isEditServices');
-                $('.modal__rights__checkox__wrapper').append(isEditServices);
-                // смотреть историю выполненных задач в сущности
-                var isShowHistory = addCheckbox('Просмотр истории выполненных задач в сущности', 'isShowHistory');
-                $('.modal__rights__checkox__wrapper').append(isShowHistory);
-                // редактирование истории
-                var isEditHistory = addCheckbox('Редактирование истории', 'isEditHistory');
-                $('.modal__rights__checkox__wrapper').append(isEditHistory);
-                // редактирование депозита
-                var isEditDeposit = addCheckbox('Редактирование депозита', 'isEditDeposit');
-                $('.modal__rights__checkox__wrapper').append(isEditDeposit);
-                // выравниваем чекбоксы
-                $('.modal__rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
-
-                // если ранее были отмечены, отображаем
-                if (self.config_settings.rights) {
-                    $.each(self.config_settings.rights, function (key, value) {
-                        if (key !== managerID) return;
-                        var rights = self.config_settings.rights[managerID];
-
-                        $.each($('.modal__rights__checkox'), function () {
-                            var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
-                            if (rights.includes(value)) {
-                                $(this).addClass('is-checked');
-                                $(this).trigger('click');
-                            }
-                        });
-                    });
-                }
-
-                // обновляем права пользователя
-                $('.modal__rights__checkox').unbind('change');
-                $('.modal__rights__checkox').bind('change', function () {
-                    // если ранее не был отмечен, создаем
-                    if (!self.config_settings.rights) self.config_settings.rights = {};
-                    var rights = [];
-
-                    // обновляем список выбранных вариантов
-                    $.each($('.modal__rights__checkox'), function () {
-                        var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
-                        if ($(this).hasClass('is-checked')) rights.push(value);
-                    });
-
-                    self.config_settings.rights[managerID] = rights;
-                    self.saveConfigSettings();
-                });
-            });
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /* ###################################################################### */
-
-        // функция показа фильтра в разделе Настройки
-        this.advancedSettings = function () {
-            let search = self.render(
-                {ref: '/tmpl/common/search_block.twig'},
-                {
-                    loader_class_name: 'loader_class_name',
-                    search_placeholder: 'Фильтр',
-                    id: 'id'
-                }
-            );
-
-            // инпут фильтра
-            $(`#work_area #work-area-${ self.get_settings().widget_code }`).append(`
-                <div class="safety_settings__section_new tasks_search">
-                    <div class="safety_settings__section_head_new">
-                        <div class="safety_settings__section_head_new_title">
-                            Задачи
-                        </div>
-                    </div>
-                    
-                    <div class="settings__search" style="
-                        width: 100%; padding: 0; display: flex; flex-direction: row;">
-                        <div class="settings__search__input" style="width: 100%;">${ search }</div>
-                        
-                        <div class="list__top__actions settings__search__menu">
-                            <div class="list-top-nav__icon-button list-top-nav__icon-button_dark list-top-nav__icon-button_context">
-                                <div class="button-input-wrapper button-input-more content__top__action__btn-more">
-                                    <button type="button" class="button-input  button-input-with-menu" tabindex="" title="Еще">
-                                        <span class="button-input-inner button-input-more-inner">
-                                            <svg class="svg-icon svg-controls--button-more-dims">
-                                                <use xlink:href="#controls--button-more"></use>
-                                            </svg>
-                                        </span>
-                                    </button>
-                        
-                                    <ul class="button-input__context-menu ">
-                                        <li class="button-input__context-menu__item  element__ js-list-export" id="export" style="min-width: 120px;">
-                                            <div class="button-input__context-menu__item__inner">
-                                                <span class="button-input__context-menu__item__icon-container">
-                                                    <svg class="button-input__context-menu__item__icon svg-icon svg-common--download-dims" style="justify-content: left;">
-                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#common--download"></use>
-                                                    </svg>
-                                                </span>
-                                                <span class="button-input__context-menu__item__text">Экспорт</span>
-                                            </div>
-                                        </li>           
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
-                    </div>
-                    
-                    <div class="settings__search__filter" style="position: relative; width: 100%;"></div>
+            $('.modal__finish').append(`
+                <div class="managers__wrapper" style="width: 100%; margin-top: 20px;">
+                    <span style="width: 100%;">Выбор ответственного:</span><br/>
+                    ${ select_managers }
                 </div>
             `);
 
-            // количество событий в фильтре
-            $('.list-top-search .list-top-search__input-block .list-top-search__input').after(`
-                <span class="list-top-search__summary">
-                    <span class="list-top-search__summary-text">0 событий</span>
-                </span>
-            `);
-
-            // выравниваем фильтр и меню
-            $('.settings__search .settings__search__input').css({
-                'margin-top': '10px',
-                'border-top': '1px solid #e8eaeb',
-                'border-bottom': '1px solid #e8eaeb'
-            });
-            $('.settings__search .list-top-search').css({ 'margin-left': '0' });
-            $('.settings__search .button-input').css({ 'border': '0', 'background': '#fff', 'max-height': 'auto' });
-            $('.settings__search .settings__search__menu').css({ 'margin-top': '10px' });
-            $('.settings__search .list-top-search__input').attr('readonly', true);
-            $('.settings__search .list-top-search__input-block').css('cursor', 'pointer');
-            $('.settings__search .list-top-search__input').css('cursor', 'pointer');
-
-            $('.settings__search .settings__search__menu').css({
-                'padding-left': '10px',
-                'padding-right': '10px'
-            });
-            $('.settings__search .button-input__context-menu').css({'left': 'auto', 'right': '0'});
-
-            // клик по фильтру
-            $('.settings__search .list-top-search__input-block').unbind('click');
-            $('.settings__search .list-top-search__input-block').bind('click', function () {
-                // если окно фильтра уже открыто, выходим
-                if ($('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
-
-                // меню событий
-                $('.settings__search__filter').append(`
-                    <div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute; z-index: 2;">
-                        <div class="filter-search__wrapper custom-scroll">
-                            <div class="filter-search__inner">
-                            
-                            <div class="filter-search__left">
-                                <ul class="filter-search__list js-filter-list" id="filter_list">
-                    
-                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
-                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="" class="js-navigate-link filter__list__item__link filter__all__events">
-                                            <span class="filter__list__item__inner">Все события</span>
-                                        </a>
-                                    </li>
-                                    
-                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
-                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="" class="js-navigate-link filter__list__item__link filter__my__events">
-                                            <span class="filter__list__item__inner">Мои события</span>
-                                        </a>
-                                    </li>
-                                    
-                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
-                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="" class="js-navigate-link filter__list__item__link filter__today__events">
-                                            <span class="filter__list__item__inner">События за сегодня</span>
-                                        </a>
-                                    </li>
-                                    
-                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
-                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="" class="js-navigate-link filter__list__item__link filter__yesterday__events">
-                                            <span class="filter__list__item__inner">События за вчера</span>
-                                        </a>
-                                    </li>
-                                    
-                                    <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
-                                        <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
-                                        <a href="" class="js-navigate-link filter__list__item__link filter__month__events">
-                                            <span class="filter__list__item__inner">События за месяц</span>
-                                        </a>
-                                    </li>
-                                
-                                </ul>
-                            </div>
-                            
-                            <div class="filter-search__right">
-                                <form action="/events/list/" method="GET" id="filter_form" class="filter__form">
-                                    <div class="filter-search__form-wrapper">
-                                        <div class="filter-search__entity-wrapper" data-element-type="events">
-                                            <div class="filter__custom_settings__list" id="filter_fields">
-                                            
-                                                <!-- календарь событий -->
-                                                <div class="filter__custom_settings__item date__filter" data-tmpl="text">
-                                                    <div class="filter__custom_settings__item__value-wrapper">
-                                                        <div class="date_filter js-control-date-filter custom_select">
-                                                            <div class="date_filter__head">
-                                                                <div class="date_filter__head__icon">
-                                                                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
-                                                                </div>
-                                                                <span class="date_filter__period custom_select__selected " data-before="За все время">
-                                                                    За все время
-                                                                </span>
-                                                                <span class="date_filter__head__dropdown_icon"></span>
-                                                            </div>
-                                                            <div class="date_filter__dropdown ">
-                                                                <div class="date_filter__param hidden">
-                                                                    <div class="control-toggler date_filter__param__toggler hidden">
-                                                                        <label for="filter_date_switch_created" class="control-toggler__item first control-toggler__item-selected" data-id="" data-label="Созданы">
-                                                                            <input type="radio" class="hidden " id="filter_date_switch_created" checked="checked" name="filter_date_switch" value="created">  
-                                                                            <b></b>
-                                                                        </label>
-                                                                    </div>
-                                                                </div>
-                                                                <div>
-                                                                    <div class="date_filter__period_range__options">
-                                                                        <div class="date_filter__period_range__controls ">
-                                                                            <input type="hidden" class="date_field__preset" name="filter[date_preset]" value="">
-                                                                            <span class="date_field_wrapper js-control-date date_filter__period_range__controls_field" data-kalendae-classname="">
-                                                                                <input type="hidden" class="date_field__range_0" name="filter_date_from" value="">
-                                                                                <input type="hidden" class="date_field__range_1" name="filter_date_to" value="">
-                                                                                <input class="date_field js-date-filter-input date-filter-in-search empty range" type="text" value="" placeholder="">
-                                                                                <div class="date_field_wrapper--calendar">
-                                                                                    <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
-                                                                                </div>
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <ul class="date_filter__period_list  without_button ">
-                                                                        <li class="date_filter__period_item custom_select__item" data-period="" style="display:none;">
-                                                                            <span data-value="" class="custom_select__title">
-                                                                                За все время
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_day" data-period="current_day">
-                                                                            <span data-value="current_day" class="custom_select__title" title="За сегодня">
-                                                                                За сегодня
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-yesterday" data-period="yesterday">
-                                                                            <span data-value="yesterday" class="custom_select__title" title="За вчера">
-                                                                                За вчера
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-past_x_days" data-period="past_x_days">
-                                                                            <span data-value="past_x_days" class="custom_select__title" "="">
-                                                                                За последние 
-                                                                                <div class="date_filter__period_item-input-days-wrapper">
-                                                                                    <input class="date_filter__period_item-input-days js-date_filter__period_item js-control-autosized_input" data-comfort-zone="0" type="number" value="30" max="999">
-                                                                                    <tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;">
-                                                                                        30
-                                                                                    </tester>
-                                                                                </div> 
-                                                                                дней
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_week" data-period="current_week">
-                                                                            <span data-value="current_week" class="custom_select__title" title="За эту неделю">
-                                                                                За эту неделю
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_week" data-period="previous_week">
-                                                                            <span data-value="previous_week" class="custom_select__title" title="За прошлую неделю">
-                                                                                За прошлую неделю
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_month" data-period="current_month">
-                                                                            <span data-value="current_month" class="custom_select__title" title="За этот месяц">
-                                                                                За этот месяц
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-previous_month" data-period="previous_month">
-                                                                            <span data-value="previous_month" class="custom_select__title" title="За прошлый месяц">
-                                                                                За прошлый месяц
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_quarter" data-period="current_quarter">
-                                                                            <span data-value="current_quarter" class="custom_select__title" title="За квартал">
-                                                                                За квартал
-                                                                            </span>
-                                                                        </li>
-                                                                        <li class="date_filter__period_item custom_select__item custom_select__item-current_year" data-period="current_year">
-                                                                            <span data-value="current_year" class="custom_select__title" title="За этот год">
-                                                                                За этот год
-                                                                            </span>
-                                                                        </li>
-                                                                    </ul>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <b class="js-filter-field-clear clear__date"></b>
-                                                    </div>
-                                                </div>                        
-                                   
-                                                <!-- список менеджеров -->
-                                                <div class="filter-search__users-select-holder filter-search__users-select-holder_ filter__custom_settings__item filter__custom_settings__item_suggest-manager" data-title="Менеджеры" data-is-fn="usersSelectClear" data-type="" data-tmpl="users" data-element-type-name="" data-input-name="filter[main_user][]">
-                                                    <div class="custom-scroll">
-                                                        <div class="multisuggest users_select-select_one  js-multisuggest js-can-add " data-multisuggest-id="5834" id="filter_users_select__holder" data-new-item-msg="">
-                                                            <ul class="multisuggest__list js-multisuggest-list"></ul>
-                                                        </div>
-                                                    </div>
-                                                    <b class="js-filter-field-clear clear__managers"></b>
-                                                </div>
-                                                
-                                                <div class="filter__managers" style="width: 100%; position: relative; margin: 3px 0 0 3px;"></div>
-                                            
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                            
-                            </div>
-                        </div>
-                    </div>
-                `);
-
-                /* ###################################################################### */
-
-                // функция обработки параметров фильтра
-                const getParamsFilter = function () {
-                    let result = {},
-                        filter_date, date_from, date_to, d = null,
-                        date_start = null, date_end = null,
-                        filter_managers = [];
-
-                    // если дата не выбрана, пишем пустое значение
-                    if (!self.filter_date) result.filter_date = null;
-                    // иначе разбираем дату
-                    else {
-                        filter_date = self.filter_date.split('(')[0].trim();
-
-                        // убираем лишние пробелы
-                        filter_date = self.filter_date.replace(/\s{2,}/g, ' ');
-
-                        // если дата в скобках - убираем скобки
-                        if (filter_date.slice(0, 1) === '(') {
-                            filter_date = filter_date.slice(1, -1);
-                        }
-
-                        // за сегодня
-                        if (filter_date.indexOf('За сегодня') !== -1) {
-                            date_from = date_to = new Date().toLocaleDateString();
-
-                            // за вчера
-                        } else if (filter_date.indexOf('За вчера') !== -1) {
-                            d = new Date();
-                            d = d.setDate(d.getDate() - 1);
-
-                            date_from = date_to = new Date(d).toLocaleDateString();
-
-                            // за последние Х дней
-                        } else if (filter_date.indexOf('За последние') !== -1) {
-                            filter_date = filter_date.split(' ')[2];
-
-                            d = new Date();
-                            d = d.setDate(d.getDate() - parseInt(filter_date));
-
-                            date_from = new Date(d).toLocaleDateString();
-                            date_to = new Date().toLocaleDateString();
-
-                            // за эту неделю
-                        } else if (filter_date.indexOf('За эту неделю') !== -1) {
-                            d = new Date().getDay();
-                            date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
-                            date_from = new Date(new Date().setDate(date_from)).toLocaleDateString();
-
-                            d = new Date();
-                            date_to = d.setDate(d.getDate() + (7 - d.getDay()));
-                            date_to = new Date(date_to).toLocaleDateString();
-
-                            // за прошлую неделю
-                        } else if (filter_date.indexOf('За прошлую неделю') !== -1) {
-                            d = new Date().getDay();
-                            date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
-                            date_from = new Date(new Date().setDate(date_from - 7)).toLocaleDateString();
-
-                            d = new Date();
-                            date_to = d.setDate(d.getDate() + (7 - d.getDay()) - 7);
-                            date_to = new Date(date_to).toLocaleDateString();
-
-                            // за этот месяц
-                        } else if (filter_date.indexOf('За этот месяц') !== -1) {
-                            d = new Date();
-
-                            date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
-                            date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
-
-                            // за прошлый месяц
-                        } else if (filter_date.indexOf('За прошлый месяц') !== -1) {
-                            // первое число прошлого месяца
-                            d = new Date();
-                            d = new Date(d.getFullYear(), d.getMonth() - 1, 1);
-
-                            date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
-                            date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
-
-                            // за квартал
-                        } else if (filter_date.indexOf('За квартал') !== -1) {
-                            // определяем текущий квартал
-                            d = new Date();
-
-                            if (d.getMonth() < 3) d = new Date(d.getFullYear(), 0, 1);
-                            if (d.getMonth() > 2 && d.getMonth() < 6) d = new Date(d.getFullYear(), 3, 1);
-                            if (d.getMonth() > 5 && d.getMonth() < 9) d = new Date(d.getFullYear(), 6, 1);
-                            if (d.getMonth() > 8) d = new Date(d.getFullYear(), 9, 1);
-
-                            date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
-                            date_to = new Date(d.getFullYear(), d.getMonth() + 3, 0).toLocaleDateString();
-
-                            // за этот год
-                        } else if (filter_date.indexOf('За этот год') !== -1) {
-                            d = new Date();
-                            date_from = new Date(d.getFullYear(), 0, 1).toLocaleDateString();
-                            date_to = new Date(d.getFullYear(), 12, 0).toLocaleDateString();
-
-                            // иначе обнуляем дату
-                        } else date_from = date_to = null;
-
-                        // если выбор не из списка, значит вручную (от и до)
-                        if (!(date_from && date_to)) {
-                            date_start = filter_date.split('-')[0];
-                            date_end = filter_date.split('-')[1];
-
-                            // если есть начальное и конечное значение, преобразуем в дату
-                            if (date_start && date_end) {
-                                date_start = date_start.trim();
-                                date_end = date_end.trim();
-
-                                // проверка на валидность даты
-                                if (date_start !== 'Сегодня' && new Date(date_start) !== 'Invalid Date') date_start = date_start;
-                                else if (date_start === 'Сегодня') date_start = new Date().toLocaleDateString();
-                                else date_start = null;
-
-                                if (date_end !== 'Сегодня' && new Date(date_end) !== 'Invalid Date') date_end = date_end;
-                                else if (date_end === 'Сегодня') date_end = new Date().toLocaleDateString();
-                                else date_end = null;
-
-                                // если дата один день (от и до Сегодня)
-                            } else if (filter_date === 'Сегодня') date_start = date_end = new Date().toLocaleDateString();
-
-                            // если дата один день (от и до совпадают)
-                            else if (new Date(filter_date) !== 'Invalid Date') date_start = date_end = filter_date;
-
-                            // иначе обнуляем дату
-                            else date_start = date_end = null;
-                        }
-
-                        // сохраняем результат
-                        filter_date = {};
-                        // выбор даты из списка или вручную
-                        filter_date.date_from = date_from || date_start;
-                        filter_date.date_to = date_to || date_end;
-
-                        // если результат стандартный, обнуляем значение
-                        if (filter_date.date_from === 'За все время' || filter_date.date_to === 'За все время') {
-                            filter_date.date_from = null;
-                            filter_date.date_to = null;
-                        }
-
-                        // если ни один из вариантов не определен, обнуляем
-                        if (!(filter_date.date_from && filter_date.date_to)) result.filter_date = null;
-                        else result.filter_date = filter_date;
-                    }
-
-                    // массив менеджеров
-                    if (!self.filter_managers.length) result.filter_managers = null;
-                    else {
-                        $.each(self.filter_managers, function () {
-                            filter_managers.push(this.title);
-                        });
-
-                        result.filter_managers = filter_managers;
-                    }
-
-                    return result;
-                }
-
-                // функция выгрузки из БД
-                const ajaxFilterParams = function (params) {
-                    // удаляем старый результат
-                    if ($('.list__table__holder').length) $('.list__table__holder').remove();
-
-                    // для подкраски столбцов синим цветом
-                    let date_blue = false, managers_blue = false;
-                    if (params.filter_date) date_blue = true;
-                    if (params.filter_managers) managers_blue = true;
-
-                    // запрос в БД
-                    $.ajax({
-                        url: url_link_t,
-                        method: 'post',
-                        data: {
-                            'domain': document.domain,
-                            'method': 'filter__events',
-                            'filter': params
-                        },
-                        dataType: 'json',
-                        success: function (data) {
-                            self.filter_results = data;
-
-                            // показываем количество строк и очищаем прошлый результат
-                            $('.list-top-search__summary-text').text(`${ data.length } событий`);
-                            if ($('.list__table__holder').length) $('.list__table__holder').remove();
-
-                            // если масссив пустой, обнуляем количество строк в фильтре, удаляем старый результат и выходим
-                            if (!data.length) return;
-
-                            // заголовок
-                            $('.safety_settings__section_new.tasks_search').after(`
-                                <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1;">
-                                    <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
-                                    
-                                        <div class="list-row list-row-head js-list-row js-list-row-head" id="list_head">
-                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
-                                                <div class="cell-head__inner">
-                                                    <div class="cell-head__inner-content">
-                                                        <span class="cell-head__dots icon icon-v-dots"></span>
-                                                        <span class="cell-head__title filter__blue__date">Дата</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 24%;">
-                                                <div class="cell-head__inner">
-                                                    <div class="cell-head__inner-content">
-                                                        <span class="cell-head__dots icon icon-v-dots"></span>
-                                                        <span class="cell-head__title filter__blue__manager">Автор</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
-                                                <div class="cell-head__inner">
-                                                    <div class="cell-head__inner-content">
-                                                        <span class="cell-head__dots icon icon-v-dots"></span>
-                                                        <span class="cell-head__title">Время</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
-                                                <div class="cell-head__inner">
-                                                    <div class="cell-head__inner-content">
-                                                        <span class="cell-head__dots icon icon-v-dots"></span>
-                                                        <span class="cell-head__title">Сумма</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 40%;">
-                                                <div class="cell-head__inner">
-                                                    <div class="cell-head__inner-content">
-                                                        <span class="cell-head__dots icon icon-v-dots"></span>
-                                                        <span class="cell-head__title">Ссылка на задачу</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                    </div>
-                                </div>
-                            `);
-
-                            // если менеджер или дата указаны в фильтре, красим столбец в синий
-                            if (date_blue) $('.filter__blue__date').css('color', '#2798d5');
-                            if (managers_blue) $('.filter__blue__manager').css('color', '#2798d5');
-
-                            // строки
-                            let all_sum = 0;
-                            let null_time = new Date(2000, 0, 1, 0, 0, 0).getTime(); // 1.01.2000 00:00:00 timestamp
-                            let all_time = 0;
-                            let timestamp = null;
-
-                            $.each(data, function () {
-                                let date = this[9],
-                                    autor = this[3],
-                                    time = this[12],
-                                    sum = this[7],
-                                    link = this[8],
-                                    event = false; // событие как пополнение депозита
-
-                                if (this[3] === 'Пополнение депозита') {
-                                    event = true;
-                                    time = '00:00:00';
-                                }
-
-                                date = date.split(' ')[0];
-
-                                // общая сумма списания
-                                if (!event) all_sum += parseInt(sum);
-
-                                // прибавляем время каждой записи к нулевому значению
-                                timestamp = new Date(2000, 0, 1, time.split(':')[0], time.split(':')[1], time.split(':')[2]).getTime();
-                                timestamp -= null_time;
-                                all_time += timestamp;
-
-                                $('#list_table').append(`
-                                    <div class="list-row js-list-row js-pager-list-item__1">
-                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
-                                            <div class="content-table__item__inner" title="${ date }">
-                                                <span class="block-selectable date">${ date }</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
-                                            <div class="content-table__item__inner" title="${ autor }">
-                                                <span class="block-selectable autor">${ autor }</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
-                                            <div class="content-table__item__inner" title="${ event ? '' : time }">
-                                                <span class="block-selectable time">${ event ? '' : time }</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
-                                            <div class="content-table__item__inner" title="${ sum }">
-                                                <span class="block-selectable sum">${ sum }р.</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="list-row__cell js-list-row__cell list-row__cell-template-event_object list-row__cell-object">
-                                            <div class="content-table__item__inner">
-                                                <a class="list-row__template-name__table-wrapper__name-link js-navigate-link" href="${ link }" title="${ link }" target="_blank">${ link }</a>
-                                            </div>
-                                        </div>
-                                    </div>                                
-                                `);
-                            });
-
-                            // прибавляем общее затраченное время всех записей к нулевому значению
-                            all_time += null_time;
-                            // получаем время
-                            all_time = new Date(all_time);
-
-                            let houses = all_time.getHours(),
-                                minutes = all_time.getMinutes(),
-                                seconds = all_time.getSeconds(),
-                                days = all_time.getDate(),
-                                months = all_time.getMonth(),
-                                years = all_time.getFullYear(),
-                                d;
-
-                            // добавляем минуту ( если секунд > 30)
-                            if (seconds > 30) minutes += 1;
-                            // если больше суток, прибавляем к часам
-                            if (days > 1) houses += days * 24 - 24;
-                            // если месяцев больше, прибавляем к часам
-                            if (months > 0) {
-                                for (let i = 0; i <= months; i++) {
-                                    d = new Date(2000, i + 1, 0);
-                                    d = d.getDate();
-                                    houses += d * 24;
-                                }
-                            }
-                            // если лет больше, прибавляем к часам
-                            if (years > 2000) {
-                                years -= 2000;
-                                if (years % 4 === 0) houses += 364 * 24;
-                                else houses += 365 * 24;
-                            }
-
-                            // результат для экспорта
-                            self.filter_all_time = `${ houses } ч. ${ minutes } мин.`;
-                            self.filter_all_sum = `${ all_sum } p.`;
-
-                            // вывод итога таблицы
-                            $('.list__table__holder').after(`
-                                <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1; margin-top: 10px;">
-                                    <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
-                                    
-                                        <div class="list-row js-list-row js-pager-list-item__1">
-                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
-                                                <div class="content-table__item__inner" title="Общее количество затраченного времени">
-                                                    <span class="block-selectable" style="display: flex; justify-content: right;">Общее количество затраченного времени</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
-                                                <div class="content-table__item__inner" title="${ houses } ч. ${ minutes } мин.">
-                                                    <span class="block-selectable">
-                                                        <span class="all__time__houses__results">${ houses }</span> ч.
-                                                        <span class="all__time__minutes__results">${ minutes }</span> мин.
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                    </div>
-                                </div>
-                                
-                                <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1;">
-                                    <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
-                                    
-                                        <div class="list-row js-list-row js-pager-list-item__1">
-                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
-                                                <div class="content-table__item__inner" title="Общая сумма списания">
-                                                    <span class="block-selectable" style="display: flex; justify-content: right;">Общая сумма списания</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
-                                                <div class="content-table__item__inner" title="${ all_sum } p.">
-                                                    <span class="block-selectable">
-                                                        <span class="all__sum__results">${ all_sum }</span> p.
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                    </div>
-                                </div>
-                            `);
-
-                            // останавливаем стандартное поведение ссылки, чтобы она открылась в новом окне
-                            $('.list-row__cell.list-row__cell-template-event_object').unbind('click');
-                            $('.list-row__cell.list-row__cell-template-event_object').bind('click', function (e) {
-                                e.stopPropagation();
-                            });
-                        }
-                    });
-                }
-
-                /* ###################################################################### */
-
-                // функция кнопки Сбросить
-                const buttonCancel = function (is_ajax = false) { // отправлять сразу запрос в БД или нет
-                    // удаляем ранее выбранные фильтры и прячем кнопки фильтра
-                    if ($('.list-top-search .search-options').length) $('.list-top-search .search-options').remove();
-
-                    if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                        $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                    }
-
-                    if (!$('#search_clear_button').hasClass('h-hidden')) {
-                        $('#search_clear_button').addClass('h-hidden');
-                    }
-
-                    // удаляем кнопки Применить и Сбросить
-                    if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                    if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                        $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                    }
-
-                    // удаляем рамки заголовков даты и менеджеров
-                    if ($('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
-                        $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
-                    }
-
-                    if ($('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
-                        $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
-                    }
-
-                    // обнуляем значения фильтра
-                    self.filter_date = null;
-                    self.filter_managers = [];
-
-                    // обнуляем значения экспорта
-                    self.filter_results = [];
-                    self.filter_all_time = null;
-                    self.filter_all_sum = null;
-
-                    // удаляем окно фильтра
-                    $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
-                    // очищаем результат количества событий
-                    $('.list-top-search .list-top-search__summary-text').text('0 событий');
-
-                    // удаляем старый результат
-                    if ($('.list__table__holder').length) $('.list__table__holder').remove();
-
-                    return false;
-                }
-
-                // функция кнопки Применить
-                const buttonApply = function () {
-                    // вставляем дату в заголовок фильтра (берем значение без скобок (даты))
-                    let filter_date = $('.date_filter .date_filter__head .date_filter__period').text().trim();
-                    self.filter_date = filter_date;
-                    filter_date = filter_date.split('(')[0].trim();
-
-                    // если wrapper'а нет, добавляем
-                    if (!$('.list-top-search .search-options').length) {
-                        $('.list-top-search').prepend(`
-                            <div class="search-options" id="search-options">
-                                <div class="list-top-search__preset" id="search_filter_preset"></div>
-                                <div class="search-options-wrapper"></div>
-                            </div>
-                        `);
-                    }
-
-                    // удаляем старое значение, если есть
-                    if ($('.search-options-wrapper .date__filter__icon').length) {
-                        $('.search-options-wrapper .date__filter__icon').remove();
-                    }
-
-                    // вставляем новое значение (если оно не по умолчанию)
-                    if (filter_date !== 'За все время') {
-                        $('.list-top-search .search-options-wrapper').append(`
-                            <div class="list-top-search__options date__filter__icon list-top-search__options-showed">
-                                <div class="options-text" title="Созданы: ${ filter_date }">Созданы: ${ filter_date }</div>
-                                <div class="option-delete js-filter-field-clear" data-input-name="filter[date_preset]">
-                                    <svg class="svg-icon svg-common--cross-close-dims">
-                                        <use xlink:href="#common--cross-close"></use>
-                                    </svg>
-                                </div>
-                            </div>
-                        `);
-                    }
-
-                    // перебираем менеджеров с заголовка и обновляем массив
-                    let managers = [];
-
-                    if ($('.multisuggest__list-item.js-multisuggest-item').length) {
-                        $.each($('.multisuggest__list-item.js-multisuggest-item'), function () {
-                            managers.push({
-                                'title' : $(this).attr('data-title').trim(),
-                                'group' : $(this).attr('data-group').trim(),
-                                'id' : $(this).attr('data-id').trim(),
-                            });
-                        });
-                    }
-
-                    // если менеджеры есть, пишем в массив, иначе обнуляем массив
-                    if (managers.length) self.filter_managers = managers;
-                    else self.filter_managers = [];
-
-                    // если менеджер один, пишем имя, иначе количество
-                    if (managers === 1) managers = self.filter_managers[0].title;
-                    else managers = self.filter_managers.length;
-
-                    // удаляем старое значение, если есть
-                    if ($('.search-options-wrapper .managers__filter__icon').length) {
-                        $('.search-options-wrapper .managers__filter__icon').remove();
-                    }
-
-                    // вставляем новое значение (если менеджеры есть в массиве)
-                    if (self.filter_managers.length) {
-                        // wrapper
-                        if (!$('.list-top-search .search-options').length) {
-                            $('.list-top-search').prepend(`
-                                <div class="search-options" id="search-options">
-                                    <div class="list-top-search__preset" id="search_filter_preset"></div>
-                                    <div class="search-options-wrapper"></div>
-                                </div>
-                            `);
-                        }
-
-                        // менеджеры
-                        $('.list-top-search .search-options-wrapper').append(`
-                            <div class="list-top-search__options managers__filter__icon list-top-search__options-showed">
-                                <div class="options-text" title="Менеджеры: ${ managers }">Менеджеры: ${ managers }</div>
-                                <div class="option-delete js-filter-field-clear" data-input-name="filter[main_user][]">
-                                    <svg class="svg-icon svg-common--cross-close-dims">
-                                        <use xlink:href="#common--cross-close"></use>
-                                    </svg>
-                                </div>
-                            </div>
-                        `);
-                    }
-
-                    // если есть какие-то фильтры, прячем кнопку Применить и показываем кнопку очистки фильтра
-                    if (filter_date !== 'За все время' || self.filter_managers.length) {
-                        if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                            $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                        }
-
-                        if ($('#search_clear_button').hasClass('h-hidden')) {
-                            $('#search_clear_button').removeClass('h-hidden');
-                        }
-
-                        // кнопка сбросить в фильтре
-                        $('#search_clear_button').unbind('click');
-                        $('#search_clear_button').bind('click', { is_ajax: true }, buttonCancel);
-
-                        // иначе прячем кнопки фильтра
-                    } else if (filter_date === 'За все время' && !self.filter_managers.length) {
-
-                        if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                            $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                        }
-
-                        if (!$('#search_clear_button').hasClass('h-hidden')) {
-                            $('#search_clear_button').addClass('h-hidden');
-                        }
-                    }
-
-                    // удаление даты с фильтра
-                    $('.list-top-search__options.date__filter__icon .option-delete').unbind('click');
-                    $('.list-top-search__options.date__filter__icon .option-delete').bind('click', function () {
-                        // удаление фильтра
-                        $('.list-top-search__options.date__filter__icon').remove();
-                        // очищаем результат количества событий
-                        $('.list-top-search__summary-text').text('0 событий');
-
-                        // если фильтр последний, удаляем wrapper фильтра и кнопку очистки фильтра
-                        if (!$('.search-options .list-top-search__options').length) {
-                            $('#search-options').remove();
-
-                            if (!$('#search_clear_button').hasClass('h-hidden')) {
-                                $('#search_clear_button').addClass('h-hidden');
-                            }
-
-                            // обнуляем значениe даты
-                            self.filter_date = null;
-                            // удаляем старый результат
-                            if ($('.list__table__holder').length) $('.list__table__holder').remove();
-
-                            // обнуляем значения экспорта
-                            self.filter_results = [];
-                            self.filter_all_time = null;
-                            self.filter_all_sum = null;
-
-                            // иначе обнуляем значениe даты и делаем запрос в БД
-                        } else {
-                            self.filter_date = null;
-                            ajaxFilterParams(getParamsFilter());
-                        }
-                    });
-
-                    // удаление менеджеров с фильтра
-                    $('.list-top-search__options.managers__filter__icon .option-delete').unbind('click');
-                    $('.list-top-search__options.managers__filter__icon .option-delete').bind('click', function () {
-                        // удаление фильтра
-                        $('.list-top-search__options.managers__filter__icon').remove();
-                        // очищаем результат количества событий
-                        $('.list-top-search__summary-text').text('0 событий');
-
-                        // если фильтр последний, удаляем wrapper фильтра и кнопку очистки фильтра
-                        if (!$('.search-options .list-top-search__options').length) {
-                            $('#search-options').remove();
-
-                            if (!$('#search_clear_button').hasClass('h-hidden')) {
-                                $('#search_clear_button').addClass('h-hidden');
-                            }
-
-                            // обнуляем массив менеджеров
-                            self.filter_managers = [];
-                            // удаляем старый результат
-                            if ($('.list__table__holder').length) $('.list__table__holder').remove();
-
-                            // обнуляем значения экспорта
-                            self.filter_results = [];
-                            self.filter_all_time = null;
-                            self.filter_all_sum = null;
-
-                            // иначе обнуляем массив менеджеров и делаем запрос в БД
-                        } else {
-                            self.filter_managers = [];
-                            ajaxFilterParams(getParamsFilter());
-                        }
-                    });
-
-                    // если значение не по умолчанию, делаем запрос в БД, иначе очищаем фильтр
-                    if (!(filter_date === 'За все время' && !self.filter_managers.length)) {
-                        ajaxFilterParams(getParamsFilter());
-                    } else buttonCancel();
-
-                    // удаляем окно фильтра
-                    $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
-                }
-
-                /* ###################################################################### */
-
-                // функция закрытия окна фильтра
-                const closeFilterWindow = function () {
-                    // если нет сохраненной даты, удаляем фильтр даты
-                    if (!self.filter_date) {
-                        if ($('.list-top-search .date__filter__icon')) {
-                            $('.list-top-search .date__filter__icon').remove();
-                        }
-                    }
-
-                    // если нет сохраненных менеджеров, удаляем фильтр менеджеров
-                    if (!self.filter_managers.length) {
-                        if ($('.list-top-search .managers__filter__icon')) {
-                            $('.list-top-search .managers__filter__icon').remove();
-                        }
-                    }
-
-                    // удаляем окно фильтра
-                    $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
-                }
-
-                // функция добавления кнопки Применить в фильтре
-                const addButtonApplyFilter = function () {
-                    if ($('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                        $('.list-top-search .list-top-search__apply-block').removeClass('h-hidden');
-                    }
-
-                    $('.list-top-search .list-top-search__apply-block').unbind('click');
-                    $('.list-top-search .list-top-search__apply-block').bind('click', buttonApply);
-                }
-
-                // функция добавления кнопок Применить и Сбросить в окне фильтра
-                const addButtonApplyCancel = function () {
-                    // добавляем класс для кнопок
-                    if (!$('.js-filter-sidebar.filter-search').hasClass('filter-search_has-changes')) {
-                        $('.js-filter-sidebar.filter-search').addClass('filter-search_has-changes');
-                    }
-
-                    // добавляем кнопки
-                    if (!$('#search-suggest-drop-down-menu').length) {
-                        $('.js-filter-sidebar.filter-search').append(`
-                            <div id="search-suggest-drop-down-menu" class="search-results custom-scroll">
-                                <div id="search-suggest-drop-down-menu_container"></div>
-                            </div>
-    
-                            <div class="modal-body__actions filter__params_manage" style="margin-right: 0px;">
-                                <button type="button" class="button-input js-modal-accept js-button-with-loader modal-body__actions__save button-input_blue filter__params_manage__apply" tabindex="1" id="filter_apply">
-                                    <span class="button-input-inner ">
-                                        <span class="button-input-inner__text">Применить</span>
-                                    </span>
-                                </button>
-    
-                                <button type="button" class="button-input button-cancel js-search-filter-clear" tabindex="2" style="">
-                                    <span>Сбросить</span>
-                                </button>
-                            </div>
-                        `);
-                    }
-
-                    // кнопка Применить
-                    $('.modal-body__actions .modal-body__actions__save').unbind('click');
-                    $('.modal-body__actions .modal-body__actions__save').bind('click', buttonApply);
-
-                    // кнопка Сбросить
-                    $('.modal-body__actions .button-cancel').unbind('click');
-                    $('.modal-body__actions .button-cancel').bind('click', { is_ajax: true }, buttonCancel);
-                }
-
-                // функция удаления менеджера с заголовка менеджеров
-                const deleteManagersForTitle = function () {
-                    // нажатие на менеджера
-                    $('.multisuggest__list-item.js-multisuggest-item').unbind('click');
-                    $('.multisuggest__list-item.js-multisuggest-item').bind('click', function (e) {
-                        // останавливаем стандартное поведение
-                        e.stopPropagation();
-
-                        // имя, группа и ID нажатого менеджера
-                        let manager = $(e.target).closest('.multisuggest__list-item.js-multisuggest-item'),
-                            manager_ID = manager.attr('data-id'),
-                            manager_group = manager.attr('data-group');
-
-                        // удаляем менеджера
-                        $(manager).remove();
-
-                        // если группа ранее была скрыта, показываем
-                        if ($(`.users-select__head-allgroup[data-id="${manager_group}"]`).closest('.users-select-row__inner').css('display') === 'none') {
-                            $(`.users-select__head-allgroup[data-id="${manager_group}"]`).closest('.users-select-row__inner').css('display', 'block');
-                        }
-
-                        // показываем менеджера в списке
-                        $(`#select_users__user-${ manager_ID }`).css('display', 'block');
-
-                        // если удален последний менеджер, снимаем рамку
-                        if (!$('.multisuggest__list-item.js-multisuggest-item').length) {
-                            $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
-                        }
-
-                        // добавляем кнопку Применить в фильтре
-                        addButtonApplyFilter();
-                        // добавляем кнопки Применить и Сбросить в окне фильтра
-                        addButtonApplyCancel();
-                    });
-                }
-
-                /* ###################################################################### */
-
-                // клик по свободному месту для закрытия фильтра
-                $('#page_holder').unbind('click');
-                $('#page_holder').bind('click', function (e) {
-                    // если фильтр не открыт, выходим
-                    if (!$('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
-                    // если клик по диву фильтра, выходим
-                    if ($(e.target).closest('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
-                    // если клик по инпуту фильтра, выходим
-                    if ($(e.target).closest('.settings__search .list-top-search__input-block').length) return;
-                    if ($(e.target).hasClass('.settings__search .list-top-search__input-block')) return;
-
-                    // закрытие окна фильтра
-                    closeFilterWindow();
-                });
-
-                // выбор даты
-                $('.filter-search__right .date_filter__head').on('DOMSubtreeModified', function() {
-                    // если рамки нет, добавляем
-                    if (!$('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
-                        $('.filter-search__right .filter__custom_settings__item.date__filter').addClass('glow');
-                    }
-
-                    // если ранее были открыты менеджеры, восстанавливаем wrapper менеджеров
-                    $('.filter__managers').css('height', '0');
-
-                    // добавляем кнопку Применить в фильтре
-                    addButtonApplyFilter();
-                    // добавляем кнопки Применить и Сбросить в окне фильтра
-                    addButtonApplyCancel();
-                });
-
-                // если открыт дата фильтр, закрываем список менеджеров
-                $('.filter-search__right').on('DOMSubtreeModified', function() {
-                    // let managers = [];
-
-                    if ($('.date_filter .date_filter__dropdown').css('display') === 'block') {
-
-                        if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
-
-                        $('.filter__managers .multisuggest__suggest-wrapper').remove();
-                        $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
-
-                        if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
-                            $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
-                        }
-
-                        // если менеджеры есть, добавляем возможность очистки
-                        if ($('.multisuggest__list .multisuggest__list-item').length) {
-                            // если рамки нет, добавляем
-                            if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
-                                $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
-                            }
-                        }
-                    }
-                });
-
-                // открываем список менеджеров
-                $('.filter-search__right .custom-scroll').unbind('click');
-                $('.filter-search__right .custom-scroll').bind('click', function (e) {
-                    // если уже открыт, выходим
-                    if ($('.filter__managers .multisuggest__suggest-wrapper').length) return;
-
-                    // добавляем wrapper
-                    $('.filter-search__right .filter__managers').append(`
-                        <div class="multisuggest__suggest-wrapper suggest-manager users-select-suggest filter__users-select-suggest" style="top: 0; left: 0; position: absolute; display: block; width: 300px; height: auto;" data-is-suggest="y">
-                            <div class="multisuggest__suggest js-multisuggest-suggest custom-scroll" style="max-height: 300px;">
-                                <div class="users-select-row custom-scroll"></div>
-                            </div>
-                        </div>
-                    `);
-
-                    $('.multisuggest__list.js-multisuggest-list').addClass('js-multisuggest-loading');
-
-                    // добавляем инпут для отображения hover
-                    $('.multisuggest__list.js-multisuggest-list').append(`
-                        <li class="multisuggest__list-item multisuggest__list-item_input">
-                            <span class="js-multisuggest-hint multisuggest__hint">Менеджеры</span>
-                        </li>
-                    `);
-
-                    // менеджеры и группы AMO
-                    let groups = AMOCRM.constant('groups'),
-                        managers = AMOCRM.constant('managers');
-
-                    // перебираем группы
-                    $.each(groups, function (key, value) {
-                        var users = [], group_ID = key;
-
-                        $.each(managers, function () {
-                            if (this.group != key) return;
-                            if (!this.active) return;
-
-                            users.push({id: this.id, title: this.title});
-                        });
-
-                        // если в группе нет менеджеров, пропускаем ее
-                        if (!users.length) return;
-
-                        // добавляем группу в список
-                        $('.filter-search__right .filter__managers .users-select-row').append(`
-                            <div class="users-select-row__inner group-color-wrapper">
-                                <div class="users-select__head group-color  js-multisuggest-item multisuggest__suggest-item" data-title="${ value }" data-group="y" data-id="${ key }" style="height: 35px;">
-                                    <div class="users-select__head-title" style="width: 293px;">
-
-                                        <span class="users-select__head-title-text">${ value }</span>
-                                        <div class="users-select__head-allgroup" data-id="${ key }">
-                                            <span>Весь отдел</span>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                <div class="users-select__body" data-id="${ key }"></div>
-                            </div>
-                        `);
-
-                        // перебираем менеджеров
-                        $.each(users, function () {
-                            let user_ID = this.id;
-                            let user_title = this.title;
-
-                            // добавляем менеджеров
-                            $(`.filter-search__right .users-select__body[data-id=${ key }]`).append(`
-                                <div class="users-select__body__item" id="select_users__user-${ user_ID }" style="display: block;">
-                                    <div class="multisuggest__suggest-item js-multisuggest-item true" data-group="${ key }" data-id="${ user_ID }">
-                                        ${ user_title }
-                                        <span data-id="${ user_ID }" class="control-user_state"></span>
-                                    </div>
-                                </div>
-                            `);
-                        });
-
-                        // если менеджер ранее выбран, прячем в списке
-                        if ($('.multisuggest__list .multisuggest__list-item')) {
-                            let group, item_group, ID, is_visible = false;;
-
-                            // если менеджер в заголовке, прячем в списке
-                            $.each($('.multisuggest__list .multisuggest__list-item'), function () {
-                                ID = $(this).attr('data-id');
-                                $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
-                            });
-
-                            // если менеджеров в списке больше нет, скрываем группу
-                            group = $(`.users-select-row__inner .users-select__body[data-id="${group_ID}"]`);
-                            item_group = group.find('.users-select__body__item');
-
-                            $.each(item_group, function () {
-                                if ($(this).css('display') === 'block') is_visible = true;
-                            });
-
-                            if (!is_visible) $(group).closest('.users-select-row__inner').css('display', 'none');
-                        }
-                    });
-
-                    // ровняем менеджеров и скролл
-                    $('.filter-search__right .filter__managers').css('height', '300px');
-                    $('.filter-search__right .users-select-row').css({
-                        'overflow-x': 'hidden', 'overflow-y': 'auto', 'max-width': '300px'
-                    });
-
-                    // клик по свободному месту для закрытия списка менеджеров
-                    $('.settings__search__filter .filter-search__inner').unbind('click');
-                    $('.settings__search__filter .filter-search__inner').bind('click', function (e) {
-                        let managers = [];
-
-                        // если список менеджеров не открыт, выходим
-                        if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
-                        // если клик по списку менеджеров, выходим
-                        if (e.target.closest('.filter__managers .multisuggest__suggest')) return;
-                        // если клик по заголовку менеджеров, выходим
-                        if (e.target.closest('.filter-search__right .custom-scroll')) return;
-
-                        // удаляем список менеджеров и ровняем wrapper
-                        $('.filter__managers .multisuggest__suggest-wrapper').remove();
-                        $('.filter-search__right .filter__managers').css('height', '0');
-                        $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
-
-                        // удаляем инпут заголовка менеджеров
-                        if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
-                            $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
-                        }
-
-                        // если менеджеры есть, добавляем возможность очистки
-                        if ($('.multisuggest__list .multisuggest__list-item').length) {
-                            // если рамки нет, добавляем
-                            if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
-                                $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
-                            }
-
-                            // добавляем кнопку Применить в фильтре
-                            addButtonApplyFilter();
-                            // добавляем кнопки Применить и Сбросить в окне фильтра
-                            addButtonApplyCancel();
-                        }
-                    });
-
-                    // отображение менеджера в заговлоке при смене курсора
-                    $('.filter__managers .users-select__head-title').bind('mouseenter', function (e) {
-                        let title = $(e.target).find('.users-select__head-title-text').text();
-                        $('.multisuggest__list .multisuggest__hint').text(title);
-                    });
-
-                    $('.filter__managers .users-select__body__item').bind('mouseenter', function (e) {
-                        let title = $(e.target).text().trim();
-                        $('.multisuggest__list .multisuggest__hint').text(title);
-                    });
-
-                    // клик на менеджера
-                    $('.filter__managers .users-select__body__item').unbind('click');
-                    $('.filter__managers .users-select__body__item').bind('click', function (e) {
-                        // останавливаем стандартное поведение
-                        e.stopPropagation();
-
-                        // заголовок, группа и ID менеджера
-                        let title = $(e.target).text().trim();
-                        let group = $(e.target).attr('data-group');
-                        let ID = $(e.target).attr('data-id');
-                        let is_visible = false;
-
-                        // добавляем менеджера в заголовок
-                        $('.multisuggest__list-item.multisuggest__list-item_input').before(`
-                            <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
-                                <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
-                                <span>${ title }</span>
-                                <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
-                            </li>
-                        `);
-
-                        // прячем из списка менеджеров
-                        $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
-
-                        // если менеджеров в списке больше нет, скрываем группу
-                        $.each($(e.target).closest('.users-select__body').find('.users-select__body__item'), function () {
-                            if ($(this).css('display') === 'block') is_visible = true;
-                        });
-
-                        if (!is_visible) $(e.target).closest('.users-select-row__inner').css('display', 'none');
-
-                        // удалениe менеджера с заголовка менеджеров
-                        deleteManagersForTitle();
-                    });
-
-                    // клик на группу менеджеров
-                    $('.filter__managers .users-select__head-title').unbind('click');
-                    $('.filter__managers .users-select__head-title').bind('click', function (e) {
-                        // останавливаем стандартное поведение
-                        e.stopPropagation();
-
-                        // ID группы
-                        let group_ID = $(this).find('.users-select__head-allgroup').attr('data-id');
-
-                        // перебираем менеджеров в этой группе
-                        $.each($(`.users-select__body[data-id="${group_ID}"] .users-select__body__item`), function () {
-                            // заголовок, группа и ID менеджера
-                            let title = $(this).find('.multisuggest__suggest-item').text().trim();
-                            let group = $(this).find('.multisuggest__suggest-item').attr('data-group');
-                            let ID = $(this).find('.multisuggest__suggest-item').attr('data-id');
-
-                            // добавляем менеджеров в заголовок
-                            if (!$(`.multisuggest__list .multisuggest__list-item[data-id="${ID}"]`).length) {
-                                $('.multisuggest__list-item.multisuggest__list-item_input').before(`
-                                    <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
-                                        <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
-                                        <span>${ title }</span>
-                                        <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
-                                    </li>
-                                `);
-                            }
-
-                            // прячем из списка менеджеров
-                            $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
-                            $(`.users-select__body[data-id="${group_ID}"]`).closest('.users-select-row__inner').css('display', 'none');
-                        });
-
-                        // удалениe менеджера с заголовка менеджеров
-                        deleteManagersForTitle();
-                    });
-                });
-
-                // очищаем заголовок календаря
-                $('.js-filter-field-clear.clear__date').unbind('click');
-                $('.js-filter-field-clear.clear__date').bind('click', function () {
-                    // пишем стандартное значение
-                    $('.date_filter .date_filter__head span').attr('data-before', 'За все время');
-                    $('.date_filter .date_filter__head span').text('За все время');
-                    // удаляем рамку
-                    $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
-
-                    // удаляем классы у выбранных дат календаря
-                    $.each($('.date_filter .date_filter__period_item'), function () {
-                        if ($(this).hasClass('date_filter__period_item_selected')) {
-                            $(this).removeClass('date_filter__period_item_selected');
-                        }
-                    });
-
-                    // добавляем кнопку Применить в фильтре
-                    addButtonApplyFilter();
-                    // добавляем кнопки Применить и Сбросить в окне фильтра
-                    addButtonApplyCancel();
-                });
-
-                // очищаем заголовок менеджеров
-                $('.js-filter-field-clear.clear__managers').unbind('click');
-                $('.js-filter-field-clear.clear__managers').bind('click', function () {
-                    // удаляем менеджеров и удаляем рамку
-                    $('.multisuggest__list .multisuggest__list-item').remove();
-                    $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
-
-                    // добавляем кнопку Применить в фильтре
-                    addButtonApplyFilter();
-                    // добавляем кнопки Применить и Сбросить в окне фильтра
-                    addButtonApplyCancel();
-                });
-
-                // отображаем ранее сохраненное значение даты
-                if (self.filter_date) {
-                    // если выбрана дата из списка, проверяем какая
-                    filter_date = self.filter_date.split('(')[0].trim();
-
-                    // добавляем соответствующий класс
-                    $.each($('.date_filter .date_filter__period_item'), function () {
-                        if ($(this).find('.custom_select__title').text().trim() === filter_date) {
-                            $(this).addClass('date_filter__period_item_selected');
-                        }
-                    });
-
-                    // меняем заголовок календаря
-                    $('.date_filter__period.custom_select__selected').attr('data-before', self.filter_date);
-                    $('.date_filter__period.custom_select__selected').text(self.filter_date);
-
-                    // если выбрана дата последних Х дней
-                    if (filter_date.indexOf('За последние') !== -1) {
-                        // количество дней
-                        filter_date = self.filter_date.split(' ')[2].trim();
-
-                        // прописываем количество в заголовок и значение, добавляем класс выбора
-                        $('.date_filter .date_filter__period_item[data-period="past_x_days"]').addClass('date_filter__period_item_selected');
-                        $('.date_filter .date_filter__period_item-input-days').val(filter_date);
-                    }
-
-                    // если значение стандартное, удаляем рамку
-                    if (filter_date === 'За все время') {
-                        if ($('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
-                            $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
-                        }
-                    }
-
-                    // добавляем рамку
-                    if (!$('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow') &&
-                        filter_date !== 'За все время') {
-
-                        $('.filter-search__right .filter__custom_settings__item.date__filter').addClass('glow');
-                    }
-                }
-
-                // отображаем ранее сохраненных менеджеров
-                if (self.filter_managers.length) {
-                    let managers = self.filter_managers;
-
-                    // перебираем выбранных менеджеров
-                    $.each(managers, function () {
-                        // добавляем в заголовок списка менеджеров
-                        $('.multisuggest__list.js-multisuggest-list').append(`
-                            <li class="multisuggest__list-item js-multisuggest-item" data-title="${ this.title }" data-group="${ this.group }" data-id="${ this.id }">
-                                <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
-                                <span>${ this.title }</span>
-                                <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ this.id }" value="${ this.id }">
-                            </li>
-                        `);
-                    });
-
-                    // добавляем рамку
-                    if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
-                        $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
-                    }
-
-                    // удалениe менеджера с заголовка менеджеров
-                    deleteManagersForTitle();
-                }
-
-                // по умолчанию прячем кнопку Применить в фильтре
-                if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
-                    $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
-                }
-
-                // по умолчанию прячем кнопки Применить и Сбросить в окне фильтра
-                if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
-                if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
-                    $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
-                }
-
-                /* ###################################################################### */
-
-                // функция показа кнопки Очистить фильтр
-                const addButtonCalcelFilter = function () {
-                    if ($('#search_clear_button').hasClass('h-hidden')) {
-                        $('#search_clear_button').removeClass('h-hidden');
-
-                        $('#search_clear_button').unbind('click');
-                        $('#search_clear_button').bind('click', { is_ajax: true }, buttonCancel);
-                    }
-                }
-
-                // клик на все события
-                $('.filter-search__left .filter__all__events').unbind('click');
-                $('.filter-search__left .filter__all__events').bind('click', function (e) {
-                    let result = {};
-
-                    // останавливаем действие по умолчанию
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    // указываем параметры запроса в БД
-                    result.filter_date = null;
-                    result.filter_managers = null;
-
-                    // очищаем фильтр
-                    buttonCancel(false);
-                    // показываем кнопку Очистить фильтр
-                    addButtonCalcelFilter();
-
-                    // запрос в БД
-                    ajaxFilterParams(result);
-                });
-
-                // клик на мои события
-                $('.filter-search__left .filter__my__events').unbind('click');
-                $('.filter-search__left .filter__my__events').bind('click', function (e) {
-                    let result = {}, filter_managers = [];
-
-                    // останавливаем действие по умолчанию
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    // указываем параметры запроса в БД
-                    result.filter_date = null;
-                    filter_managers.push(AMOCRM.constant('user').name);
-                    result.filter_managers = filter_managers;
-
-                    // очищаем фильтр
-                    buttonCancel(false);
-                    // показываем кнопку Очистить фильтр
-                    addButtonCalcelFilter();
-
-                    // запрос в БД
-                    ajaxFilterParams(result);
-                });
-
-                // клик на события за сегодня
-                $('.filter-search__left .filter__today__events').unbind('click');
-                $('.filter-search__left .filter__today__events').bind('click', function (e) {
-                    let result = {}, date_from, date_to, filter_date = {};
-
-                    // останавливаем действие по умолчанию
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    // указываем параметры запроса в БД
-                    date_from = date_to = new Date().toLocaleDateString();
-                    filter_date.date_from = date_from;
-                    filter_date.date_to = date_to;
-
-                    result.filter_date = filter_date;
-                    result.filter_managers = null;
-
-                    // очищаем фильтр
-                    buttonCancel(false);
-                    // показываем кнопку Очистить фильтр
-                    addButtonCalcelFilter();
-
-                    // запрос в БД
-                    ajaxFilterParams(result);
-                });
-
-                // клик на события за вчера
-                $('.filter-search__left .filter__yesterday__events').unbind('click');
-                $('.filter-search__left .filter__yesterday__events').bind('click', function (e) {
-                    let result = {}, date_from, date_to, filter_date = {}, d;
-
-                    // останавливаем действие по умолчанию
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    // указываем параметры запроса в БД
-                    d = new Date();
-                    d = d.setDate(d.getDate() - 1);
-                    date_from = date_to = new Date(d).toLocaleDateString();
-                    filter_date.date_from = date_from;
-                    filter_date.date_to = date_to;
-
-                    result.filter_date = filter_date;
-                    result.filter_managers = null;
-
-                    // очищаем фильтр
-                    buttonCancel(false);
-                    // показываем кнопку Очистить фильтр
-                    addButtonCalcelFilter();
-
-                    // запрос в БД
-                    ajaxFilterParams(result);
-                });
-
-                // клик на события за месяц
-                $('.filter-search__left .filter__month__events').unbind('click');
-                $('.filter-search__left .filter__month__events').bind('click', function (e) {
-                    let result = {}, date_from, date_to, filter_date = {}, d;
-
-                    // останавливаем действие по умолчанию
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    // указываем параметры запроса в БД
-                    d = new Date();
-                    date_from = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 30).toLocaleDateString();
-                    date_to = new Date().toLocaleDateString();
-                    filter_date.date_from = date_from;
-                    filter_date.date_to = date_to;
-
-                    result.filter_date = filter_date;
-                    result.filter_managers = null;
-
-                    // очищаем фильтр
-                    buttonCancel(false);
-                    // показываем кнопку Очистить фильтр
-                    addButtonCalcelFilter();
-
-                    // запрос в БД
-                    ajaxFilterParams(result);
-                });
-            });
-
-            // клик по меню экспорт
-            $('.settings__search .settings__search__menu #export').unbind('click');
-            $('.settings__search .settings__search__menu #export').bind('click', function (e) {
-                // модалка экспорта
-                new Modal({
-                    class_name: 'export__excel',
-                    init: function ($modal_body) {
-                        var $this = $(this);
-                        $modal_body
-                            .trigger('modal:loaded')
-                            .html(`<div class="modal__export__excel" style="width: 100%; min-height: 180px;"></div>`)
-                            .trigger('modal:centrify')
-                            .append('');
-                    },
-                    destroy: function () {}
-                });
-
-                // кнопки Отменить и Экспорт
-                $('.modal__export__excel').append(`
-                    <div class="modal-export__header">
-                        <h3 class="modal-export__header-title">Экспорт</h3>
-                        <div class="modal-export__header-buttons">
-                            <button type="button" class="button-input button-cancel modal__cancel__btn" tabindex="" style="">
-                                <span>Отменить</span>
-                            </button>
-                            <button type="button" class="button-input button-input_blue modal-export__create-button modal__export__btn" tabindex="">
-                                <span class="button-input-inner">
-                                    <span class="button-input-inner__text">Экспорт</span>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                `);
-
-                // картинки экспорта
-                $('.modal__export__excel').append(`
-                    <div class="modal-export__formats">
-                        <label class="modal-export__format" for="export_excel" style="cursor: auto;">
-                            <div class="modal-export__format-icon">
-                                <svg class="svg-icon svg-common--export--excel-dims">
-                                    <use xlink:href="#common--export--excel"></use>
-                                </svg>
-                            </div>
-                            <div class="modal-export__format-content">
-                                <div class="modal-export__format-title">Excel</div>
-                                <div class="modal-export__format-text">Экспорт в файл формата Microsoft Excel</div>
-                            </div>
-                        </label>
-                    </div>
-                `);
-
-                // кнопка Отменить
-                $('.export__excel .modal__cancel__btn').unbind('click');
-                $('.export__excel .modal__cancel__btn').bind('click', function () {
-                    if ($('.export__excel').length) $('.export__excel').remove();
-                });
-
-                // кнопка Экспорт
-                $('.export__excel .modal__export__btn').bind('click', function () {
-                    // отключаем кнопку
-                    $(this).unbind('click');
-                    $('.export__excel .modal__export__btn').addClass('button-input-loading');
-                    $('.export__excel .modal__export__btn').attr('data-loading', 'Y');
-                    $('.export__excel .modal__export__btn .button-input-inner').css('display', 'none');
-                    $('.export__excel .modal__export__btn').append(`
-                        <div class="button-input__spinner">
-                            <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
-                        </div>
-                    `);
-                    $('.export__excel .modal__export__btn').unbind('click');
-
-                    // создаем excel файл на сервере
-                    $.ajax({
-                        url: url_link_t,
-                        method: 'post',
-                        data: {
-                            'domain': document.domain,
-                            'method': 'export_excel',
-                            'params': {
-                                'filter_results': self.filter_results,
-                                'filter_all_time': self.filter_all_time,
-                                'filter_all_sum': self.filter_all_sum
-                            }
-                        },
-                        dataType: 'json',
-                        success: function (data) {
-                            // очищаем окно экспорта
-                            if ($('.modal__export__excel .modal-export__header').length) {
-                                $('.modal__export__excel .modal-export__header').remove();
-                            }
-
-                            if ($('.modal__export__excel .modal-export__formats').length) {
-                                $('.modal__export__excel .modal-export__formats').remove();
-                            }
-
-                            // вставляем данные загрузки документа
-                            $('.modal__export__excel').append(`
-                                <h2 class="modal-body__caption head_2">Экспорт завершен</h2>
-                                
-                                <div class="modal-export__last-file" style="display: flex; flex-direction: row; align-items: center;">
-                                    <svg class="svg-icon svg-common--export--load-file-dims" style="width: 29px; height: 35px;">
-                                        <use xlink:href="#common--export--load-file"></use>
-                                    </svg>
-                                    <div class="modal-export__file-container" style="display: flex; flex-direction: column; flex: 1 0; align-items: flex-start; margin-left: 8px;">
-                                        <div class="modal-export__file-info" style="display: flex; width: 100%; justify-content: space-between;">
-                                            <a class="modal-export__file-name" download="export_billing.xlsx" href="https://integratorgroup.k-on.ru/andreev/billing/export_billing.xlsx">export_billing.xlsx</a>
-                                            <span class="modal-export__file-size"></span>
-                                        </div>
-                                        <span class="modal-export__file-time" style="margin-left: 8px;"></span>
-                                    </div>
-                                </div>
-                                
-                                <div class="modal-body__actions">
-                                    <a download="export_billing.xlsx" href="https://integratorgroup.k-on.ru/andreev/billing/export_billing.xlsx">
-                                        <button type="button" class="button-input button-input_blue modal-export__save-button" tabindex="">
-                                            <span class="button-input-inner ">
-                                                <svg class="svg-icon svg-common--export--download-dims">
-                                                    <use xlink:href="#common--export--download"></use>
-                                                </svg>
-                                                <span class="button-input-inner__text">Скачать файл</span>
-                                            </span>
-                                        </button>
-                                    </a>
-                                </div>
-                            `);
-
-                            $('.modal__export__excel').css('min-height', '150px');
-
-                            // размер файла
-                            $('.modal-export__file-container .modal-export__file-size').text(`${ data.filesize } / ${ data.count } строк`);
-                            // дата создания файла
-                            $('.modal-export__file-container .modal-export__file-time').text(`${ data.date } в ${ data.time }`);
-                        }
-                    });
-                });
+            $('.modal__finish .select__managers').css('margin-top', '3px');
+            $('.modal__finish .select__managers .control--select--button').css('width', '100%');
+            $('.modal__finish .select__managers ul').css({
+                'margin-left': '13px',
+                'width': 'auto',
+                'min-width': $('.modal__finish').outerWidth() - 13
             });
         }
+
+        // имя клиента
+        const getClients = function () {
+            let clients = [];
+            clients.push({ id: 'null', option: 'Выберите клиента' });
+
+            $('.modal__finish').append(`
+                <div class="clients__wrapper" style="width: 100%; margin-top: 20px;">
+                    <span style="width: 100%;">Выбор клиента:</span><br/>
+                </div>
+            `);
+
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'get_clients',
+                    'essence_ID': self.essense_ID
+                },
+                dataType: 'json',
+                success: function (data) {
+                    $.each(data, function () {
+                        clients.push({ id: this[0], option: this[1] });
+                    });
+
+                    clients.push({ id: 'my_option', option: 'Добавить свой вариант' });
+
+                    // селект с клиентами
+                    let select_clients = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                        items: clients,
+                        class_name: 'select__clients'
+                    });
+
+                    $('.modal__finish .clients__wrapper span').after(select_clients);
+                    $('.modal__finish .select__clients').css('margin-top', '3px');
+                    $('.modal__finish .select__clients .control--select--button').css('width', '100%');
+                    $('.modal__finish .select__clients ul').css({
+                        'margin-left': '13px',
+                        'width': 'auto',
+                        'min-width': $('.modal__finish').outerWidth() - 13
+                    });
+
+                    // выбор клиента
+                    $('.modal__finish .select__clients ul li').unbind('click');
+                    $('.modal__finish .select__clients ul li').bind('click', function () {
+                        // если выбор варианта, вставляем поле ввода
+                        if ($(this).find('.control--select--list--item-inner').text().trim() === 'Добавить свой вариант') {
+                            var input_client_name = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                                name: 'input-client-name',
+                                class_name: 'input__client__name',
+                                value: '',
+                                placeholder: 'введите имя клиента'
+                            });
+
+                            // меняем селект на поле ввода
+                            $('.modal__finish .clients__wrapper span').after(input_client_name);
+                            $('.modal__finish .input__client__name').css({ 'width': '100%', 'margin-top': '3px' });
+                            $('.modal__finish .input__client__name').focus();
+                            $('.modal__finish .select__clients').remove();
+                        }
+                    });
+                }
+            });
+        }
+
+        /**
+         *
+         * ****************************************** HISTORY **********************************************************
+         *
+         */
+
+            // история таймеров
+        const timerHistory = function (e) {
+                e.preventDefault();
+                console.log('history');
+            }
+
+        /**
+         *
+         * ****************************************** START TIMER ******************************************************
+         *
+         */
+
+            // модалка таймера
+        const modalTimer = function () {
+                // нажатие на ссылку таймера
+                $('.billing__link').bind('click', function (e) {
+                    e.preventDefault();
+                    var interval, services = [], rights = null;
+
+                    self.getConfigSettings(); // получение настроек
+                    self.essense_ID = AMOCRM.data.current_card.id; // ущность
+                    self.user_ID = AMOCRM.constant('user').id; // ID пользователя
+
+                    // права на текущего пользователя
+                    if (self.config_settings.rights && self.config_settings.rights[self.user_ID]) {
+                        rights = self.config_settings.rights[self.user_ID];
+                    }
+
+                    self.clearIntervals(); // очищаем интервалы
+                    timerOpen(); // запуск модалки таймера
+                    isAuth(); // проверка авторизации
+
+                    // ссылка Истории и кнопка Закрыть
+                    var timer_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                        class_name: 'timer__close__Btn',
+                        text: 'Закрыть'
+                    });
+
+                    $('.modal__timer').append(`
+                    <div class="right__title" style="position: absolute; right: 23px; margin-top: -20px; display: flex; flex-direction: row;">
+                        <div class="right__history" style="padding-right: 12px; border-right: 1px solid #dbdedf; display: none;">
+                            <a href="" class="hystory__link" style="text-decoration: none; color: #1375ab;">История</a>
+                        </div>
+                        <div class="right__close" style="padding-left: 5px;">${ timer_close_Btn }</div>
+                    </div>
+                `);
+
+                    // отображение кнопки закрыть и ссылки истории
+                    $('.modal__timer .timer__close__Btn').css({ 'margin-top': '-7px', 'padding-bottom': '3px' });
+                    if (rights && rights.includes('isShowHistory')) $('.timer__wrapper .right__history').css('display', 'block');
+
+                    // история таймеров
+                    $('.modal__timer .hystory__link').unbind('click');
+                    $('.modal__timer .hystory__link').bind('click', timerHistory);
+
+                    /* ************************************************************** */
+
+                    addLinkProject(rights); // ссылка на проект
+                    linkAddTimer(); // ссылка на добавление таймера
+                    getTimers(); // отображение запущенных таймеров, или нового
+                });
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // // модалка таймера
+        // const modalTimer = function () {
+        //     // нажатие на ссылку таймера
+        //     $('.billing__link').bind('click', function (e) {
+        //         e.preventDefault();
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+
+        //
+        //         // функция кнопки стоп
+        //         const timerStop = function () {
+        //             // timer stop
+        //             $('.stop__timer__btn').unbind('click');
+        //             $('.stop__timer__btn').bind('click', function (e) {
+
+        //
+        //                 /* ###################################################################### */
+        //
+        //                 // выбор услуги
+        //                 services = [];
+        //                 services.push({ id: 'null', option: 'Выберите оказанную услугу' });
+        //                 $.ajax({
+        //                     url: url_link_t,
+        //                     method: 'post',
+        //                     data: {
+        //                         'domain': document.domain,
+        //                         'method': 'show_services'
+        //                     },
+        //                     dataType: 'json',
+        //                     success: function (data) {
+        //                         $.each(data, function () { services.push({ id: this[0], option: this[1] }) });
+        //
+        //                         var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+        //                                 items: services,
+        //                                 class_name: 'modal__select__services'
+        //                             }),
+        //                             editBtnServices = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+        //                                 class_name: 'editBtn__services',
+        //                                 text: 'Редактировать'
+        //                             }),
+        //                             selectServicesWrapper = `<div class="modal__select__services__wrapper" style="width: 100%; margin-top: 10px;">
+        //                                 <span style="width: 100%;">Список оказанных услуг:</span><br/>
+        //                                 <div class="select__wrapper__flex" style="display: flex; flex-direction: row;">
+        //                                     <div class="select" style="width: 70%;"></div>
+        //                                     <div class="buttonEdit" style="width: 30%; text-align: right;"></div>
+        //                                 </div>
+        //                             </div>`;
+        //
+        //                         $('.modal__client__name__wrapper').after(selectServicesWrapper);
+        //                         $('.modal__select__services__wrapper .select').append(selectServices);
+        //                         $('.modal__select__services__wrapper .buttonEdit').append(editBtnServices);
+        //                         $('.modal__select__services').css('margin-top', '3px');
+        //                         $('.editBtn__services').css('margin-top', '3px');
+        //                         $('.modal__select__services .control--select--button').css('width', '100%');
+        //                         $('.modal__select__services ul').css({
+        //                             'margin-left': '13px',
+        //                             'width': 'auto',
+        //                             'min-width': $('.modal__timer__stop').outerWidth() - 13
+        //                         });
+        //
+        //                         // проверяем права на редактирование
+        //                         if (!rights || !rights.includes('isEditServices')) {
+        //                             $('.select__wrapper__flex .select').css('width', '100%');
+        //                             $('.select__wrapper__flex .buttonEdit').remove();
+        //                         }
+        //
+        //                         /* ###################################################################### */
+        //
+        //                         // редактирование списка услуг
+        //                         $('.editBtn__services').unbind('click');
+        //                         $('.editBtn__services').bind('click', function () {
+        //                             // запуск модалки редактирования
+        //                             new Modal({
+        //                                 class_name: 'timer__edit__services',
+        //                                 init: function ($modal_body) {
+        //                                     var $this = $(this);
+        //                                     $modal_body
+        //                                         .trigger('modal:loaded')
+        //                                         .html(`
+        //                                             <div class="modal__timer__edit__services" style="width: 100%; min-height: 450px;">
+        //                                                 <h2 class="modal__body__caption head_2" style="margin-bottom: 10px;">Редактирование оказанных услуг</h2>
+        //                                             </div>
+        //                                         `)
+        //                                         .trigger('modal:centrify')
+        //                                         .append('');
+        //                                 },
+        //                                 destroy: function () {}
+        //                             });
+        //
+        //                             // ссылка добавления варианта
+        //                             linkAddService = `
+        //                                 <a href="" class="modal__link__add__service" style="
+        //                                     text-decoration: block;
+        //                                     color: #1375ab;
+        //                                     margin-top: 10px;
+        //                                 ">Добавить</a>
+        //                             `;
+        //
+        //                             $('.modal__timer__edit__services').append(linkAddService);
+        //
+        //                             // функция добавления варианта
+        //                             const addInput = function (id = '', option = '') {
+        //                                 var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+        //                                     name: 'modal-input-edit-service',
+        //                                     class_name: 'modal_input__edit__service',
+        //                                     value: option,
+        //                                     placeholder: 'Вариант',
+        //                                     max_length: 50
+        //                                 });
+        //
+        //                                 // вставляем и ровняем инпут и кнопку удаления
+        //                                 $('.modal__link__add__service').before(`
+        //                                     <div class="select__enums__item" style="
+        //                                         margin-bottom: 4px;
+        //                                         width: 100%;
+        //                                         position: relative;
+        //                                     ">
+        //                                         <div class="cf-field-enum__remove" title="Удалить" style="width: auto;">
+        //                                             <svg class="svg-icon svg-common--trash-dims"><use xlink:href="#common--trash"></use></svg>
+        //                                         </div>
+        //                                         ${ input }
+        //                                     </div>
+        //                                 `);
+        //
+        //                                 $('.modal_input__edit__service').css({ 'padding-right': '25px', 'width': '100%' });
+        //                                 $('.modal_input__edit__service').attr('data-id', id);
+        //                                 $('.cf-field-enum__remove').css({
+        //                                     'position': 'absolute',
+        //                                     'top': '10px',
+        //                                     'left': $('.modal_input__edit__service').outerWidth() - 20,
+        //                                     'cursor': 'pointer'
+        //                                 });
+        //
+        //                                 // удаление инпута
+        //                                 $('.cf-field-enum__remove').unbind('click');
+        //                                 $('.cf-field-enum__remove').bind('click', function (e) {
+        //                                     $(e.target).closest('.select__enums__item').remove();
+        //                                 });
+        //                             }
+        //
+        //                             // выводим ранее сохраненные варианты
+        //                             if (services.length > 1) {
+        //                                 $.each(services, function () {
+        //                                     if (this.option === 'Выберите оказанную услугу') return;
+        //                                     addInput(this.id, this.option);
+        //                                 });
+        //                             } else addInput();
+        //
+        //                             // добавление варианта
+        //                             $('.modal__link__add__service').unbind('click');
+        //                             $('.modal__link__add__service').bind('click', function (e) {
+        //                                 e.preventDefault();
+        //                                 if (!$('.modal_input__edit__service').length) addInput();
+        //                                 else {
+        //                                     var isEmptyInput = false;
+        //                                     $.each($('.modal_input__edit__service'), function () {
+        //                                         if (!$(this).val().trim().length) {
+        //                                             $(this).val('').focus();
+        //                                             isEmptyInput = true;
+        //                                             return false;
+        //                                         }
+        //                                     });
+        //                                     if (!isEmptyInput) addInput();
+        //                                 }
+        //                             });
+        //
+        //                             /* ###################################################################### */
+        //
+        //                             // кнопки Сохранить и Закрыть
+        //                             var saveServicesBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+        //                                     class_name: 'modal__saveBtn__services',
+        //                                     text: 'Сохранить'
+        //                                 }),
+        //                                 cancelServicesBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+        //                                     class_name: 'modal__cancelBtn__services',
+        //                                     text: 'Закрыть'
+        //                                 }),
+        //                                 btnWrapper = `<div class="modal__body__actions__services" style="width: 100%;">
+        //                                     ${ saveServicesBtn } ${ cancelServicesBtn }
+        //                                 </div>`;
+        //
+        //                             $('.modal__timer__edit__services').append(btnWrapper);
+        //                             $('.modal__body__actions__services').css('margin-top', '20px');
+        //
+        //                             $('.modal__saveBtn__services').unbind('click');
+        //                             $('.modal__saveBtn__services').bind('click', function () {
+        //                                 $('.modal__select__services').remove();
+        //                                 $('.modal__select__services__wrapper').css('display', 'none');
+        //
+        //                                 // обновляем массив списка услуг
+        //                                 services = [];
+        //
+        //                                 $.each($('.modal_input__edit__service'), function () {
+        //                                     if (!$(this).val().trim().length) return;
+        //                                     services.push($(this).val().trim());
+        //                                 });
+        //
+        //                                 // обновляем список услуг в БД
+        //                                 $.ajax({
+        //                                     url: url_link_t,
+        //                                     method: 'post',
+        //                                     data: {
+        //                                         'domain': document.domain,
+        //                                         'method': 'edit_services',
+        //                                         'services': services
+        //                                     },
+        //                                     dataType: 'json',
+        //                                     success: function (data) {
+        //                                         services = [];
+        //                                         services.push({ id: 'null', option: 'Выберите оказанную услугу' });
+        //                                         $.each(data, function () { services.push({ id: this[0], option: this[1] }) });
+        //
+        //                                         var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+        //                                             items: services,
+        //                                             class_name: 'modal__select__services'
+        //                                         });
+        //
+        //                                         $('.modal__select__services__wrapper .select').append(selectServices);
+        //                                         $('.modal__select__services__wrapper').css('display', 'block');
+        //                                         $('.modal__select__services').css('margin-top', '3px');
+        //                                         $('.modal__select__services .control--select--button').css('width', '100%');
+        //                                         $('.modal__select__services ul').css({
+        //                                             'margin-left': '13px',
+        //                                             'width': 'auto',
+        //                                             'min-width': $('.modal__timer__stop').outerWidth() - 13
+        //                                         });
+        //                                     }
+        //                                 });
+        //
+        //                                 $('.timer__edit__services').remove();
+        //                             });
+        //
+        //                             // margin-bottom для отступа
+        //                             $('.modal__body__actions__services').append(`
+        //                             <div class="modal__bottom" style="position: absolute; height: 100px; width: 100%;"></div>
+        //                         `);
+        //                         });
+        //                     }
+        //                 });
+        //
+        //                 /* ###################################################################### */
+        //
+        //                 // комментарий
+        //                 var textareaComment = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
+        //                         name: 'modal-textarea-comment',
+        //                         class_name: 'modal__textarea__comment',
+        //                         placeholder: 'введите комментарий'
+        //                     }),
+        //                     textareaCommentWrapper = `<div class="modal__textarea__comment__wrapper" style="width: 100%; margin-top: 10px;">
+        //                         <span style="width: 100%;">Комментарий:</span><br/>
+        //                         ${ textareaComment }
+        //                     </div>`;
+        //
+        //                 $('.modal__timer__stop').append(textareaCommentWrapper);
+        //                 $('.modal__textarea__comment').css({ 'width': '100%', 'margin-top': '3px' });
+        //
+        //                 /* ###################################################################### */
+        //
+        //                 // кнопки Сохранить и Закрыть
+        //                 var saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+        //                         class_name: 'modal__saveBtn__timer button-input_blue',
+        //                         text: 'Сохранить'
+        //                     }),
+        //                     cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+        //                         class_name: 'modal__cancelBtn__timer',
+        //                         text: 'Закрыть'
+        //                     }),
+        //                     btnWrapper = `<div class="modal__body__actions__stop" style="width: 100%;">
+        //                         ${ saveBtn } ${ cancelBtn }
+        //                     </div>`;
+        //
+        //                 $('.modal__timer__stop').append(btnWrapper);
+        //                 $('.modal__body__actions__stop').css('margin-top', '20px');
+        //
+        //                 // margin-bottom для отступа
+        //                 $('.modal__timer__stop').append(`
+        //                     <div class="modal__bottom" style="position: absolute; height: 70px; width: 100%;"></div>
+        //                 `);
+        //
+        //                 /* ###################################################################### */
+        //
+        //                 // сохранение таймера в БД
+        //                 $('.modal__saveBtn__timer').unbind('click');
+        //                 $('.modal__saveBtn__timer').bind('click', function () {
+        //                     // если необходимые поля не выбраны, красим в красный
+        //                     var manager = $('.modal__select__managers .control--select--button');
+        //                     var managerID = $('.modal__select__managers .control--select--button').attr('data-value');
+        //                     var client = $('.modal__input__client__name');
+        //                     var service = $('.modal__select__services .control--select--button');
+        //                     var comment = $('.modal__textarea__comment');
+        //                     var error = false;
+        //
+        //                     if (manager.text() === 'Выберите ответственного') {
+        //                         manager.css('border-color', '#f57d7d');
+        //                         error = true;
+        //                     }
+        //
+        //                     if (!client.val().trim().length) {
+        //                         client.css('border-color', '#f57d7d');
+        //                         client.val(client.val().trim());
+        //                         error = true;
+        //                     }
+        //
+        //                     if (service.text() === 'Выберите оказанную услугу') {
+        //                         service.css('border-color', '#f57d7d');
+        //                         error = true;
+        //                     }
+        //
+        //                     // возвращаем естесственные цвета в случае изменения
+        //                     manager.unbind('click');
+        //                     manager.bind('click', function () { manager.css('border-color', '#d4d5d8') });
+        //                     client.unbind('change');
+        //                     client.bind('change', function () { client.css('border-color', '#d4d5d8') });
+        //                     service.unbind('click');
+        //                     service.bind('click', function () { service.css('border-color', '#d4d5d8') });
+        //
+        //                     if (error) return false;
+        //
+        //                     /* ###################################################################### */
+        //
+        //                     // поиск цены сотрудника в кастомных полях
+        //                     let entity_url, entity_ID = AMOCRM.data.current_card.id;
+        //                     if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
+        //                     if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
+        //
+        //                     $.ajax({
+        //                         url: entity_url,
+        //                         method: 'get',
+        //                         success: function (data) {
+        //                             if (!data.custom_fields_values) return;
+        //
+        //                             $.each(data.custom_fields_values, function () {
+        //                                 // если не сотрудник истории, пропускаем
+        //                                 if (this.field_name !== manager.text()) return;
+        //                                 // цена сотрудника
+        //                                 self.price_manager = this.values[0].value;
+        //                             });
+        //
+        //                             // преобразуем в число
+        //                             self.price_manager = parseInt(self.price_manager) || 0;
+        //
+        //                             // получаем настройки для поиска поля депозита
+        //                             let deposit_title = self.getDepositTitle();
+        //
+        //                             // сохраняем результат в БД
+        //                             $.ajax({
+        //                                 url: url_link_t,
+        //                                 method: 'post',
+        //                                 data: {
+        //                                     'domain': document.domain,
+        //                                     'method': 'timer_save',
+        //                                     'essence_id': essenseID,
+        //                                     'timer_id': timer_ID,
+        //                                     'priceManager': self.price_manager,
+        //                                     'user': manager.text(),
+        //                                     'client': client.val().trim(),
+        //                                     'service': service.text(),
+        //                                     'comment': $('.modal__textarea__comment').val().trim(),
+        //                                     'deposit_title': deposit_title
+        //                                 },
+        //                                 dataType: 'json',
+        //                                 success: function (data) {}
+        //                             });
+        //
+        //                             // анимация выполнения кнопки
+        //                             $('.modal__saveBtn__timer').addClass('button-input-loading');
+        //                             $('.modal__saveBtn__timer').attr('data-loading', 'Y');
+        //                             $('.modal__saveBtn__timer .button-input-inner').css('display', 'none');
+        //                             $('.modal__saveBtn__timer').append(`
+        //                                 <div class="button-input__spinner">
+        //                                     <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+        //                                 </div>
+        //                             `);
+        //                             $('.modal__saveBtn__timer').unbind('click');
+        //
+        //                             // пауза для эффекта сохранения
+        //                             setTimeout(() => {
+        //                                 // очищаем таймер
+        //                                 $('.timer__stop').remove();
+        //                                 $(`.timer__item[data-id="${ timer_ID }"]`).remove();
+        //
+        //                                 // если удален последний таймер, добавляем пустой
+        //                                 if (!$('.modal__timer .timer__item').length) addTimer();
+        //                             }, '1500');
+        //
+        //                             self.price_manager = 0;
+        //                         },
+        //                         timeout: 2000
+        //                     });
+        //                 });
+        //             });
+        //         }
+        //
+        //         /* ###################################################################### */
+        //
+        //
+        //
+        //         /* ###################################################################### */
+        //
+        //         // поиск запущенных таймеров
+        //         $.ajax({
+        //             url: url_link_t,
+        //             method: 'post',
+        //             data: {
+        //                 'domain': document.domain,
+        //                 'method': 'search_timer',
+        //                 'essence_id': essenseID,
+        //                 'user_id': userID
+        //             },
+        //             dataType: 'json',
+        //             success: function (data) {
+        //                 // если для сущности и пользователя таймеров нет, создаем новый
+        //                 if (!data.length) {
+        //                     // добавляем таймер
+        //                     addTimer();
+        //
+        //                     // показываем кнопку старта
+        //                     $('.modal__timer .time__timer').text('00:00:00');
+        //                     $('.modal__timer .start__timer__btn').css('display', 'block');
+        //                     $('.modal__timer .pause__timer__btn').css('display', 'none');
+        //                     $('.modal__timer .stop__timer__btn').css('display', 'none');
+        //                 }
+        //
+        //                 // иначе отображаем
+        //                 else {
+        //                     $.each(data, function () {
+        //                         let timer_ID = this[0],
+        //                             link_task = this[8],
+        //                             time_work = this[12],
+        //                             status = this[13];
+        //
+        //                         // таймер
+        //                         addTimer(timer_ID, link_task);
+        //
+        //                         // обновленное время
+        //                         var date = new Date();
+        //                         var time = time_work.split(' ');
+        //                         time = time[1].split(':');
+        //                         date.setHours(time[0]);
+        //                         date.setMinutes(time[1]);
+        //                         date.setSeconds(time[2]);
+        //                         $(`.timer__item[data-id="${ timer_ID }"] .time__timer`).text(date.toLocaleTimeString());
+        //
+        //                         if (status === 'pause') {
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'block');
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+        //                         }
+        //
+        //                         if (status === 'stop') {
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).text('Сохранить');
+        //                         }
+        //
+        //                         // если таймер запущен, запускаем интервал
+        //                         if (status === 'start') {
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'block');
+        //                             $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+        //
+        //                             interval = setInterval(() => {
+        //                                 // если время максимальное, останавливаем таймер
+        //                                 if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
+        //                                     clearInterval(interval);
+        //                                     // показываем кнопку сохранить
+        //                                     $(`.timer__item[data-id="${ timer_ID }"] .start__timer__btn`).css('display', 'none');
+        //                                     $(`.timer__item[data-id="${ timer_ID }"] .pause__timer__btn`).css('display', 'none');
+        //                                     $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).css('display', 'block');
+        //                                     $(`.timer__item[data-id="${ timer_ID }"] .stop__timer__btn`).text('Сохранить');
+        //
+        //                                     // обновляем время на сервере на максимальное
+        //                                     $.ajax({
+        //                                         url: url_link_t,
+        //                                         method: 'post',
+        //                                         data: {
+        //                                             'domain': document.domain,
+        //                                             'method': 'timer_auto_stop',
+        //                                             'timer_id': timer_ID
+        //                                         },
+        //                                         dataType: 'json',
+        //                                         success: function (data) {}
+        //                                     });
+        //
+        //                                     return false;
+        //                                 }
+        //
+        //                                 // +1 сек к времени в интервале
+        //                                 date.setSeconds(date.getSeconds() + 1);
+        //                                 $(`.timer__item[data-id="${ timer_ID }"] .time__timer`).text(date.toLocaleTimeString());
+        //                             }, 1000);
+        //                         }
+        //                     });
+        //                 }
+        //             }
+        //         });
+        //     });
+        // }
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        // // детальный просмотр истории таймера
+        // this.showDetails = function (e) {
+        //     var historyID = $(e.target).attr('data-id');
+        //     if (!historyID) historyID = $(e.target).closest('.link__details').attr('data-id');
+        //
+        //     new Modal({
+        //         class_name: 'hystory__details',
+        //         init: function ($modal_body) {
+        //             var $this = $(this);
+        //             $modal_body
+        //                 .trigger('modal:loaded')
+        //                 .html(`
+        //                     <div class="modal__hystory__details" data-id="${ historyID }" style="width: 100%; min-height: 550px;">
+        //                         <h2 class="modal-body__caption head_2">Детализация</h2>
+        //                     </div>
+        //                 `)
+        //                 .trigger('modal:centrify')
+        //                 .append('');
+        //         },
+        //         destroy: function () {}
+        //     });
+        //
+        //     /* ###################################################################### */
+        //
+        //     // добавляем элементы истории
+        //     const addHistoryItem = function (title, value, class_item = '') {
+        //         var historyItem = `
+        //             <div class="flex__history" style="
+        //                 display: flex;
+        //                 flex-direction: row;
+        //                 background: #fcfcfc;
+        //                 border-top: 1px solid #dbdedf;
+        //                 border-bottom: 1px solid #dbdedf;
+        //                 margin-bottom: 2px;
+        //             ">
+        //                 <div class="title title__${ class_item }" style="
+        //                     width: 200px; text-align: right; padding: 10px; color: #92989b;">
+        //                     ${ title }
+        //                 </div>
+        //                 <div class="value ${ class_item }" style="width: 100%; padding: 10px 10px 10px 0;">
+        //                     ${ value }
+        //                 </div>
+        //             </div>
+        //         `;
+        //         $('.modal__hystory__details').append(historyItem);
+        //     }
+        //
+        //     $.ajax({
+        //         url: url_link_t,
+        //         method: 'post',
+        //         data: {
+        //             'domain': document.domain,
+        //             'method': 'history_details',
+        //             'history_id': historyID
+        //         },
+        //         dataType: 'json',
+        //         success: function (data) {
+        //             addHistoryItem('Дата таймера', data.created_at.split(' ')[0] + 'г.');
+        //             addHistoryItem('Ответственный', data.user, 'user__details__item');
+        //             addHistoryItem('Имя клиента', data.client, 'client__details__item');
+        //             addHistoryItem('Оказанная услуга', data.service, 'service__details__item');
+        //             addHistoryItem('Комментарий', data.comment, 'comment__details__item');
+        //             addHistoryItem('Стоимость работы', data.price + 'р.', 'price__details__item');
+        //             addHistoryItem('Ссылка на задачу', `
+        //                 <a href="${ data.link_task }" target="_blank" style="
+        //                     text-decoration: none; color: #1375ab; word-break: break-all;
+        //                 ">${ data.link_task }</a>
+        //             `, 'link__task__details__item');
+        //             addHistoryItem('Время работы', data.time_work, 'time_work__details__item');
+        //
+        //             $('.value.time_work__details__item').css('width', '50%');
+        //             $('.value.time_work__details__item').after(`
+        //                 <div class="is__change__time_work" style="width: calc(50% - 30px); padding: 10px; text-align: right; color: #92989b;"></div>
+        //             `);
+        //
+        //             // если время изменено, показываем блок "(изменено)"
+        //             if (data.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
+        //
+        //             /* ###################################################################### */
+        //
+        //             // права на редактирование истории
+        //             if (rights && rights.includes('isEditHistory')) {
+        //                 // кнопки Редактировать, Сохранить
+        //                 var editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+        //                         class_name: 'modal__editBtn__details',
+        //                         text: 'Редактировать'
+        //                     }),
+        //                     saveEditBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+        //                         class_name: 'modal__saveEditBtn__details button-input_blue',
+        //                         text: 'Сохранить'
+        //                     }),
+        //                     editBtnWrapper = `<div class="modal__body__actions__details" style="width: 100%;"></div>`;
+        //
+        //                 $('.modal__hystory__details').append(editBtnWrapper);
+        //                 $('.modal__body__actions__details').append(editBtn);
+        //                 $('.modal__body__actions__details').append(saveEditBtn);
+        //                 $('.modal__saveEditBtn__details').css('display', 'none');
+        //                 $('.modal__body__actions__details').css('margin-top', '10px');
+        //
+        //                 /* ###################################################################### */
+        //
+        //                 // время работы для для подсчета разницы даты после редактирования
+        //                 let old_time, new_time, price, time_edit;
+        //
+        //                 // редактирование истории
+        //                 $('.modal__editBtn__details').unbind('click');
+        //                 $('.modal__editBtn__details').bind('click', function () {
+        //                     $('.modal__editBtn__details').css('display', 'none');
+        //                     $('.modal__saveEditBtn__details').css('display', 'block');
+        //
+        //                     // возвращаем стандартные аттрибуты кнопки
+        //                     if ($('.modal__saveEditBtn__details').hasClass('button-input-loading')) $('.modal__saveBtn__timer').removeClass('button-input-loading')
+        //                     $('.modal__saveEditBtn__details').attr('data-loading', '');
+        //                     if ($('.modal__saveEditBtn__details .button-input-inner').css('display') === 'none') $('.modal__saveEditBtn__details .button-input-inner').css('display', 'block');
+        //                     if ($('.modal__saveEditBtn__details .button-input__spinner').length) $('.modal__saveEditBtn__details .button-input__spinner').remove();
+        //
+        //                     const toEdit = function (class_text, class_input, name_input, value, placeholder) {
+        //                         var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+        //                             name: name_input,
+        //                             class_name: class_input,
+        //                             value: '',
+        //                             placeholder: placeholder
+        //                         });
+        //
+        //                         $(`.${ class_text }`).text('');
+        //                         $(`.${ class_text }`).append(input);
+        //                         $(`.${ class_input }`).val(value);
+        //                         $(`.${ class_input }`).css('width', '100%');
+        //                         $(`.title__${ class_text }`).css('padding-top', '19px');
+        //                     }
+        //
+        //                     // ответственный
+        //                     toEdit(
+        //                         'user__details__item',
+        //                         'modal__input__user__edit__details',
+        //                         'modal-input-client-edit-details',
+        //                         $('.user__details__item').text().trim(),
+        //                         'введите имя ответственного'
+        //                     );
+        //
+        //                     // имя клиента
+        //                     toEdit(
+        //                         'client__details__item',
+        //                         'modal__input__client__edit__details',
+        //                         'modal-input-client-edit-details',
+        //                         $('.client__details__item').text().trim(),
+        //                         'введите имя клиента'
+        //                     );
+        //
+        //                     // оказанная услуга
+        //                     toEdit(
+        //                         'service__details__item',
+        //                         'modal__input__service__edit__details',
+        //                         'modal-input-service-edit-details',
+        //                         $('.service__details__item').text().trim(),
+        //                         'введите оказанную услугу'
+        //                     );
+        //
+        //                     var textarea = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
+        //                         name: 'modal-textarea-comment-edit-details',
+        //                         class_name: 'modal__textarea__comment__edit__details',
+        //                         placeholder: 'введите комментарий'
+        //                     });
+        //                     var text = $('.comment__details__item').text().trim();
+        //                     $('.comment__details__item').text('');
+        //                     $('.comment__details__item').append(textarea);
+        //                     $('.modal__textarea__comment__edit__details').val(text);
+        //                     $('.modal__textarea__comment__edit__details').css('width', '100%');
+        //                     $('.title__comment__details__item').css('padding-top', '19px');
+        //
+        //                     // стоимость работы
+        //                     toEdit(
+        //                         'price__details__item',
+        //                         'modal__input__price__edit__details',
+        //                         'modal-input-price-edit-details',
+        //                         $('.price__details__item').text().trim().slice(0, -2),
+        //                         'введите стоимость работы'
+        //                     );
+        //                     $('.modal__input__price__edit__details').attr('type', 'number');
+        //
+        //                     // ссылка на задачу
+        //                     toEdit(
+        //                         'link__task__details__item',
+        //                         'modal__input__link__task__edit__details',
+        //                         'modal-input-link__task-edit-details',
+        //                         $('.link__task__details__item').text().trim(),
+        //                         'введите ссылку на задачу'
+        //                     );
+        //
+        //                     // время работы
+        //                     time_edit = $('.time_work__details__item').text().trim();
+        //                     $('.time_work__details__item').text('');
+        //
+        //                     $('.value.time_work__details__item').append(`
+        //                         <input
+        //                             type="time"
+        //                             name="modal-input-time_work-edit-details"
+        //                             class="modal__input__time_work__edit__details text-input"
+        //                             placeholder="введите время работы"
+        //                             value="${ time_edit }"
+        //                             step="2"
+        //                         />
+        //                     `);
+        //
+        //                     $('.modal__input__time_work__edit__details').css('width', '100%');
+        //                     $('.title__time_work__details__item').css('padding-top', '19px');
+        //                 });
+        //
+        //                 /* ###################################################################### */
+        //
+        //                 // сохранение истории
+        //                 $('.modal__saveEditBtn__details').unbind('click');
+        //                 $('.modal__saveEditBtn__details').bind('click', function () {
+        //                     var user = $('.modal__input__user__edit__details');
+        //                     var client = $('.modal__input__client__edit__details');
+        //                     var service = $('.modal__input__service__edit__details');
+        //                     var comment = $('.modal__textarea__comment__edit__details');
+        //                     price = $('.modal__input__price__edit__details');
+        //                     var link_task = $('.modal__input__link__task__edit__details');
+        //                     var time_work = $('.modal__input__time_work__edit__details');
+        //                     var isError = false;
+        //
+        //                     // красим поля в случае ошибки
+        //                     if (!link_task.val().trim().length) {
+        //                         link_task.val('').focus();
+        //                         isError = true;
+        //                         $('.modal__input__link__task__edit__details').css('border-color', '#f37575');
+        //                     }
+        //                     // возвращаем естесственные цвета
+        //                     $('.modal__input__link__task__edit__details').unbind('change');
+        //                     $('.modal__input__link__task__edit__details').bind('change', function () {
+        //                         $('.modal__input__link__task__edit__details').css('border-color', '#dbdedf');
+        //                     });
+        //
+        //                     if (!price.val().trim().length) {
+        //                         price.val('').focus();
+        //                         isError = true;
+        //                         $('.modal__input__price__edit__details').css('border-color', '#f37575');
+        //                     }
+        //
+        //                     // возвращаем естесственные цвета
+        //                     $('.modal__input__price__edit__details').unbind('change');
+        //                     $('.modal__input__price__edit__details').bind('change', function () {
+        //                         $('.modal__input__price__edit__details').css('border-color', '#dbdedf');
+        //                     });
+        //
+        //                     if (!service.val().trim().length) {
+        //                         service.val('').focus();
+        //                         isError = true;
+        //                         $('.modal__input__service__edit__details').css('border-color', '#f37575');
+        //                     }
+        //
+        //                     // возвращаем естесственные цвета
+        //                     $('.modal__input__service__edit__details').unbind('change');
+        //                     $('.modal__input__service__edit__details').bind('change', function () {
+        //                         $('.modal__input__service__edit__details').css('border-color', '#dbdedf');
+        //                     });
+        //
+        //                     if (!client.val().trim().length) {
+        //                         client.val('').focus();
+        //                         isError = true;
+        //                         $('.modal__input__client__edit__details').css('border-color', '#f37575');
+        //                     }
+        //
+        //                     // возвращаем естесственные цвета
+        //                     $('.modal__input__client__edit__details').unbind('change');
+        //                     $('.modal__input__client__edit__details').bind('change', function () {
+        //                         $('.modal__input__client__edit__details').css('border-color', '#dbdedf');
+        //                     });
+        //
+        //                     if (!user.val().trim().length) {
+        //                         user.val('').focus();
+        //                         isError = true;
+        //                         $('.modal__input__user__edit__details').css('border-color', '#f37575');
+        //                     }
+        //
+        //                     // возвращаем естесственные цвета
+        //                     $('.modal__input__user__edit__details').unbind('change');
+        //                     $('.modal__input__user__edit__details').bind('change', function () {
+        //                         $('.modal__input__user__edit__details').css('border-color', '#dbdedf');
+        //                     });
+        //
+        //                     if (isError) return false;
+        //
+        //                     // меняем аттрибуты кнопки
+        //                     $('.modal__saveEditBtn__details').addClass('button-input-loading');
+        //                     $('.modal__saveEditBtn__details').attr('data-loading', 'Y');
+        //                     $('.modal__saveEditBtn__details .button-input-inner').css('display', 'none');
+        //                     $('.modal__saveEditBtn__details').append(`
+        //                         <div class="button-input__spinner">
+        //                             <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+        //                         </div>
+        //                     `);
+        //                     $('.modal__editBtn__details').css('display', 'none');
+        //
+        //                     // поиск цены сотрудника в кастомных полях
+        //                     let entity_url, entity_ID = AMOCRM.data.current_card.id;
+        //                     if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
+        //                     if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
+        //
+        //                     $.ajax({
+        //                         url: entity_url,
+        //                         method: 'get',
+        //                         success: function (data) {
+        //                             if (!data.custom_fields_values) return;
+        //
+        //                             $.each(data.custom_fields_values, function () {
+        //                                 // если не сотрудник истории, пропускаем
+        //                                 if (this.field_name !== user.val().trim()) return;
+        //                                 // цена сотрудника
+        //                                 self.price_manager = this.values[0].value;
+        //                             });
+        //
+        //                             // преобразуем в число
+        //                             self.price_manager = parseInt(self.price_manager) || 0;
+        //
+        //                             // считаем разницу во времени
+        //                             new_time = time_work.val();
+        //                             old_time = time_edit;
+        //                             price = parseInt(price.val()) || 0;
+        //
+        //                             // если время было изменено
+        //                             if (new_time !== old_time) {
+        //                                 // считаем разницу во времени
+        //                                 const getDate = function (date) {
+        //                                     return new Date(0, 0, 0, date.split(':')[0], date.split(':')[1], date.split(':')[2]);
+        //                                 }
+        //
+        //                                 // если новая дата больше старой, прибавляем к стоимости работы, иначе онимаем
+        //                                 if (getDate(new_time) > getDate(old_time)) {
+        //                                     price += ((getDate(new_time) - getDate(old_time)) / 60000) * self.price_manager;
+        //                                 } else if (getDate(new_time) < getDate(old_time)) {
+        //                                     price -= ((getDate(old_time) - getDate(new_time)) / 60000) * self.price_manager;
+        //                                 }
+        //                             }
+        //
+        //                             // получаем настройки для поиска поля депозита
+        //                             let deposit_title = self.getDepositTitle();
+        //
+        //                             // обновляем данные в БД
+        //                             $.ajax({
+        //                                 url: url_link_t,
+        //                                 method: 'post',
+        //                                 data: {
+        //                                     'domain': document.domain,
+        //                                     'method': 'edit_history_details',
+        //                                     'history_id': historyID,
+        //                                     'essence_id': AMOCRM.data.current_card.id,
+        //                                     'user': $('.modal__input__user__edit__details').val(),
+        //                                     'client': $('.modal__input__client__edit__details').val(),
+        //                                     'service': $('.modal__input__service__edit__details').val(),
+        //                                     'price': price,
+        //                                     'link_task': $('.modal__input__link__task__edit__details').val(),
+        //                                     'time_work': $('.modal__input__time_work__edit__details').val(),
+        //                                     'comment': $('.modal__textarea__comment__edit__details').val().trim(),
+        //                                     'deposit_title': deposit_title
+        //                                 },
+        //                                 dataType: 'json',
+        //                                 success: function (data) {
+        //                                     var timer = data[0];
+        //                                     var deposit = data[1];
+        //
+        //                                     // обновляем сумму депозита
+        //                                     $('.deposit .deposit__sum__int').text(deposit);
+        //
+        //                                     // обновляем историю
+        //                                     $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
+        //                                     $(`.link__details[data-id="${ timer.id }"] .user__price .user__sum`).text(timer.price);
+        //
+        //                                     // обновляем детализацию
+        //                                     $('.modal__input__user__edit__details').remove();
+        //                                     $('.modal__input__client__edit__details').remove();
+        //                                     $('.modal__input__service__edit__details').remove();
+        //                                     $('.modal__textarea__comment__edit__details').remove();
+        //                                     $('.modal__input__price__edit__details').remove();
+        //                                     $('.modal__input__link__task__edit__details').remove();
+        //                                     $('.modal__input__time_work__edit__details').remove();
+        //
+        //                                     $('.user__details__item').text(timer.user);
+        //                                     $('.client__details__item').text(timer.client);
+        //                                     $('.service__details__item').text(timer.service);
+        //                                     $('.comment__details__item').text(timer.comment);
+        //                                     $('.price__details__item').text(timer.price + 'р.');
+        //                                     $('.link__task__details__item').html(`
+        //                                         <a href="${ timer.link_task }" target="_blank" style="
+        //                                             text-decoration: none; color: #1375ab; word-break: break-all;
+        //                                         ">${ timer.link_task }</a>
+        //                                     `);
+        //                                     $('.time_work__details__item').text(timer.time_work);
+        //
+        //                                     $(`.title__user__details__item`).css('padding-top', '10px');
+        //                                     $(`.title__client__details__item`).css('padding-top', '10px');
+        //                                     $(`.title__service__details__item`).css('padding-top', '10px');
+        //                                     $(`.title__comment__details__item`).css('padding-top', '10px');
+        //                                     $(`.title__price__details__item`).css('padding-top', '10px');
+        //                                     $(`.title__link__task__details__item`).css('padding-top', '10px');
+        //                                     $(`.time_work__details__item`).css('padding-top', '10px');
+        //                                     $(`.title.title__time_work__details__item`).css('padding-top', '10px');
+        //
+        //                                     // если время изменено, показываем блок "(изменено)"
+        //                                     if (timer.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
+        //
+        //                                     // меняем итоговую сумму внизу истории
+        //                                     price = 0;
+        //
+        //                                     $.each($('.user__price .user__sum'), function () {
+        //                                         price += parseInt($(this).text());
+        //                                     });
+        //
+        //                                     $('.result__sum .result__price').text(price);
+        //                                     time_edit = $('.time_work__details__item').text().trim();
+        //
+        //                                     $('.modal__editBtn__details').css('display', 'block');
+        //                                     $('.modal__saveEditBtn__details').css('display', 'none');
+        //                                 }
+        //                             });
+        //
+        //                             self.price_manager = 0;
+        //                         },
+        //                         timeout: 2000
+        //                     });
+        //
+        //                 });
+        //
+        //             }
+        //         }
+        //     });
+        //
+        //     /* ###################################################################### */
+        //
+        //     // кнопка Закрыть
+        //     $('.modal__hystory__details').css('position', 'relative');
+        //     var cancelBtn = `
+        //         <a href="#" class="modal__cancelBtn__details" style="
+        //             text-decoration: none;
+        //             color: #92989b;
+        //             font-size: 14px;
+        //             font-weight: bold;
+        //             top: 3px;
+        //             right: 0;
+        //             position: absolute;
+        //         ">Закрыть</a>
+        //     `;
+        //     $('.modal__hystory__details').append(cancelBtn);
+        //     $('.modal__cancelBtn__details').bind('click', function (e) {
+        //         e.preventDefault();
+        //         $('.hystory__details').remove();
+        //     });
+        // }
+        //
+        // /* ###################################################################### */
+        //
+        // // итоговая сумма истории
+        // this.resultSum = function (sum = null) {
+        //     $.ajax({
+        //         url: url_link_t,
+        //         method: 'post',
+        //         data: {
+        //             'domain': document.domain,
+        //             'method': 'get_sum',
+        //             'essence_id': AMOCRM.data.current_card.id
+        //         },
+        //         dataType: 'json',
+        //         success: function (data) {
+        //             if (!data) data = 0;
+        //             if ($('.result__sum').length) $('.result__sum').remove();
+        //
+        //             $('.x__bottom').before(`
+        //                 <div class="result__sum" style="display: flex; flex-direction: row; justify-content: flex-end;">
+        //                     Итого: &nbsp<div class="result__price">${ sum ? sum : data }</div>р.
+        //                 </div>
+        //             `);
+        //
+        //             $('.result__sum').css({
+        //                 'width': '100%',
+        //                 'padding': '20px 20px 10px 0',
+        //                 'text-align': 'right'
+        //             });
+        //         }
+        //     });
+        // }
+        //
+        // /* ###################################################################### */
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        // // история таймеров
+        // const modalHistory = function (e) {
+        //     e.preventDefault();
+        //     var essenseID = AMOCRM.data.current_card.id,
+        //         userID = AMOCRM.constant('user').id;
+        //
+        //     // права доступа
+        //     self.getConfigSettings();
+        //     if (self.config_settings.rights && self.config_settings.rights[userID]) {
+        //         rights = self.config_settings.rights[userID];
+        //     }
+        //
+        //     // запуск модалки истории
+        //     new Modal({
+        //         class_name: 'timer__history',
+        //         init: function ($modal_body) {
+        //             var $this = $(this);
+        //             $modal_body
+        //                 .trigger('modal:loaded')
+        //                 .html(`
+        //                     <div class="modal__timer__history" style="width: 100%; height: 600px;">
+        //                         <h2 class="modal__body__caption head_2">История таймеров</h2>
+        //                     </div>
+        //                 `)
+        //                 .trigger('modal:centrify')
+        //                 .append('');
+        //         },
+        //         destroy: function () {}
+        //     });
+        //     $('.timer__history .modal-body').css('overflow', 'auto');
+        //     $('.modal__timer__history').css('position', 'relative');
+        //
+        //     /* ###################################################################### */
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //     // сумма депозита
+        //     let historyDepositWrapper = `<div class="modal__history__deposit__wrapper" style="width: 100%; margin-top: 20px;">
+        //         <div class="history__wrapper__flex" style="display: flex; flex-direction: row;">
+        //             <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
+        //                 <span>Сумма депозита:</span>
+        //                 <div class="deposit__sum" style="margin-top: 8px;">
+        //                     <span class="deposit__sum__int" style="font-weight: bold;">0</span> р.
+        //                 </div>
+        //             </div>
+        //             <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
+        //                 <a href="" class="link__filter" style="
+        //                     text-decoration: none; color: #1375ab; word-break: break-all;">Фильтр
+        //                 </a>
+        //             </div>
+        //         </div>
+        //     </div>`;
+        //
+        //     $('.modal__timer__history').append(historyDepositWrapper);
+        //     $('.modal__input__history__deposit').css({ 'margin-bottom': '10px', 'width': '150px' });
+        //     $('.history__wrapper__flex .deposit span').css('margin-top', '8px');
+        //     $('.history__wrapper__flex .deposit div').css('margin-left', '5px');
+        //     $('.modal__input__history__deposit').attr('type', 'number');
+        //
+        //     // получаем сумму депозита
+        //     $.ajax({
+        //         url: url_link_t,
+        //         method: 'post',
+        //         data: {
+        //             'domain': document.domain,
+        //             'method': 'get_deposit',
+        //             'essence_id': essenseID
+        //         },
+        //         dataType: 'json',
+        //         success: function (data) {
+        //             $('.deposit__sum .deposit__sum__int').text(data);
+        //
+        //             if (rights && rights.includes('isEditDeposit')) {
+        //                 $('.modal__history__deposit__wrapper .deposit').append(`
+        //                     <div class="modal__addDepositBtn__wrapper">
+        //                         <button type="button" class="button-input modal__addDepositBtn">
+        //                             <span class="button-input-inner">
+        //                                 <span class="button-input-inner__text">+</span>
+        //                             </span>
+        //                         </button>
+        //                     </div>
+        //                 `);
+        //
+        //                 $('.modal__addDepositBtn__wrapper').css({ 'margin-left': '10px' });
+        //                 $('.modal__addDepositBtn').css({ 'padding': '10px 12px 8px' });
+        //                 $('.modal__addDepositBtn .button-input-inner__text').css({ 'font-size': '18px', 'font-weight': 'normal' });
+        //                 $('.history__wrapper__flex').css('margin-bottom', '10px');
+        //
+        //                 // добавление депозита
+        //                 $('.modal__addDepositBtn').unbind('click');
+        //                 $('.modal__addDepositBtn').bind('click', function () {
+        //                     // модалка добавления суммы депозита
+        //                     new Modal({
+        //                         class_name: 'timer__deposit_change',
+        //                         init: function ($modal_body) {
+        //                             var $this = $(this);
+        //                             $modal_body
+        //                                 .trigger('modal:loaded')
+        //                                 .html(`
+        //                                     <div class="modal__timer__add__deposit" style="width: 100%; height: 125px;">
+        //                                         <h2 class="modal__body__caption head_2">Добавление депозита</h2>
+        //                                     </div>
+        //                                 `)
+        //                                 .trigger('modal:centrify')
+        //                                 .append('');
+        //                         },
+        //                         destroy: function () {}
+        //                     });
+        //
+        //                     // инпут депозита
+        //                     let input_deposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+        //                         name: 'modal-input-add-deposit',
+        //                         class_name: 'modal__input__add__deposit',
+        //                         placeholder: 'укажите сумму депозита'
+        //                     });
+        //
+        //                     $('.modal__timer__add__deposit').append(input_deposit);
+        //                     $('.modal__input__add__deposit').css({ 'width': '100%', 'margin-top': '10px' });
+        //                     $('.modal__input__add__deposit').attr('type', 'number');
+        //                     $('.modal__input__add__deposit').focus();
+        //
+        //                     // кнопки Сохранить и Закрыть
+        //                     let saveBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+        //                             class_name: 'modal__saveDepositBtn__timer button-input_blue',
+        //                             text: 'Сохранить'
+        //                         }),
+        //                         cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+        //                             class_name: 'modal__cancelDepositBtn__timer',
+        //                             text: 'Закрыть'
+        //                         }),
+        //                         btnWrapper = `<div class="modal__body__actions__add__deposit" style="width: 100%;">
+        //                             ${ saveBtn } ${ cancelBtn }
+        //                         </div>`;
+        //
+        //                     $('.modal__timer__add__deposit').append(btnWrapper);
+        //                     $('.modal__body__actions__add__deposit').css('margin-top', '20px');
+        //
+        //                     // добавление депозита
+        //                     $('.modal__saveDepositBtn__timer').unbind('click');
+        //                     $('.modal__saveDepositBtn__timer').bind('click', function (e) {
+        //                         // проверка на значение
+        //                         if (!$('.modal__input__add__deposit').val().trim().length) {
+        //                             $('.modal__input__add__deposit').css('border-color', '#f57d7d');
+        //                             $('.modal__input__add__deposit').focus();
+        //                             return false;
+        //                         }
+        //
+        //                         // анимация выполнения кнопки
+        //                         $('.modal__saveDepositBtn__timer').addClass('button-input-loading');
+        //                         $('.modal__saveDepositBtn__timer').attr('data-loading', 'Y');
+        //                         $('.modal__saveDepositBtn__timer .button-input-inner').css('display', 'none');
+        //                         $('.modal__saveDepositBtn__timer').append(`
+        //                             <div class="button-input__spinner">
+        //                                 <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+        //                             </div>
+        //                         `);
+        //                         $('.modal__saveDepositBtn__timer').unbind('click');
+        //
+        //                         // получаем настройки для поиска поля депозита
+        //                         let deposit_title = self.getDepositTitle();
+        //                         let deposit_sum = parseInt($('.deposit .deposit__sum__int').text().trim()) + parseInt($('.modal__input__add__deposit').val().trim());
+        //
+        //                         // меняем депозит
+        //                         if (parseInt($('.modal__input__add__deposit').val().trim()) !== 0) {
+        //                             $.ajax({
+        //                                 url: url_link_t,
+        //                                 method: 'post',
+        //                                 data: {
+        //                                     'domain': document.domain,
+        //                                     'method': 'change_deposit',
+        //                                     'essence_id': essenseID,
+        //                                     'user_id': AMOCRM.constant('user').id,
+        //                                     'deposit_sum': deposit_sum,
+        //                                     'deposit': $('.modal__input__add__deposit').val().trim(),
+        //                                     'deposit_title': deposit_title,
+        //                                     'timezone': AMOCRM.constant('account').timezone
+        //                                 },
+        //                                 dataType: 'json',
+        //                                 success: function (data) {
+        //                                     // добавляем пополнение депозита в историю
+        //                                     $('.modal__history__deposit__wrapper').after(`
+        //                                         <div class="link__details" data-id="" style="
+        //                                             display: flex; flex-direction: row; justify-content: space-between;
+        //                                             width: calc(100% - 10px); border-top: 1px solid #c7efc2; border-bottom: 1px solid #c7efc2;
+        //                                             margin-bottom: 2px; background: #ECFFEA; padding: 1px 10px; cursor: auto;
+        //                                             ">
+        //                                             <div>
+        //                                                 <span class="user__created_at" style="color: #979797; font-size: 13px;">
+        //                                                     ${new Date().toLocaleDateString()}
+        //                                                 </span><br/>
+        //                                                 <div class="user__title">Пополнение депозита</div>
+        //                                             </div>
+        //                                             <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
+        //                                                 <div class="user__sum">${ $('.modal__input__add__deposit').val().trim() }</div>
+        //                                                 <div class="user_valute">р.</div>
+        //                                             </div>
+        //                                         </div>
+        //                                     `);
+        //
+        //                                     // обновляем значение депозита
+        //                                     $('.deposit .deposit__sum__int').text(data);
+        //                                     // закрываем окно
+        //                                     $('.timer__deposit_change').remove();
+        //                                 }
+        //                             });
+        //                         } else $('.timer__deposit_change').remove();
+        //
+        //                     });
+        //                 });
+        //             }
+        //         }
+        //     });
+        //
+        //     /* ###################################################################### */
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //     // фильтр поиска
+        //     $('.link__filter').unbind('click');
+        //     $('.link__filter').bind('click', function (e) {
+        //         e.preventDefault();
+        //
+        //         new Modal({
+        //             class_name: 'timer__filter',
+        //             init: function ($modal_body) {
+        //                 var $this = $(this);
+        //                 $modal_body
+        //                     .trigger('modal:loaded')
+        //                     .html(`
+        //                     <div class="modal__history__filter" style="width: 100%; height: 175px;">
+        //                         <h2 class="modal__body__caption__filter head_2">Фильтр поиска</h2>
+        //                     </div>
+        //                 `)
+        //                     .trigger('modal:centrify')
+        //                     .append('');
+        //             },
+        //             destroy: function () {}
+        //         });
+        //
+        //         // даты от - до
+        //         var modalInputFrom = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
+        //                 class_name: 'modal__filter__input__from',
+        //                 input_class: 'input__modal__filter__input__from',
+        //                 value: '',
+        //                 placeholder: 'введите значение от:'
+        //             }),
+        //             modalInputTo = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
+        //                 class_name: 'modal__filter__input__to',
+        //                 input_class: 'input__modal__filter__input__to',
+        //                 value: '',
+        //                 placeholder: 'введите значение до:'
+        //             }),
+        //             linkFilterWrapper = `<div class="modal__filter__input__wrapper" style="width: 100%; margin-top: 20px;">
+        //                 <span style="width: 100%;">Введите дату поиска (от - до):</span><br/>
+        //                 <div class="modal__filter__input__flex" style="
+        //                     display: flex;
+        //                     flex-direction: row;
+        //                     width: 100%;
+        //                     margin-top: 3px;
+        //                 ">
+        //                     <div class="date_from">${ modalInputFrom }</div>
+        //                     <div style="padding: 8px 10px 0; color: #dbdedf;">-</div>
+        //                     <div class="date_to">${ modalInputTo }</div>
+        //                 </div>
+        //             </div>`;
+        //         $('.modal__history__filter').append(linkFilterWrapper);
+        //
+        //         // кнопки Показать, Закрыть
+        //         var showBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+        //                 class_name: 'modal__showBtn__filter',
+        //                 text: 'Показать'
+        //             }),
+        //             cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+        //                 class_name: 'modal__cancelBtn__filter',
+        //                 text: 'Закрыть'
+        //             }),
+        //             actionBtnWrapper = `<div class="modal__body__actions__filter" style="
+        //                 width: 100%; margin-top: 20px;">
+        //                 ${ showBtn } ${ cancelBtn }
+        //             </div>`;
+        //
+        //         $('.modal__history__filter').append(actionBtnWrapper);
+        //         $('.modal__body__caption__filter').css('margin-top', '20px');
+        //
+        //         /* ###################################################################### */
+        //
+        //         // показ интервала истории
+        //         $('.modal__showBtn__filter').unbind('click');
+        //         $('.modal__showBtn__filter').bind('click', function () {
+        //             var filter_from = $('.input__modal__filter__input__from');
+        //             var filter_to = $('.input__modal__filter__input__to');
+        //             var isErrorFilter = false;
+        //
+        //             if (!filter_from.val().length) {
+        //                 filter_from.css('border-color', '#f37575');
+        //                 isErrorFilter = true;
+        //             }
+        //
+        //             if (!filter_to.val().length) {
+        //                 filter_to.css('border-color', '#f37575');
+        //                 isErrorFilter = true;
+        //             }
+        //
+        //             // возвращаем естесственные цвета
+        //             filter_from.unbind('click');
+        //             filter_from.bind('click', function () { filter_from.css('border-color', '#dbdedf') });
+        //             filter_to.unbind('click');
+        //             filter_to.bind('click', function () { filter_to.css('border-color', '#dbdedf') });
+        //
+        //             if (isErrorFilter) return false;
+        //
+        //             $.ajax({
+        //                 url: url_link_t,
+        //                 method: 'post',
+        //                 data: {
+        //                     'domain': document.domain,
+        //                     'method': 'filter_history',
+        //                     'essence_id': essenseID,
+        //                     'from': filter_from.val(),
+        //                     'to': filter_to.val(),
+        //                 },
+        //                 dataType: 'json',
+        //                 success: function (data) {
+        //                     // очищаем прежний вывод
+        //                     $.each($('.link__details'), function () { this.remove(); });
+        //                     if ($('.filter__no__result').length) $('.filter__no__result').remove();
+        //
+        //                     // добавляем надпись фильтра дат
+        //                     if ($('.filter__timers__title').length) $('.filter__timers__title').remove();
+        //                     $('.modal__history__deposit__wrapper').after(`
+        //                         <div class="filter__timers__title" style="
+        //                             width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
+        //                             Фильтр таймеров с ${ filter_from.val() }г. по ${ filter_to.val() }г.:
+        //                         </div>
+        //                     `);
+        //
+        //                     if (!data) {
+        //                         if ($('.history__no__result').length) $('.history__no__result').remove();
+        //
+        //                         $('.result__sum').text('Итого: 0р.');
+        //                         $('.filter__timers__title').after(`
+        //                             <div class="filter__no__result" style="
+        //                                 width: 100%; text-align: center; padding: 30px 0 10px;">
+        //                                 Фильтр не дал результатов.
+        //                             </div>
+        //                         `);
+        //                         return;
+        //                     }
+        //
+        //                     // выводим результат
+        //                     var result_sum = 0;
+        //                     $.each(data, function () {
+        //                         var history_id = this[0],
+        //                             history_created_at = this[1].split(' ')[0],
+        //                             history_user = this[2],
+        //                             history_price = this[3],
+        //                             history_sum = this[4];
+        //
+        //                         var historyItem = `
+        //                             <div class="link__details" data-id="${history_id}" style="
+        //                                 display: flex;
+        //                                 flex-direction: row;
+        //                                 justify-content: space-between;
+        //                                 width: calc(100% - 10px);
+        //                                 border-top: 1px solid #dbdedf;
+        //                                 border-bottom: 1px solid #dbdedf;
+        //                                 margin-bottom: 2px;
+        //                                 background: #fcfcfc;
+        //                                 padding: 1px 10px;
+        //                                 cursor: pointer;
+        //                                 ">
+        //                                 <div>
+        //                                     <span class="user__created_at" style="color: #979797; font-size: 13px;">
+        //                                         ${ history_created_at }
+        //                                     </span><br/>
+        //                                     <div class="user__title">${ history_user }</div>
+        //                                 </div>
+        //                                 <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
+        //                                     <div class="user__sum">${ history_price }</div>
+        //                                     <div class="user_valute">р.</div>
+        //                                 </div>
+        //                             </div>
+        //                         `;
+        //
+        //                         $('.x__bottom').before(historyItem);
+        //                         $('.link__details').unbind('click');
+        //                         $('.link__details').bind('click', self.showDetails);
+        //                         if (history_user !== 'Пополнение депозита') result_sum += parseInt(history_sum);
+        //                     });
+        //
+        //                     // красим пополнение депозита в зеленый цвет
+        //                     if ($('.modal__timer__history .link__details').length) {
+        //                         $.each($('.modal__timer__history .link__details'), function () {
+        //                             if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
+        //
+        //                             $(this).unbind('click');
+        //                             $(this).css({
+        //                                 'border-top': '1px solid #c7efc2',
+        //                                 'border-bottom': '1px solid #c7efc2',
+        //                                 'background': '#ECFFEA',
+        //                                 'cursor': 'auto'
+        //                             });
+        //                         });
+        //                     }
+        //
+        //                     // меняем итоговую сумму внизу истории
+        //                     self.resultSum(result_sum);
+        //                 }
+        //             });
+        //
+        //             $('.timer__filter').remove();
+        //         });
+        //     });
+        //
+        //     /* ###################################################################### */
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //     // получаем данные
+        //     $.ajax({
+        //         url: url_link_t,
+        //         method: 'post',
+        //         data: {
+        //             'domain': document.domain,
+        //             'method': 'hystory',
+        //             'essence_id': essenseID
+        //         },
+        //         dataType: 'json',
+        //         success: function (data) {
+        //             if ($('.history__no__result').length) $('.history__no__result').remove();
+        //
+        //             if (!data) {
+        //                 $('.result__sum').text('Итого: 0р.');
+        //                 $('.modal__history__deposit__wrapper').after(`
+        //                     <div class="history__no__result" style="
+        //                         width: 100%; text-align: center; padding: 30px 0 10px;">
+        //                         Таймеров не найдено.
+        //                     </div>
+        //                 `);
+        //             }
+        //
+        //             // добавляем историю таймеров (дата, ответственный, сумма)
+        //             $.each(data, function () {
+        //                 var history_id = this[0],
+        //                     history_created_at = this[1].split(' ')[0],
+        //                     history_user = this[2],
+        //                     history_price = this[3];
+        //
+        //                 var historyItem = `
+        //                     <div class="link__details" data-id="${ history_id }" style="
+        //                         display: flex;
+        //                         flex-direction: row;
+        //                         justify-content: space-between;
+        //                         width: calc(100% - 10px);
+        //                         border-top: 1px solid #dbdedf;
+        //                         border-bottom: 1px solid #dbdedf;
+        //                         margin-bottom: 2px;
+        //                         background: #fcfcfc;
+        //                         padding: 1px 10px;
+        //                         cursor: pointer;
+        //                         ">
+        //                         <div>
+        //                             <span class="user__created_at" style="color: #979797; font-size: 13px;">
+        //                                 ${ history_created_at }
+        //                             </span><br/>
+        //                             <div class="user__title">${ history_user }</div>
+        //                         </div>
+        //                         <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
+        //                             <div class="user__sum">${ history_price }</div>
+        //                             <div class="user_valute">р.</div>
+        //                         </div>
+        //                     </div>
+        //                 `;
+        //
+        //                 $('.modal__timer__history').append(historyItem);
+        //                 $('.link__details').unbind('click');
+        //                 $('.link__details').bind('click', self.showDetails);
+        //             });
+        //
+        //             // красим пополнение депозита в зеленый цвет
+        //             if ($('.modal__timer__history .link__details').length) {
+        //                 $.each($('.modal__timer__history .link__details'), function () {
+        //                     if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
+        //
+        //                     $(this).unbind('click');
+        //                     $(this).css({
+        //                         'border-top': '1px solid #c7efc2',
+        //                         'border-bottom': '1px solid #c7efc2',
+        //                         'background': '#ECFFEA',
+        //                         'cursor': 'auto'
+        //                     });
+        //                 });
+        //             }
+        //
+        //             // итоговая сумма истории
+        //             $('.modal__timer__history').append(`<div class="x__bottom"></div>`);
+        //             self.resultSum();
+        //
+        //             // отступ снизу
+        //             $('.modal__timer__history').append('<div style="height: 30px;"></div>');
+        //         }
+        //     });
+        //
+        //     /* ###################################################################### */
+        //
+        //     // кнопка Закрыть
+        //     hystoryCancelBtn = `
+        //         <a href="#" class="hystory__cancel__btn" style="
+        //             text-decoration: none;
+        //             color: #92989b;
+        //             font-size: 14px;
+        //             font-weight: bold;
+        //             top: 3px;
+        //             right: 0;
+        //             position: absolute;
+        //         ">Закрыть</a>
+        //     `;
+        //
+        //     $('.modal__timer__history').append(hystoryCancelBtn);
+        //     $('.hystory__cancel__btn').bind('click', function (e) {
+        //         e.preventDefault();
+        //         $('.timer__history').remove();
+        //     });
+        // }
+        //
+        // /* ###################################################################### */
+        //
+        //
+        //
+        // /* ###################################################################### */
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        // // настройка прав доступа
+        // this.accessRight = function () {
+        //     self.getConfigSettings();
+        //
+        //     // div для полей покупателей
+        //     var select_fields_rapper = `<div class="widget_settings_block__item_field select__fields__wrapper" style="margin-top: 10px;"></div>`;
+        //     $('.widget_settings_block__controls').before(select_fields_rapper);
+        //
+        //     // список полей покупателей
+        //     const ajaxFields = function (url) {
+        //         let fields = [];
+        //         fields.push({ option: 'Выберите поле' });
+        //
+        //         $.ajax({
+        //             url: url,
+        //             success: function (data) {
+        //                 $.each(data._embedded.custom_fields, function () {
+        //                     fields.push({ id: this.id, option: this.name });
+        //                 });
+        //
+        //                 if (data._links.next) ajaxFields(data._links.next.href);
+        //                 else {
+        //                     // селект с полями
+        //                     var select_fields = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+        //                         items: fields,
+        //                         class_name: 'select__fields'
+        //                     });
+        //
+        //                     $('.select__fields__wrapper').append(`
+        //                         <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+        //                             Настройка поля для депозита:
+        //                         </div>
+        //                         <div class="widget_settings_block__input_field" style="width: 100%;">
+        //                             ${ select_fields }
+        //                         </div>
+        //                     `);
+        //
+        //                     $('.select__managers__wrapper .control--select--button').css('width', '100%');
+        //                     $('.select__managers__wrapper ul').css({
+        //                         'margin-left': '13px',
+        //                         'width': '100%',
+        //                         'min-width': $('.select__managers__wrapper').outerWidth() - 13
+        //                     });
+        //
+        //                     // если ранее значение было, отмечаем
+        //                     if (self.config_settings.deposit_title && self.config_settings.deposit_title.length) {
+        //                         $.each($('.select__fields__wrapper ul li'), function () {
+        //                             if ($(this).hasClass('control--select--list--item-selected')) {
+        //                                 $(this).removeClass('control--select--list--item-selected');
+        //                             }
+        //
+        //                             if ($(this).find('span').text().trim() === self.config_settings.deposit_title) {
+        //                                 $(this).addClass('control--select--list--item-selected');
+        //                                 $('.control--select--button-inner').text(self.config_settings.deposit_title);
+        //                             }
+        //                         });
+        //                     }
+        //
+        //                     // обновляем права пользователя
+        //                     $('.select__fields__wrapper ul li').unbind('click');
+        //                     $('.select__fields__wrapper ul li').bind('click', function () {
+        //                         if (!self.config_settings.deposit_title) self.config_settings.deposit_title = '';
+        //
+        //                         let deposit_title = $(this).find('span').text().trim();
+        //                         if (deposit_title === 'Выберите поле') deposit_title = '';
+        //
+        //                         self.config_settings.deposit_title = deposit_title;
+        //                         self.saveConfigSettings();
+        //                     });
+        //                 }
+        //             },
+        //             timeout: 5000
+        //         });
+        //     }
+        //
+        //     ajaxFields('/api/v4/customers/custom_fields?limit=50');
+        //
+        //     // список активных пользователей
+        //     var managers = [], checkbox;
+        //     managers.push({ option: 'Выберите пользователя' });
+        //
+        //     $.each(AMOCRM.constant('managers'), function () {
+        //         if (!this.active) return;
+        //         managers.push({ id: this.id, option: this.title });
+        //     });
+        //
+        //     // селект с пользователями
+        //     var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+        //         items: managers,
+        //         class_name: 'select__managers'
+        //     });
+        //
+        //     var selectManagersWrapper = `
+        //         <div class="widget_settings_block__item_field select__managers__wrapper" style="margin-top: 10px;">
+        //             <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+        //                 Настройка прав пользователей:
+        //             </div>
+        //             <div class="widget_settings_block__input_field" style="width: 100%;">
+        //                 ${ selectManagers }
+        //             </div>
+        //         </div>
+        //     `;
+        //
+        //     $('.widget_settings_block__controls').before(selectManagersWrapper);
+        //     $('.select__managers__wrapper .control--select--button').css('width', '100%');
+        //     $('.select__managers__wrapper ul').css({
+        //         'margin-left': '13px',
+        //         'width': '100%',
+        //         'min-width': $('.select__managers__wrapper').outerWidth() - 13
+        //     });
+        //
+        //     // выбор пользователя
+        //     $('.select__managers__wrapper ul li').unbind('click');
+        //     $('.select__managers__wrapper ul li').bind('click', function () {
+        //         var managerID = $(this).attr('data-value');
+        //
+        //         // очищаем перед запуском чекбоксы
+        //         $('.modal__rights__checkox__wrapper').remove();
+        //         $('.input__price__wrapper').remove();
+        //         if ($(this).find('span').text() === 'Выберите пользователя') {
+        //             $('.modal__rights__checkox__wrapper').remove();
+        //             $('.input__price__wrapper').remove();
+        //             return;
+        //         }
+        //
+        //         // ддобавление чекбокса
+        //         const addCheckbox = function (value, dataValue) {
+        //             checkbox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
+        //                 class_name: 'modal__rights__checkox',
+        //                 checked: false,
+        //                 value: value,
+        //                 input_class_name: 'modal__rights__checkox__item',
+        //                 name: 'modal-rights--checkox',
+        //                 text: value,
+        //                 dataValue: dataValue
+        //             });
+        //
+        //             return checkbox;
+        //         }
+        //
+        //         checkboxWrapper = '<div class="modal__rights__checkox__wrapper" style="width: 100%; margin-top: 10px;"></div>';
+        //         $('.widget_settings_block__controls').before(checkboxWrapper);
+        //
+        //         // ссылка в сущности
+        //         var isEditLink = addCheckbox('Редактирование ссылки в сущности', 'isEditLink');
+        //         $('.modal__rights__checkox__wrapper').append(isEditLink);
+        //         // список в форме на выбор услуги
+        //         var isEditServices = addCheckbox('Редактирование списка в форме на выбор услуги', 'isEditServices');
+        //         $('.modal__rights__checkox__wrapper').append(isEditServices);
+        //         // смотреть историю выполненных задач в сущности
+        //         var isShowHistory = addCheckbox('Просмотр истории выполненных задач в сущности', 'isShowHistory');
+        //         $('.modal__rights__checkox__wrapper').append(isShowHistory);
+        //         // редактирование истории
+        //         var isEditHistory = addCheckbox('Редактирование истории', 'isEditHistory');
+        //         $('.modal__rights__checkox__wrapper').append(isEditHistory);
+        //         // редактирование депозита
+        //         var isEditDeposit = addCheckbox('Редактирование депозита', 'isEditDeposit');
+        //         $('.modal__rights__checkox__wrapper').append(isEditDeposit);
+        //         // выравниваем чекбоксы
+        //         $('.modal__rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
+        //
+        //         // если ранее были отмечены, отображаем
+        //         if (self.config_settings.rights) {
+        //             $.each(self.config_settings.rights, function (key, value) {
+        //                 if (key !== managerID) return;
+        //                 var rights = self.config_settings.rights[managerID];
+        //
+        //                 $.each($('.modal__rights__checkox'), function () {
+        //                     var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
+        //                     if (rights.includes(value)) {
+        //                         $(this).addClass('is-checked');
+        //                         $(this).trigger('click');
+        //                     }
+        //                 });
+        //             });
+        //         }
+        //
+        //         // обновляем права пользователя
+        //         $('.modal__rights__checkox').unbind('change');
+        //         $('.modal__rights__checkox').bind('change', function () {
+        //             // если ранее не был отмечен, создаем
+        //             if (!self.config_settings.rights) self.config_settings.rights = {};
+        //             var rights = [];
+        //
+        //             // обновляем список выбранных вариантов
+        //             $.each($('.modal__rights__checkox'), function () {
+        //                 var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
+        //                 if ($(this).hasClass('is-checked')) rights.push(value);
+        //             });
+        //
+        //             self.config_settings.rights[managerID] = rights;
+        //             self.saveConfigSettings();
+        //         });
+        //     });
+        // }
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        // /* ###################################################################### */
+        //
+        // // функция показа фильтра в разделе Настройки
+        // this.advancedSettings = function () {
+        //     let search = self.render(
+        //         {ref: '/tmpl/common/search_block.twig'},
+        //         {
+        //             loader_class_name: 'loader_class_name',
+        //             search_placeholder: 'Фильтр',
+        //             id: 'id'
+        //         }
+        //     );
+        //
+        //     // инпут фильтра
+        //     $(`#work_area #work-area-${ self.get_settings().widget_code }`).append(`
+        //         <div class="safety_settings__section_new tasks_search">
+        //             <div class="safety_settings__section_head_new">
+        //                 <div class="safety_settings__section_head_new_title">
+        //                     Задачи
+        //                 </div>
+        //             </div>
+        //
+        //             <div class="settings__search" style="
+        //                 width: 100%; padding: 0; display: flex; flex-direction: row;">
+        //                 <div class="settings__search__input" style="width: 100%;">${ search }</div>
+        //
+        //                 <div class="list__top__actions settings__search__menu">
+        //                     <div class="list-top-nav__icon-button list-top-nav__icon-button_dark list-top-nav__icon-button_context">
+        //                         <div class="button-input-wrapper button-input-more content__top__action__btn-more">
+        //                             <button type="button" class="button-input  button-input-with-menu" tabindex="" title="Еще">
+        //                                 <span class="button-input-inner button-input-more-inner">
+        //                                     <svg class="svg-icon svg-controls--button-more-dims">
+        //                                         <use xlink:href="#controls--button-more"></use>
+        //                                     </svg>
+        //                                 </span>
+        //                             </button>
+        //
+        //                             <ul class="button-input__context-menu ">
+        //                                 <li class="button-input__context-menu__item  element__ js-list-export" id="export" style="min-width: 120px;">
+        //                                     <div class="button-input__context-menu__item__inner">
+        //                                         <span class="button-input__context-menu__item__icon-container">
+        //                                             <svg class="button-input__context-menu__item__icon svg-icon svg-common--download-dims" style="justify-content: left;">
+        //                                                 <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#common--download"></use>
+        //                                             </svg>
+        //                                         </span>
+        //                                         <span class="button-input__context-menu__item__text">Экспорт</span>
+        //                                     </div>
+        //                                 </li>
+        //                             </ul>
+        //                         </div>
+        //                     </div>
+        //                 </div>
+        //
+        //             </div>
+        //
+        //             <div class="settings__search__filter" style="position: relative; width: 100%;"></div>
+        //         </div>
+        //     `);
+        //
+        //     // количество событий в фильтре
+        //     $('.list-top-search .list-top-search__input-block .list-top-search__input').after(`
+        //         <span class="list-top-search__summary">
+        //             <span class="list-top-search__summary-text">0 событий</span>
+        //         </span>
+        //     `);
+        //
+        //     // выравниваем фильтр и меню
+        //     $('.settings__search .settings__search__input').css({
+        //         'margin-top': '10px',
+        //         'border-top': '1px solid #e8eaeb',
+        //         'border-bottom': '1px solid #e8eaeb'
+        //     });
+        //     $('.settings__search .list-top-search').css({ 'margin-left': '0' });
+        //     $('.settings__search .button-input').css({ 'border': '0', 'background': '#fff', 'max-height': 'auto' });
+        //     $('.settings__search .settings__search__menu').css({ 'margin-top': '10px' });
+        //     $('.settings__search .list-top-search__input').attr('readonly', true);
+        //     $('.settings__search .list-top-search__input-block').css('cursor', 'pointer');
+        //     $('.settings__search .list-top-search__input').css('cursor', 'pointer');
+        //
+        //     $('.settings__search .settings__search__menu').css({
+        //         'padding-left': '10px',
+        //         'padding-right': '10px'
+        //     });
+        //     $('.settings__search .button-input__context-menu').css({'left': 'auto', 'right': '0'});
+        //
+        //     // клик по фильтру
+        //     $('.settings__search .list-top-search__input-block').unbind('click');
+        //     $('.settings__search .list-top-search__input-block').bind('click', function () {
+        //         // если окно фильтра уже открыто, выходим
+        //         if ($('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
+        //
+        //         // меню событий
+        //         $('.settings__search__filter').append(`
+        //             <div class="js-filter-sidebar filter-search visible" id="sidebar" style="width: calc(100% - 54px); position: absolute; z-index: 2;">
+        //                 <div class="filter-search__wrapper custom-scroll">
+        //                     <div class="filter-search__inner">
+        //
+        //                     <div class="filter-search__left">
+        //                         <ul class="filter-search__list js-filter-list" id="filter_list">
+        //
+        //                             <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Все события">
+        //                                 <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+        //                                 <a href="" class="js-navigate-link filter__list__item__link filter__all__events">
+        //                                     <span class="filter__list__item__inner">Все события</span>
+        //                                 </a>
+        //                             </li>
+        //
+        //                             <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="Мои события">
+        //                                 <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+        //                                 <a href="" class="js-navigate-link filter__list__item__link filter__my__events">
+        //                                     <span class="filter__list__item__inner">Мои события</span>
+        //                                 </a>
+        //                             </li>
+        //
+        //                             <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link" title="События за сегодня">
+        //                                 <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+        //                                 <a href="" class="js-navigate-link filter__list__item__link filter__today__events">
+        //                                     <span class="filter__list__item__inner">События за сегодня</span>
+        //                                 </a>
+        //                             </li>
+        //
+        //                             <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за вчера">
+        //                                 <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+        //                                 <a href="" class="js-navigate-link filter__list__item__link filter__yesterday__events">
+        //                                     <span class="filter__list__item__inner">События за вчера</span>
+        //                                 </a>
+        //                             </li>
+        //
+        //                             <li class="filter__list__item filter__list__item-system-preset js-filter__common_settings__item-sortable js-filter-preset-link " title="События за месяц">
+        //                                 <span class="filter_items__handle"><span class="icon icon-v-dots"></span></span>
+        //                                 <a href="" class="js-navigate-link filter__list__item__link filter__month__events">
+        //                                     <span class="filter__list__item__inner">События за месяц</span>
+        //                                 </a>
+        //                             </li>
+        //
+        //                         </ul>
+        //                     </div>
+        //
+        //                     <div class="filter-search__right">
+        //                         <form action="/events/list/" method="GET" id="filter_form" class="filter__form">
+        //                             <div class="filter-search__form-wrapper">
+        //                                 <div class="filter-search__entity-wrapper" data-element-type="events">
+        //                                     <div class="filter__custom_settings__list" id="filter_fields">
+        //
+        //                                         <!-- календарь событий -->
+        //                                         <div class="filter__custom_settings__item date__filter" data-tmpl="text">
+        //                                             <div class="filter__custom_settings__item__value-wrapper">
+        //                                                 <div class="date_filter js-control-date-filter custom_select">
+        //                                                     <div class="date_filter__head">
+        //                                                         <div class="date_filter__head__icon">
+        //                                                             <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
+        //                                                         </div>
+        //                                                         <span class="date_filter__period custom_select__selected " data-before="За все время">
+        //                                                             За все время
+        //                                                         </span>
+        //                                                         <span class="date_filter__head__dropdown_icon"></span>
+        //                                                     </div>
+        //                                                     <div class="date_filter__dropdown ">
+        //                                                         <div class="date_filter__param hidden">
+        //                                                             <div class="control-toggler date_filter__param__toggler hidden">
+        //                                                                 <label for="filter_date_switch_created" class="control-toggler__item first control-toggler__item-selected" data-id="" data-label="Созданы">
+        //                                                                     <input type="radio" class="hidden " id="filter_date_switch_created" checked="checked" name="filter_date_switch" value="created">
+        //                                                                     <b></b>
+        //                                                                 </label>
+        //                                                             </div>
+        //                                                         </div>
+        //                                                         <div>
+        //                                                             <div class="date_filter__period_range__options">
+        //                                                                 <div class="date_filter__period_range__controls ">
+        //                                                                     <input type="hidden" class="date_field__preset" name="filter[date_preset]" value="">
+        //                                                                     <span class="date_field_wrapper js-control-date date_filter__period_range__controls_field" data-kalendae-classname="">
+        //                                                                         <input type="hidden" class="date_field__range_0" name="filter_date_from" value="">
+        //                                                                         <input type="hidden" class="date_field__range_1" name="filter_date_to" value="">
+        //                                                                         <input class="date_field js-date-filter-input date-filter-in-search empty range" type="text" value="" placeholder="">
+        //                                                                         <div class="date_field_wrapper--calendar">
+        //                                                                             <svg class="svg-card-calendar-dims"><use xlink:href="#card-calendar"></use></svg>
+        //                                                                         </div>
+        //                                                                     </span>
+        //                                                                 </div>
+        //                                                             </div>
+        //                                                             <ul class="date_filter__period_list  without_button ">
+        //                                                                 <li class="date_filter__period_item custom_select__item" data-period="" style="display:none;">
+        //                                                                     <span data-value="" class="custom_select__title">
+        //                                                                         За все время
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-current_day" data-period="current_day">
+        //                                                                     <span data-value="current_day" class="custom_select__title" title="За сегодня">
+        //                                                                         За сегодня
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-yesterday" data-period="yesterday">
+        //                                                                     <span data-value="yesterday" class="custom_select__title" title="За вчера">
+        //                                                                         За вчера
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-past_x_days" data-period="past_x_days">
+        //                                                                     <span data-value="past_x_days" class="custom_select__title" "="">
+        //                                                                         За последние
+        //                                                                         <div class="date_filter__period_item-input-days-wrapper">
+        //                                                                             <input class="date_filter__period_item-input-days js-date_filter__period_item js-control-autosized_input" data-comfort-zone="0" type="number" value="30" max="999">
+        //                                                                             <tester style="position: absolute; top: -9999px; left: -9999px; width: auto; font-size: 13px; font-family: &quot;PT Sans&quot;, Arial, sans-serif; font-weight: 400; font-style: normal; letter-spacing: 0px; text-transform: none; white-space: pre;">
+        //                                                                                 30
+        //                                                                             </tester>
+        //                                                                         </div>
+        //                                                                         дней
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-current_week" data-period="current_week">
+        //                                                                     <span data-value="current_week" class="custom_select__title" title="За эту неделю">
+        //                                                                         За эту неделю
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-previous_week" data-period="previous_week">
+        //                                                                     <span data-value="previous_week" class="custom_select__title" title="За прошлую неделю">
+        //                                                                         За прошлую неделю
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-current_month" data-period="current_month">
+        //                                                                     <span data-value="current_month" class="custom_select__title" title="За этот месяц">
+        //                                                                         За этот месяц
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-previous_month" data-period="previous_month">
+        //                                                                     <span data-value="previous_month" class="custom_select__title" title="За прошлый месяц">
+        //                                                                         За прошлый месяц
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-current_quarter" data-period="current_quarter">
+        //                                                                     <span data-value="current_quarter" class="custom_select__title" title="За квартал">
+        //                                                                         За квартал
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                                 <li class="date_filter__period_item custom_select__item custom_select__item-current_year" data-period="current_year">
+        //                                                                     <span data-value="current_year" class="custom_select__title" title="За этот год">
+        //                                                                         За этот год
+        //                                                                     </span>
+        //                                                                 </li>
+        //                                                             </ul>
+        //                                                         </div>
+        //                                                     </div>
+        //                                                 </div>
+        //                                                 <b class="js-filter-field-clear clear__date"></b>
+        //                                             </div>
+        //                                         </div>
+        //
+        //                                         <!-- список менеджеров -->
+        //                                         <div class="filter-search__users-select-holder filter-search__users-select-holder_ filter__custom_settings__item filter__custom_settings__item_suggest-manager" data-title="Менеджеры" data-is-fn="usersSelectClear" data-type="" data-tmpl="users" data-element-type-name="" data-input-name="filter[main_user][]">
+        //                                             <div class="custom-scroll">
+        //                                                 <div class="multisuggest users_select-select_one  js-multisuggest js-can-add " data-multisuggest-id="5834" id="filter_users_select__holder" data-new-item-msg="">
+        //                                                     <ul class="multisuggest__list js-multisuggest-list"></ul>
+        //                                                 </div>
+        //                                             </div>
+        //                                             <b class="js-filter-field-clear clear__managers"></b>
+        //                                         </div>
+        //
+        //                                         <div class="filter__managers" style="width: 100%; position: relative; margin: 3px 0 0 3px;"></div>
+        //
+        //                                     </div>
+        //                                 </div>
+        //                             </div>
+        //                         </form>
+        //                     </div>
+        //
+        //                     </div>
+        //                 </div>
+        //             </div>
+        //         `);
+        //
+        //         /* ###################################################################### */
+        //
+        //         // функция обработки параметров фильтра
+        //         const getParamsFilter = function () {
+        //             let result = {},
+        //                 filter_date, date_from, date_to, d = null,
+        //                 date_start = null, date_end = null,
+        //                 filter_managers = [];
+        //
+        //             // если дата не выбрана, пишем пустое значение
+        //             if (!self.filter_date) result.filter_date = null;
+        //             // иначе разбираем дату
+        //             else {
+        //                 filter_date = self.filter_date.split('(')[0].trim();
+        //
+        //                 // убираем лишние пробелы
+        //                 filter_date = self.filter_date.replace(/\s{2,}/g, ' ');
+        //
+        //                 // если дата в скобках - убираем скобки
+        //                 if (filter_date.slice(0, 1) === '(') {
+        //                     filter_date = filter_date.slice(1, -1);
+        //                 }
+        //
+        //                 // за сегодня
+        //                 if (filter_date.indexOf('За сегодня') !== -1) {
+        //                     date_from = date_to = new Date().toLocaleDateString();
+        //
+        //                     // за вчера
+        //                 } else if (filter_date.indexOf('За вчера') !== -1) {
+        //                     d = new Date();
+        //                     d = d.setDate(d.getDate() - 1);
+        //
+        //                     date_from = date_to = new Date(d).toLocaleDateString();
+        //
+        //                     // за последние Х дней
+        //                 } else if (filter_date.indexOf('За последние') !== -1) {
+        //                     filter_date = filter_date.split(' ')[2];
+        //
+        //                     d = new Date();
+        //                     d = d.setDate(d.getDate() - parseInt(filter_date));
+        //
+        //                     date_from = new Date(d).toLocaleDateString();
+        //                     date_to = new Date().toLocaleDateString();
+        //
+        //                     // за эту неделю
+        //                 } else if (filter_date.indexOf('За эту неделю') !== -1) {
+        //                     d = new Date().getDay();
+        //                     date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
+        //                     date_from = new Date(new Date().setDate(date_from)).toLocaleDateString();
+        //
+        //                     d = new Date();
+        //                     date_to = d.setDate(d.getDate() + (7 - d.getDay()));
+        //                     date_to = new Date(date_to).toLocaleDateString();
+        //
+        //                     // за прошлую неделю
+        //                 } else if (filter_date.indexOf('За прошлую неделю') !== -1) {
+        //                     d = new Date().getDay();
+        //                     date_from = new Date().getDate() - d + (d === 0 ? -6 : 1);
+        //                     date_from = new Date(new Date().setDate(date_from - 7)).toLocaleDateString();
+        //
+        //                     d = new Date();
+        //                     date_to = d.setDate(d.getDate() + (7 - d.getDay()) - 7);
+        //                     date_to = new Date(date_to).toLocaleDateString();
+        //
+        //                     // за этот месяц
+        //                 } else if (filter_date.indexOf('За этот месяц') !== -1) {
+        //                     d = new Date();
+        //
+        //                     date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
+        //                     date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
+        //
+        //                     // за прошлый месяц
+        //                 } else if (filter_date.indexOf('За прошлый месяц') !== -1) {
+        //                     // первое число прошлого месяца
+        //                     d = new Date();
+        //                     d = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+        //
+        //                     date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
+        //                     date_to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString();
+        //
+        //                     // за квартал
+        //                 } else if (filter_date.indexOf('За квартал') !== -1) {
+        //                     // определяем текущий квартал
+        //                     d = new Date();
+        //
+        //                     if (d.getMonth() < 3) d = new Date(d.getFullYear(), 0, 1);
+        //                     if (d.getMonth() > 2 && d.getMonth() < 6) d = new Date(d.getFullYear(), 3, 1);
+        //                     if (d.getMonth() > 5 && d.getMonth() < 9) d = new Date(d.getFullYear(), 6, 1);
+        //                     if (d.getMonth() > 8) d = new Date(d.getFullYear(), 9, 1);
+        //
+        //                     date_from = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString();
+        //                     date_to = new Date(d.getFullYear(), d.getMonth() + 3, 0).toLocaleDateString();
+        //
+        //                     // за этот год
+        //                 } else if (filter_date.indexOf('За этот год') !== -1) {
+        //                     d = new Date();
+        //                     date_from = new Date(d.getFullYear(), 0, 1).toLocaleDateString();
+        //                     date_to = new Date(d.getFullYear(), 12, 0).toLocaleDateString();
+        //
+        //                     // иначе обнуляем дату
+        //                 } else date_from = date_to = null;
+        //
+        //                 // если выбор не из списка, значит вручную (от и до)
+        //                 if (!(date_from && date_to)) {
+        //                     date_start = filter_date.split('-')[0];
+        //                     date_end = filter_date.split('-')[1];
+        //
+        //                     // если есть начальное и конечное значение, преобразуем в дату
+        //                     if (date_start && date_end) {
+        //                         date_start = date_start.trim();
+        //                         date_end = date_end.trim();
+        //
+        //                         // проверка на валидность даты
+        //                         if (date_start !== 'Сегодня' && new Date(date_start) !== 'Invalid Date') date_start = date_start;
+        //                         else if (date_start === 'Сегодня') date_start = new Date().toLocaleDateString();
+        //                         else date_start = null;
+        //
+        //                         if (date_end !== 'Сегодня' && new Date(date_end) !== 'Invalid Date') date_end = date_end;
+        //                         else if (date_end === 'Сегодня') date_end = new Date().toLocaleDateString();
+        //                         else date_end = null;
+        //
+        //                         // если дата один день (от и до Сегодня)
+        //                     } else if (filter_date === 'Сегодня') date_start = date_end = new Date().toLocaleDateString();
+        //
+        //                     // если дата один день (от и до совпадают)
+        //                     else if (new Date(filter_date) !== 'Invalid Date') date_start = date_end = filter_date;
+        //
+        //                     // иначе обнуляем дату
+        //                     else date_start = date_end = null;
+        //                 }
+        //
+        //                 // сохраняем результат
+        //                 filter_date = {};
+        //                 // выбор даты из списка или вручную
+        //                 filter_date.date_from = date_from || date_start;
+        //                 filter_date.date_to = date_to || date_end;
+        //
+        //                 // если результат стандартный, обнуляем значение
+        //                 if (filter_date.date_from === 'За все время' || filter_date.date_to === 'За все время') {
+        //                     filter_date.date_from = null;
+        //                     filter_date.date_to = null;
+        //                 }
+        //
+        //                 // если ни один из вариантов не определен, обнуляем
+        //                 if (!(filter_date.date_from && filter_date.date_to)) result.filter_date = null;
+        //                 else result.filter_date = filter_date;
+        //             }
+        //
+        //             // массив менеджеров
+        //             if (!self.filter_managers.length) result.filter_managers = null;
+        //             else {
+        //                 $.each(self.filter_managers, function () {
+        //                     filter_managers.push(this.title);
+        //                 });
+        //
+        //                 result.filter_managers = filter_managers;
+        //             }
+        //
+        //             return result;
+        //         }
+        //
+        //         // функция выгрузки из БД
+        //         const ajaxFilterParams = function (params) {
+        //             // удаляем старый результат
+        //             if ($('.list__table__holder').length) $('.list__table__holder').remove();
+        //
+        //             // для подкраски столбцов синим цветом
+        //             let date_blue = false, managers_blue = false;
+        //             if (params.filter_date) date_blue = true;
+        //             if (params.filter_managers) managers_blue = true;
+        //
+        //             // запрос в БД
+        //             $.ajax({
+        //                 url: url_link_t,
+        //                 method: 'post',
+        //                 data: {
+        //                     'domain': document.domain,
+        //                     'method': 'filter__events',
+        //                     'filter': params
+        //                 },
+        //                 dataType: 'json',
+        //                 success: function (data) {
+        //                     self.filter_results = data;
+        //
+        //                     // показываем количество строк и очищаем прошлый результат
+        //                     $('.list-top-search__summary-text').text(`${ data.length } событий`);
+        //                     if ($('.list__table__holder').length) $('.list__table__holder').remove();
+        //
+        //                     // если масссив пустой, обнуляем количество строк в фильтре, удаляем старый результат и выходим
+        //                     if (!data.length) return;
+        //
+        //                     // заголовок
+        //                     $('.safety_settings__section_new.tasks_search').after(`
+        //                         <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1;">
+        //                             <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
+        //
+        //                                 <div class="list-row list-row-head js-list-row js-list-row-head" id="list_head">
+        //                                     <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
+        //                                         <div class="cell-head__inner">
+        //                                             <div class="cell-head__inner-content">
+        //                                                 <span class="cell-head__dots icon icon-v-dots"></span>
+        //                                                 <span class="cell-head__title filter__blue__date">Дата</span>
+        //                                             </div>
+        //                                         </div>
+        //                                     </div>
+        //
+        //                                     <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 24%;">
+        //                                         <div class="cell-head__inner">
+        //                                             <div class="cell-head__inner-content">
+        //                                                 <span class="cell-head__dots icon icon-v-dots"></span>
+        //                                                 <span class="cell-head__title filter__blue__manager">Автор</span>
+        //                                             </div>
+        //                                         </div>
+        //                                     </div>
+        //
+        //                                     <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
+        //                                         <div class="cell-head__inner">
+        //                                             <div class="cell-head__inner-content">
+        //                                                 <span class="cell-head__dots icon icon-v-dots"></span>
+        //                                                 <span class="cell-head__title">Время</span>
+        //                                             </div>
+        //                                         </div>
+        //                                     </div>
+        //
+        //                                     <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 12%;">
+        //                                         <div class="cell-head__inner">
+        //                                             <div class="cell-head__inner-content">
+        //                                                 <span class="cell-head__dots icon icon-v-dots"></span>
+        //                                                 <span class="cell-head__title">Сумма</span>
+        //                                             </div>
+        //                                         </div>
+        //                                     </div>
+        //
+        //                                     <div class="list-row__cell js-hs-prevent js-resizable-cell list-row__cell-head cell-head js-cell-head  list-row__cell-template-text list-row__cell-name  ui-resizable" data-field-template="text" style="width: 40%;">
+        //                                         <div class="cell-head__inner">
+        //                                             <div class="cell-head__inner-content">
+        //                                                 <span class="cell-head__dots icon icon-v-dots"></span>
+        //                                                 <span class="cell-head__title">Ссылка на задачу</span>
+        //                                             </div>
+        //                                         </div>
+        //                                     </div>
+        //                                 </div>
+        //
+        //                             </div>
+        //                         </div>
+        //                     `);
+        //
+        //                     // если менеджер или дата указаны в фильтре, красим столбец в синий
+        //                     if (date_blue) $('.filter__blue__date').css('color', '#2798d5');
+        //                     if (managers_blue) $('.filter__blue__manager').css('color', '#2798d5');
+        //
+        //                     // строки
+        //                     let all_sum = 0;
+        //                     let null_time = new Date(2000, 0, 1, 0, 0, 0).getTime(); // 1.01.2000 00:00:00 timestamp
+        //                     let all_time = 0;
+        //                     let timestamp = null;
+        //
+        //                     $.each(data, function () {
+        //                         let date = this[9],
+        //                             autor = this[3],
+        //                             time = this[12],
+        //                             sum = this[7],
+        //                             link = this[8],
+        //                             event = false; // событие как пополнение депозита
+        //
+        //                         if (this[3] === 'Пополнение депозита') {
+        //                             event = true;
+        //                             time = '00:00:00';
+        //                         }
+        //
+        //                         date = date.split(' ')[0];
+        //
+        //                         // общая сумма списания
+        //                         if (!event) all_sum += parseInt(sum);
+        //
+        //                         // прибавляем время каждой записи к нулевому значению
+        //                         timestamp = new Date(2000, 0, 1, time.split(':')[0], time.split(':')[1], time.split(':')[2]).getTime();
+        //                         timestamp -= null_time;
+        //                         all_time += timestamp;
+        //
+        //                         $('#list_table').append(`
+        //                             <div class="list-row js-list-row js-pager-list-item__1">
+        //                                 <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+        //                                     <div class="content-table__item__inner" title="${ date }">
+        //                                         <span class="block-selectable date">${ date }</span>
+        //                                     </div>
+        //                                 </div>
+        //
+        //                                 <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+        //                                     <div class="content-table__item__inner" title="${ autor }">
+        //                                         <span class="block-selectable autor">${ autor }</span>
+        //                                     </div>
+        //                                 </div>
+        //
+        //                                 <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+        //                                     <div class="content-table__item__inner" title="${ event ? '' : time }">
+        //                                         <span class="block-selectable time">${ event ? '' : time }</span>
+        //                                     </div>
+        //                                 </div>
+        //
+        //                                 <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered">
+        //                                     <div class="content-table__item__inner" title="${ sum }">
+        //                                         <span class="block-selectable sum">${ sum }р.</span>
+        //                                     </div>
+        //                                 </div>
+        //
+        //                                 <div class="list-row__cell js-list-row__cell list-row__cell-template-event_object list-row__cell-object">
+        //                                     <div class="content-table__item__inner">
+        //                                         <a class="list-row__template-name__table-wrapper__name-link js-navigate-link" href="${ link }" title="${ link }" target="_blank">${ link }</a>
+        //                                     </div>
+        //                                 </div>
+        //                             </div>
+        //                         `);
+        //                     });
+        //
+        //                     // прибавляем общее затраченное время всех записей к нулевому значению
+        //                     all_time += null_time;
+        //                     // получаем время
+        //                     all_time = new Date(all_time);
+        //
+        //                     let houses = all_time.getHours(),
+        //                         minutes = all_time.getMinutes(),
+        //                         seconds = all_time.getSeconds(),
+        //                         days = all_time.getDate(),
+        //                         months = all_time.getMonth(),
+        //                         years = all_time.getFullYear(),
+        //                         d;
+        //
+        //                     // добавляем минуту ( если секунд > 30)
+        //                     if (seconds > 30) minutes += 1;
+        //                     // если больше суток, прибавляем к часам
+        //                     if (days > 1) houses += days * 24 - 24;
+        //                     // если месяцев больше, прибавляем к часам
+        //                     if (months > 0) {
+        //                         for (let i = 0; i <= months; i++) {
+        //                             d = new Date(2000, i + 1, 0);
+        //                             d = d.getDate();
+        //                             houses += d * 24;
+        //                         }
+        //                     }
+        //                     // если лет больше, прибавляем к часам
+        //                     if (years > 2000) {
+        //                         years -= 2000;
+        //                         if (years % 4 === 0) houses += 364 * 24;
+        //                         else houses += 365 * 24;
+        //                     }
+        //
+        //                     // результат для экспорта
+        //                     self.filter_all_time = `${ houses } ч. ${ minutes } мин.`;
+        //                     self.filter_all_sum = `${ all_sum } p.`;
+        //
+        //                     // вывод итога таблицы
+        //                     $('.list__table__holder').after(`
+        //                         <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1; margin-top: 10px;">
+        //                             <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
+        //
+        //                                 <div class="list-row js-list-row js-pager-list-item__1">
+        //                                     <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
+        //                                         <div class="content-table__item__inner" title="Общее количество затраченного времени">
+        //                                             <span class="block-selectable" style="display: flex; justify-content: right;">Общее количество затраченного времени</span>
+        //                                         </div>
+        //                                     </div>
+        //
+        //                                     <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
+        //                                         <div class="content-table__item__inner" title="${ houses } ч. ${ minutes } мин.">
+        //                                             <span class="block-selectable">
+        //                                                 <span class="all__time__houses__results">${ houses }</span> ч.
+        //                                                 <span class="all__time__minutes__results">${ minutes }</span> мин.
+        //                                             </span>
+        //                                         </div>
+        //                                     </div>
+        //                                 </div>
+        //
+        //                             </div>
+        //                         </div>
+        //
+        //                         <div class="list__table__holder js-hs-scroller custom-scroll hs-wrapper_no-hand" style="margin-bottom: 0px; width: 100%; padding-left: 0; z-index: 1;">
+        //                             <div class="js-scroll-container list__table" id="list_table" style="width: 100%; padding: 0;">
+        //
+        //                                 <div class="list-row js-list-row js-pager-list-item__1">
+        //                                     <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 85%;">
+        //                                         <div class="content-table__item__inner" title="Общая сумма списания">
+        //                                             <span class="block-selectable" style="display: flex; justify-content: right;">Общая сумма списания</span>
+        //                                         </div>
+        //                                     </div>
+        //
+        //                                     <div class="list-row__cell js-list-row__cell list-row__cell-template-text list-row__cell-author list-row__cell_filtered" style="width: 15%;">
+        //                                         <div class="content-table__item__inner" title="${ all_sum } p.">
+        //                                             <span class="block-selectable">
+        //                                                 <span class="all__sum__results">${ all_sum }</span> p.
+        //                                             </span>
+        //                                         </div>
+        //                                     </div>
+        //                                 </div>
+        //
+        //                             </div>
+        //                         </div>
+        //                     `);
+        //
+        //                     // останавливаем стандартное поведение ссылки, чтобы она открылась в новом окне
+        //                     $('.list-row__cell.list-row__cell-template-event_object').unbind('click');
+        //                     $('.list-row__cell.list-row__cell-template-event_object').bind('click', function (e) {
+        //                         e.stopPropagation();
+        //                     });
+        //                 }
+        //             });
+        //         }
+        //
+        //         /* ###################################################################### */
+        //
+        //         // функция кнопки Сбросить
+        //         const buttonCancel = function (is_ajax = false) { // отправлять сразу запрос в БД или нет
+        //             // удаляем ранее выбранные фильтры и прячем кнопки фильтра
+        //             if ($('.list-top-search .search-options').length) $('.list-top-search .search-options').remove();
+        //
+        //             if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+        //                 $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+        //             }
+        //
+        //             if (!$('#search_clear_button').hasClass('h-hidden')) {
+        //                 $('#search_clear_button').addClass('h-hidden');
+        //             }
+        //
+        //             // удаляем кнопки Применить и Сбросить
+        //             if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
+        //             if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
+        //                 $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
+        //             }
+        //
+        //             // удаляем рамки заголовков даты и менеджеров
+        //             if ($('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
+        //                 $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
+        //             }
+        //
+        //             if ($('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
+        //                 $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
+        //             }
+        //
+        //             // обнуляем значения фильтра
+        //             self.filter_date = null;
+        //             self.filter_managers = [];
+        //
+        //             // обнуляем значения экспорта
+        //             self.filter_results = [];
+        //             self.filter_all_time = null;
+        //             self.filter_all_sum = null;
+        //
+        //             // удаляем окно фильтра
+        //             $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
+        //             // очищаем результат количества событий
+        //             $('.list-top-search .list-top-search__summary-text').text('0 событий');
+        //
+        //             // удаляем старый результат
+        //             if ($('.list__table__holder').length) $('.list__table__holder').remove();
+        //
+        //             return false;
+        //         }
+        //
+        //         // функция кнопки Применить
+        //         const buttonApply = function () {
+        //             // вставляем дату в заголовок фильтра (берем значение без скобок (даты))
+        //             let filter_date = $('.date_filter .date_filter__head .date_filter__period').text().trim();
+        //             self.filter_date = filter_date;
+        //             filter_date = filter_date.split('(')[0].trim();
+        //
+        //             // если wrapper'а нет, добавляем
+        //             if (!$('.list-top-search .search-options').length) {
+        //                 $('.list-top-search').prepend(`
+        //                     <div class="search-options" id="search-options">
+        //                         <div class="list-top-search__preset" id="search_filter_preset"></div>
+        //                         <div class="search-options-wrapper"></div>
+        //                     </div>
+        //                 `);
+        //             }
+        //
+        //             // удаляем старое значение, если есть
+        //             if ($('.search-options-wrapper .date__filter__icon').length) {
+        //                 $('.search-options-wrapper .date__filter__icon').remove();
+        //             }
+        //
+        //             // вставляем новое значение (если оно не по умолчанию)
+        //             if (filter_date !== 'За все время') {
+        //                 $('.list-top-search .search-options-wrapper').append(`
+        //                     <div class="list-top-search__options date__filter__icon list-top-search__options-showed">
+        //                         <div class="options-text" title="Созданы: ${ filter_date }">Созданы: ${ filter_date }</div>
+        //                         <div class="option-delete js-filter-field-clear" data-input-name="filter[date_preset]">
+        //                             <svg class="svg-icon svg-common--cross-close-dims">
+        //                                 <use xlink:href="#common--cross-close"></use>
+        //                             </svg>
+        //                         </div>
+        //                     </div>
+        //                 `);
+        //             }
+        //
+        //             // перебираем менеджеров с заголовка и обновляем массив
+        //             let managers = [];
+        //
+        //             if ($('.multisuggest__list-item.js-multisuggest-item').length) {
+        //                 $.each($('.multisuggest__list-item.js-multisuggest-item'), function () {
+        //                     managers.push({
+        //                         'title' : $(this).attr('data-title').trim(),
+        //                         'group' : $(this).attr('data-group').trim(),
+        //                         'id' : $(this).attr('data-id').trim(),
+        //                     });
+        //                 });
+        //             }
+        //
+        //             // если менеджеры есть, пишем в массив, иначе обнуляем массив
+        //             if (managers.length) self.filter_managers = managers;
+        //             else self.filter_managers = [];
+        //
+        //             // если менеджер один, пишем имя, иначе количество
+        //             if (managers === 1) managers = self.filter_managers[0].title;
+        //             else managers = self.filter_managers.length;
+        //
+        //             // удаляем старое значение, если есть
+        //             if ($('.search-options-wrapper .managers__filter__icon').length) {
+        //                 $('.search-options-wrapper .managers__filter__icon').remove();
+        //             }
+        //
+        //             // вставляем новое значение (если менеджеры есть в массиве)
+        //             if (self.filter_managers.length) {
+        //                 // wrapper
+        //                 if (!$('.list-top-search .search-options').length) {
+        //                     $('.list-top-search').prepend(`
+        //                         <div class="search-options" id="search-options">
+        //                             <div class="list-top-search__preset" id="search_filter_preset"></div>
+        //                             <div class="search-options-wrapper"></div>
+        //                         </div>
+        //                     `);
+        //                 }
+        //
+        //                 // менеджеры
+        //                 $('.list-top-search .search-options-wrapper').append(`
+        //                     <div class="list-top-search__options managers__filter__icon list-top-search__options-showed">
+        //                         <div class="options-text" title="Менеджеры: ${ managers }">Менеджеры: ${ managers }</div>
+        //                         <div class="option-delete js-filter-field-clear" data-input-name="filter[main_user][]">
+        //                             <svg class="svg-icon svg-common--cross-close-dims">
+        //                                 <use xlink:href="#common--cross-close"></use>
+        //                             </svg>
+        //                         </div>
+        //                     </div>
+        //                 `);
+        //             }
+        //
+        //             // если есть какие-то фильтры, прячем кнопку Применить и показываем кнопку очистки фильтра
+        //             if (filter_date !== 'За все время' || self.filter_managers.length) {
+        //                 if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+        //                     $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+        //                 }
+        //
+        //                 if ($('#search_clear_button').hasClass('h-hidden')) {
+        //                     $('#search_clear_button').removeClass('h-hidden');
+        //                 }
+        //
+        //                 // кнопка сбросить в фильтре
+        //                 $('#search_clear_button').unbind('click');
+        //                 $('#search_clear_button').bind('click', { is_ajax: true }, buttonCancel);
+        //
+        //                 // иначе прячем кнопки фильтра
+        //             } else if (filter_date === 'За все время' && !self.filter_managers.length) {
+        //
+        //                 if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+        //                     $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+        //                 }
+        //
+        //                 if (!$('#search_clear_button').hasClass('h-hidden')) {
+        //                     $('#search_clear_button').addClass('h-hidden');
+        //                 }
+        //             }
+        //
+        //             // удаление даты с фильтра
+        //             $('.list-top-search__options.date__filter__icon .option-delete').unbind('click');
+        //             $('.list-top-search__options.date__filter__icon .option-delete').bind('click', function () {
+        //                 // удаление фильтра
+        //                 $('.list-top-search__options.date__filter__icon').remove();
+        //                 // очищаем результат количества событий
+        //                 $('.list-top-search__summary-text').text('0 событий');
+        //
+        //                 // если фильтр последний, удаляем wrapper фильтра и кнопку очистки фильтра
+        //                 if (!$('.search-options .list-top-search__options').length) {
+        //                     $('#search-options').remove();
+        //
+        //                     if (!$('#search_clear_button').hasClass('h-hidden')) {
+        //                         $('#search_clear_button').addClass('h-hidden');
+        //                     }
+        //
+        //                     // обнуляем значениe даты
+        //                     self.filter_date = null;
+        //                     // удаляем старый результат
+        //                     if ($('.list__table__holder').length) $('.list__table__holder').remove();
+        //
+        //                     // обнуляем значения экспорта
+        //                     self.filter_results = [];
+        //                     self.filter_all_time = null;
+        //                     self.filter_all_sum = null;
+        //
+        //                     // иначе обнуляем значениe даты и делаем запрос в БД
+        //                 } else {
+        //                     self.filter_date = null;
+        //                     ajaxFilterParams(getParamsFilter());
+        //                 }
+        //             });
+        //
+        //             // удаление менеджеров с фильтра
+        //             $('.list-top-search__options.managers__filter__icon .option-delete').unbind('click');
+        //             $('.list-top-search__options.managers__filter__icon .option-delete').bind('click', function () {
+        //                 // удаление фильтра
+        //                 $('.list-top-search__options.managers__filter__icon').remove();
+        //                 // очищаем результат количества событий
+        //                 $('.list-top-search__summary-text').text('0 событий');
+        //
+        //                 // если фильтр последний, удаляем wrapper фильтра и кнопку очистки фильтра
+        //                 if (!$('.search-options .list-top-search__options').length) {
+        //                     $('#search-options').remove();
+        //
+        //                     if (!$('#search_clear_button').hasClass('h-hidden')) {
+        //                         $('#search_clear_button').addClass('h-hidden');
+        //                     }
+        //
+        //                     // обнуляем массив менеджеров
+        //                     self.filter_managers = [];
+        //                     // удаляем старый результат
+        //                     if ($('.list__table__holder').length) $('.list__table__holder').remove();
+        //
+        //                     // обнуляем значения экспорта
+        //                     self.filter_results = [];
+        //                     self.filter_all_time = null;
+        //                     self.filter_all_sum = null;
+        //
+        //                     // иначе обнуляем массив менеджеров и делаем запрос в БД
+        //                 } else {
+        //                     self.filter_managers = [];
+        //                     ajaxFilterParams(getParamsFilter());
+        //                 }
+        //             });
+        //
+        //             // если значение не по умолчанию, делаем запрос в БД, иначе очищаем фильтр
+        //             if (!(filter_date === 'За все время' && !self.filter_managers.length)) {
+        //                 ajaxFilterParams(getParamsFilter());
+        //             } else buttonCancel();
+        //
+        //             // удаляем окно фильтра
+        //             $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
+        //         }
+        //
+        //         /* ###################################################################### */
+        //
+        //         // функция закрытия окна фильтра
+        //         const closeFilterWindow = function () {
+        //             // если нет сохраненной даты, удаляем фильтр даты
+        //             if (!self.filter_date) {
+        //                 if ($('.list-top-search .date__filter__icon')) {
+        //                     $('.list-top-search .date__filter__icon').remove();
+        //                 }
+        //             }
+        //
+        //             // если нет сохраненных менеджеров, удаляем фильтр менеджеров
+        //             if (!self.filter_managers.length) {
+        //                 if ($('.list-top-search .managers__filter__icon')) {
+        //                     $('.list-top-search .managers__filter__icon').remove();
+        //                 }
+        //             }
+        //
+        //             // удаляем окно фильтра
+        //             $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
+        //         }
+        //
+        //         // функция добавления кнопки Применить в фильтре
+        //         const addButtonApplyFilter = function () {
+        //             if ($('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+        //                 $('.list-top-search .list-top-search__apply-block').removeClass('h-hidden');
+        //             }
+        //
+        //             $('.list-top-search .list-top-search__apply-block').unbind('click');
+        //             $('.list-top-search .list-top-search__apply-block').bind('click', buttonApply);
+        //         }
+        //
+        //         // функция добавления кнопок Применить и Сбросить в окне фильтра
+        //         const addButtonApplyCancel = function () {
+        //             // добавляем класс для кнопок
+        //             if (!$('.js-filter-sidebar.filter-search').hasClass('filter-search_has-changes')) {
+        //                 $('.js-filter-sidebar.filter-search').addClass('filter-search_has-changes');
+        //             }
+        //
+        //             // добавляем кнопки
+        //             if (!$('#search-suggest-drop-down-menu').length) {
+        //                 $('.js-filter-sidebar.filter-search').append(`
+        //                     <div id="search-suggest-drop-down-menu" class="search-results custom-scroll">
+        //                         <div id="search-suggest-drop-down-menu_container"></div>
+        //                     </div>
+        //
+        //                     <div class="modal-body__actions filter__params_manage" style="margin-right: 0px;">
+        //                         <button type="button" class="button-input js-modal-accept js-button-with-loader modal-body__actions__save button-input_blue filter__params_manage__apply" tabindex="1" id="filter_apply">
+        //                             <span class="button-input-inner ">
+        //                                 <span class="button-input-inner__text">Применить</span>
+        //                             </span>
+        //                         </button>
+        //
+        //                         <button type="button" class="button-input button-cancel js-search-filter-clear" tabindex="2" style="">
+        //                             <span>Сбросить</span>
+        //                         </button>
+        //                     </div>
+        //                 `);
+        //             }
+        //
+        //             // кнопка Применить
+        //             $('.modal-body__actions .modal-body__actions__save').unbind('click');
+        //             $('.modal-body__actions .modal-body__actions__save').bind('click', buttonApply);
+        //
+        //             // кнопка Сбросить
+        //             $('.modal-body__actions .button-cancel').unbind('click');
+        //             $('.modal-body__actions .button-cancel').bind('click', { is_ajax: true }, buttonCancel);
+        //         }
+        //
+        //         // функция удаления менеджера с заголовка менеджеров
+        //         const deleteManagersForTitle = function () {
+        //             // нажатие на менеджера
+        //             $('.multisuggest__list-item.js-multisuggest-item').unbind('click');
+        //             $('.multisuggest__list-item.js-multisuggest-item').bind('click', function (e) {
+        //                 // останавливаем стандартное поведение
+        //                 e.stopPropagation();
+        //
+        //                 // имя, группа и ID нажатого менеджера
+        //                 let manager = $(e.target).closest('.multisuggest__list-item.js-multisuggest-item'),
+        //                     manager_ID = manager.attr('data-id'),
+        //                     manager_group = manager.attr('data-group');
+        //
+        //                 // удаляем менеджера
+        //                 $(manager).remove();
+        //
+        //                 // если группа ранее была скрыта, показываем
+        //                 if ($(`.users-select__head-allgroup[data-id="${manager_group}"]`).closest('.users-select-row__inner').css('display') === 'none') {
+        //                     $(`.users-select__head-allgroup[data-id="${manager_group}"]`).closest('.users-select-row__inner').css('display', 'block');
+        //                 }
+        //
+        //                 // показываем менеджера в списке
+        //                 $(`#select_users__user-${ manager_ID }`).css('display', 'block');
+        //
+        //                 // если удален последний менеджер, снимаем рамку
+        //                 if (!$('.multisuggest__list-item.js-multisuggest-item').length) {
+        //                     $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
+        //                 }
+        //
+        //                 // добавляем кнопку Применить в фильтре
+        //                 addButtonApplyFilter();
+        //                 // добавляем кнопки Применить и Сбросить в окне фильтра
+        //                 addButtonApplyCancel();
+        //             });
+        //         }
+        //
+        //         /* ###################################################################### */
+        //
+        //         // клик по свободному месту для закрытия фильтра
+        //         $('#page_holder').unbind('click');
+        //         $('#page_holder').bind('click', function (e) {
+        //             // если фильтр не открыт, выходим
+        //             if (!$('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
+        //             // если клик по диву фильтра, выходим
+        //             if ($(e.target).closest('.settings__search__filter .js-filter-sidebar.filter-search').length) return;
+        //             // если клик по инпуту фильтра, выходим
+        //             if ($(e.target).closest('.settings__search .list-top-search__input-block').length) return;
+        //             if ($(e.target).hasClass('.settings__search .list-top-search__input-block')) return;
+        //
+        //             // закрытие окна фильтра
+        //             closeFilterWindow();
+        //         });
+        //
+        //         // выбор даты
+        //         $('.filter-search__right .date_filter__head').on('DOMSubtreeModified', function() {
+        //             // если рамки нет, добавляем
+        //             if (!$('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
+        //                 $('.filter-search__right .filter__custom_settings__item.date__filter').addClass('glow');
+        //             }
+        //
+        //             // если ранее были открыты менеджеры, восстанавливаем wrapper менеджеров
+        //             $('.filter__managers').css('height', '0');
+        //
+        //             // добавляем кнопку Применить в фильтре
+        //             addButtonApplyFilter();
+        //             // добавляем кнопки Применить и Сбросить в окне фильтра
+        //             addButtonApplyCancel();
+        //         });
+        //
+        //         // если открыт дата фильтр, закрываем список менеджеров
+        //         $('.filter-search__right').on('DOMSubtreeModified', function() {
+        //             // let managers = [];
+        //
+        //             if ($('.date_filter .date_filter__dropdown').css('display') === 'block') {
+        //
+        //                 if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
+        //
+        //                 $('.filter__managers .multisuggest__suggest-wrapper').remove();
+        //                 $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
+        //
+        //                 if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
+        //                     $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
+        //                 }
+        //
+        //                 // если менеджеры есть, добавляем возможность очистки
+        //                 if ($('.multisuggest__list .multisuggest__list-item').length) {
+        //                     // если рамки нет, добавляем
+        //                     if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
+        //                         $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
+        //                     }
+        //                 }
+        //             }
+        //         });
+        //
+        //         // открываем список менеджеров
+        //         $('.filter-search__right .custom-scroll').unbind('click');
+        //         $('.filter-search__right .custom-scroll').bind('click', function (e) {
+        //             // если уже открыт, выходим
+        //             if ($('.filter__managers .multisuggest__suggest-wrapper').length) return;
+        //
+        //             // добавляем wrapper
+        //             $('.filter-search__right .filter__managers').append(`
+        //                 <div class="multisuggest__suggest-wrapper suggest-manager users-select-suggest filter__users-select-suggest" style="top: 0; left: 0; position: absolute; display: block; width: 300px; height: auto;" data-is-suggest="y">
+        //                     <div class="multisuggest__suggest js-multisuggest-suggest custom-scroll" style="max-height: 300px;">
+        //                         <div class="users-select-row custom-scroll"></div>
+        //                     </div>
+        //                 </div>
+        //             `);
+        //
+        //             $('.multisuggest__list.js-multisuggest-list').addClass('js-multisuggest-loading');
+        //
+        //             // добавляем инпут для отображения hover
+        //             $('.multisuggest__list.js-multisuggest-list').append(`
+        //                 <li class="multisuggest__list-item multisuggest__list-item_input">
+        //                     <span class="js-multisuggest-hint multisuggest__hint">Менеджеры</span>
+        //                 </li>
+        //             `);
+        //
+        //             // менеджеры и группы AMO
+        //             let groups = AMOCRM.constant('groups'),
+        //                 managers = AMOCRM.constant('managers');
+        //
+        //             // перебираем группы
+        //             $.each(groups, function (key, value) {
+        //                 var users = [], group_ID = key;
+        //
+        //                 $.each(managers, function () {
+        //                     if (this.group != key) return;
+        //                     if (!this.active) return;
+        //
+        //                     users.push({id: this.id, title: this.title});
+        //                 });
+        //
+        //                 // если в группе нет менеджеров, пропускаем ее
+        //                 if (!users.length) return;
+        //
+        //                 // добавляем группу в список
+        //                 $('.filter-search__right .filter__managers .users-select-row').append(`
+        //                     <div class="users-select-row__inner group-color-wrapper">
+        //                         <div class="users-select__head group-color  js-multisuggest-item multisuggest__suggest-item" data-title="${ value }" data-group="y" data-id="${ key }" style="height: 35px;">
+        //                             <div class="users-select__head-title" style="width: 293px;">
+        //
+        //                                 <span class="users-select__head-title-text">${ value }</span>
+        //                                 <div class="users-select__head-allgroup" data-id="${ key }">
+        //                                     <span>Весь отдел</span>
+        //                                 </div>
+        //
+        //                             </div>
+        //                         </div>
+        //
+        //                         <div class="users-select__body" data-id="${ key }"></div>
+        //                     </div>
+        //                 `);
+        //
+        //                 // перебираем менеджеров
+        //                 $.each(users, function () {
+        //                     let user_ID = this.id;
+        //                     let user_title = this.title;
+        //
+        //                     // добавляем менеджеров
+        //                     $(`.filter-search__right .users-select__body[data-id=${ key }]`).append(`
+        //                         <div class="users-select__body__item" id="select_users__user-${ user_ID }" style="display: block;">
+        //                             <div class="multisuggest__suggest-item js-multisuggest-item true" data-group="${ key }" data-id="${ user_ID }">
+        //                                 ${ user_title }
+        //                                 <span data-id="${ user_ID }" class="control-user_state"></span>
+        //                             </div>
+        //                         </div>
+        //                     `);
+        //                 });
+        //
+        //                 // если менеджер ранее выбран, прячем в списке
+        //                 if ($('.multisuggest__list .multisuggest__list-item')) {
+        //                     let group, item_group, ID, is_visible = false;;
+        //
+        //                     // если менеджер в заголовке, прячем в списке
+        //                     $.each($('.multisuggest__list .multisuggest__list-item'), function () {
+        //                         ID = $(this).attr('data-id');
+        //                         $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
+        //                     });
+        //
+        //                     // если менеджеров в списке больше нет, скрываем группу
+        //                     group = $(`.users-select-row__inner .users-select__body[data-id="${group_ID}"]`);
+        //                     item_group = group.find('.users-select__body__item');
+        //
+        //                     $.each(item_group, function () {
+        //                         if ($(this).css('display') === 'block') is_visible = true;
+        //                     });
+        //
+        //                     if (!is_visible) $(group).closest('.users-select-row__inner').css('display', 'none');
+        //                 }
+        //             });
+        //
+        //             // ровняем менеджеров и скролл
+        //             $('.filter-search__right .filter__managers').css('height', '300px');
+        //             $('.filter-search__right .users-select-row').css({
+        //                 'overflow-x': 'hidden', 'overflow-y': 'auto', 'max-width': '300px'
+        //             });
+        //
+        //             // клик по свободному месту для закрытия списка менеджеров
+        //             $('.settings__search__filter .filter-search__inner').unbind('click');
+        //             $('.settings__search__filter .filter-search__inner').bind('click', function (e) {
+        //                 let managers = [];
+        //
+        //                 // если список менеджеров не открыт, выходим
+        //                 if (!$('.filter__managers .multisuggest__suggest-wrapper').length) return;
+        //                 // если клик по списку менеджеров, выходим
+        //                 if (e.target.closest('.filter__managers .multisuggest__suggest')) return;
+        //                 // если клик по заголовку менеджеров, выходим
+        //                 if (e.target.closest('.filter-search__right .custom-scroll')) return;
+        //
+        //                 // удаляем список менеджеров и ровняем wrapper
+        //                 $('.filter__managers .multisuggest__suggest-wrapper').remove();
+        //                 $('.filter-search__right .filter__managers').css('height', '0');
+        //                 $('.multisuggest__list.js-multisuggest-list').removeClass('js-multisuggest-loading');
+        //
+        //                 // удаляем инпут заголовка менеджеров
+        //                 if ($('.multisuggest__list.js-multisuggest-list').find('.multisuggest__list-item_input')) {
+        //                     $('.multisuggest__list.js-multisuggest-list .multisuggest__list-item_input').remove();
+        //                 }
+        //
+        //                 // если менеджеры есть, добавляем возможность очистки
+        //                 if ($('.multisuggest__list .multisuggest__list-item').length) {
+        //                     // если рамки нет, добавляем
+        //                     if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
+        //                         $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
+        //                     }
+        //
+        //                     // добавляем кнопку Применить в фильтре
+        //                     addButtonApplyFilter();
+        //                     // добавляем кнопки Применить и Сбросить в окне фильтра
+        //                     addButtonApplyCancel();
+        //                 }
+        //             });
+        //
+        //             // отображение менеджера в заговлоке при смене курсора
+        //             $('.filter__managers .users-select__head-title').bind('mouseenter', function (e) {
+        //                 let title = $(e.target).find('.users-select__head-title-text').text();
+        //                 $('.multisuggest__list .multisuggest__hint').text(title);
+        //             });
+        //
+        //             $('.filter__managers .users-select__body__item').bind('mouseenter', function (e) {
+        //                 let title = $(e.target).text().trim();
+        //                 $('.multisuggest__list .multisuggest__hint').text(title);
+        //             });
+        //
+        //             // клик на менеджера
+        //             $('.filter__managers .users-select__body__item').unbind('click');
+        //             $('.filter__managers .users-select__body__item').bind('click', function (e) {
+        //                 // останавливаем стандартное поведение
+        //                 e.stopPropagation();
+        //
+        //                 // заголовок, группа и ID менеджера
+        //                 let title = $(e.target).text().trim();
+        //                 let group = $(e.target).attr('data-group');
+        //                 let ID = $(e.target).attr('data-id');
+        //                 let is_visible = false;
+        //
+        //                 // добавляем менеджера в заголовок
+        //                 $('.multisuggest__list-item.multisuggest__list-item_input').before(`
+        //                     <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
+        //                         <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
+        //                         <span>${ title }</span>
+        //                         <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
+        //                     </li>
+        //                 `);
+        //
+        //                 // прячем из списка менеджеров
+        //                 $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
+        //
+        //                 // если менеджеров в списке больше нет, скрываем группу
+        //                 $.each($(e.target).closest('.users-select__body').find('.users-select__body__item'), function () {
+        //                     if ($(this).css('display') === 'block') is_visible = true;
+        //                 });
+        //
+        //                 if (!is_visible) $(e.target).closest('.users-select-row__inner').css('display', 'none');
+        //
+        //                 // удалениe менеджера с заголовка менеджеров
+        //                 deleteManagersForTitle();
+        //             });
+        //
+        //             // клик на группу менеджеров
+        //             $('.filter__managers .users-select__head-title').unbind('click');
+        //             $('.filter__managers .users-select__head-title').bind('click', function (e) {
+        //                 // останавливаем стандартное поведение
+        //                 e.stopPropagation();
+        //
+        //                 // ID группы
+        //                 let group_ID = $(this).find('.users-select__head-allgroup').attr('data-id');
+        //
+        //                 // перебираем менеджеров в этой группе
+        //                 $.each($(`.users-select__body[data-id="${group_ID}"] .users-select__body__item`), function () {
+        //                     // заголовок, группа и ID менеджера
+        //                     let title = $(this).find('.multisuggest__suggest-item').text().trim();
+        //                     let group = $(this).find('.multisuggest__suggest-item').attr('data-group');
+        //                     let ID = $(this).find('.multisuggest__suggest-item').attr('data-id');
+        //
+        //                     // добавляем менеджеров в заголовок
+        //                     if (!$(`.multisuggest__list .multisuggest__list-item[data-id="${ID}"]`).length) {
+        //                         $('.multisuggest__list-item.multisuggest__list-item_input').before(`
+        //                             <li class="multisuggest__list-item js-multisuggest-item" data-title="${ title }" data-group="${ group }" data-id="${ ID }">
+        //                                 <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
+        //                                 <span>${ title }</span>
+        //                                 <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ ID }" value="${ ID }">
+        //                             </li>
+        //                         `);
+        //                     }
+        //
+        //                     // прячем из списка менеджеров
+        //                     $(`.users-select__body__item[id="select_users__user-${ ID }"]`).css('display', 'none');
+        //                     $(`.users-select__body[data-id="${group_ID}"]`).closest('.users-select-row__inner').css('display', 'none');
+        //                 });
+        //
+        //                 // удалениe менеджера с заголовка менеджеров
+        //                 deleteManagersForTitle();
+        //             });
+        //         });
+        //
+        //         // очищаем заголовок календаря
+        //         $('.js-filter-field-clear.clear__date').unbind('click');
+        //         $('.js-filter-field-clear.clear__date').bind('click', function () {
+        //             // пишем стандартное значение
+        //             $('.date_filter .date_filter__head span').attr('data-before', 'За все время');
+        //             $('.date_filter .date_filter__head span').text('За все время');
+        //             // удаляем рамку
+        //             $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
+        //
+        //             // удаляем классы у выбранных дат календаря
+        //             $.each($('.date_filter .date_filter__period_item'), function () {
+        //                 if ($(this).hasClass('date_filter__period_item_selected')) {
+        //                     $(this).removeClass('date_filter__period_item_selected');
+        //                 }
+        //             });
+        //
+        //             // добавляем кнопку Применить в фильтре
+        //             addButtonApplyFilter();
+        //             // добавляем кнопки Применить и Сбросить в окне фильтра
+        //             addButtonApplyCancel();
+        //         });
+        //
+        //         // очищаем заголовок менеджеров
+        //         $('.js-filter-field-clear.clear__managers').unbind('click');
+        //         $('.js-filter-field-clear.clear__managers').bind('click', function () {
+        //             // удаляем менеджеров и удаляем рамку
+        //             $('.multisuggest__list .multisuggest__list-item').remove();
+        //             $('.filter-search__right .filter-search__users-select-holder').removeClass('glow');
+        //
+        //             // добавляем кнопку Применить в фильтре
+        //             addButtonApplyFilter();
+        //             // добавляем кнопки Применить и Сбросить в окне фильтра
+        //             addButtonApplyCancel();
+        //         });
+        //
+        //         // отображаем ранее сохраненное значение даты
+        //         if (self.filter_date) {
+        //             // если выбрана дата из списка, проверяем какая
+        //             filter_date = self.filter_date.split('(')[0].trim();
+        //
+        //             // добавляем соответствующий класс
+        //             $.each($('.date_filter .date_filter__period_item'), function () {
+        //                 if ($(this).find('.custom_select__title').text().trim() === filter_date) {
+        //                     $(this).addClass('date_filter__period_item_selected');
+        //                 }
+        //             });
+        //
+        //             // меняем заголовок календаря
+        //             $('.date_filter__period.custom_select__selected').attr('data-before', self.filter_date);
+        //             $('.date_filter__period.custom_select__selected').text(self.filter_date);
+        //
+        //             // если выбрана дата последних Х дней
+        //             if (filter_date.indexOf('За последние') !== -1) {
+        //                 // количество дней
+        //                 filter_date = self.filter_date.split(' ')[2].trim();
+        //
+        //                 // прописываем количество в заголовок и значение, добавляем класс выбора
+        //                 $('.date_filter .date_filter__period_item[data-period="past_x_days"]').addClass('date_filter__period_item_selected');
+        //                 $('.date_filter .date_filter__period_item-input-days').val(filter_date);
+        //             }
+        //
+        //             // если значение стандартное, удаляем рамку
+        //             if (filter_date === 'За все время') {
+        //                 if ($('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow')) {
+        //                     $('.filter-search__right .filter__custom_settings__item.date__filter').removeClass('glow');
+        //                 }
+        //             }
+        //
+        //             // добавляем рамку
+        //             if (!$('.filter-search__right .filter__custom_settings__item.date__filter').hasClass('glow') &&
+        //                 filter_date !== 'За все время') {
+        //
+        //                 $('.filter-search__right .filter__custom_settings__item.date__filter').addClass('glow');
+        //             }
+        //         }
+        //
+        //         // отображаем ранее сохраненных менеджеров
+        //         if (self.filter_managers.length) {
+        //             let managers = self.filter_managers;
+        //
+        //             // перебираем выбранных менеджеров
+        //             $.each(managers, function () {
+        //                 // добавляем в заголовок списка менеджеров
+        //                 $('.multisuggest__list.js-multisuggest-list').append(`
+        //                     <li class="multisuggest__list-item js-multisuggest-item" data-title="${ this.title }" data-group="${ this.group }" data-id="${ this.id }">
+        //                         <input type="text" class="js-focuser" readonly="readonly" onkeydown="([13,8].indexOf(event.which)+1)&amp;&amp;this.parentNode.click()" onclick="return false">
+        //                         <span>${ this.title }</span>
+        //                         <input type="checkbox" checked="checked" class="hidden" name="" id="cbx_drop_${ this.id }" value="${ this.id }">
+        //                     </li>
+        //                 `);
+        //             });
+        //
+        //             // добавляем рамку
+        //             if (!$('.filter-search__right .filter-search__users-select-holder').hasClass('glow')) {
+        //                 $('.filter-search__right .filter-search__users-select-holder').addClass('glow');
+        //             }
+        //
+        //             // удалениe менеджера с заголовка менеджеров
+        //             deleteManagersForTitle();
+        //         }
+        //
+        //         // по умолчанию прячем кнопку Применить в фильтре
+        //         if (!$('.list-top-search .list-top-search__apply-block').hasClass('h-hidden')) {
+        //             $('.list-top-search .list-top-search__apply-block').addClass('h-hidden');
+        //         }
+        //
+        //         // по умолчанию прячем кнопки Применить и Сбросить в окне фильтра
+        //         if ($('#search-suggest-drop-down-menu')) $('#search-suggest-drop-down-menu').remove();
+        //         if ($('.js-filter-sidebar.filter-search .modal-body__actions')) {
+        //             $('.js-filter-sidebar.filter-search .modal-body__actions').remove();
+        //         }
+        //
+        //         /* ###################################################################### */
+        //
+        //         // функция показа кнопки Очистить фильтр
+        //         const addButtonCalcelFilter = function () {
+        //             if ($('#search_clear_button').hasClass('h-hidden')) {
+        //                 $('#search_clear_button').removeClass('h-hidden');
+        //
+        //                 $('#search_clear_button').unbind('click');
+        //                 $('#search_clear_button').bind('click', { is_ajax: true }, buttonCancel);
+        //             }
+        //         }
+        //
+        //         // клик на все события
+        //         $('.filter-search__left .filter__all__events').unbind('click');
+        //         $('.filter-search__left .filter__all__events').bind('click', function (e) {
+        //             let result = {};
+        //
+        //             // останавливаем действие по умолчанию
+        //             e.stopPropagation();
+        //             e.preventDefault();
+        //
+        //             // указываем параметры запроса в БД
+        //             result.filter_date = null;
+        //             result.filter_managers = null;
+        //
+        //             // очищаем фильтр
+        //             buttonCancel(false);
+        //             // показываем кнопку Очистить фильтр
+        //             addButtonCalcelFilter();
+        //
+        //             // запрос в БД
+        //             ajaxFilterParams(result);
+        //         });
+        //
+        //         // клик на мои события
+        //         $('.filter-search__left .filter__my__events').unbind('click');
+        //         $('.filter-search__left .filter__my__events').bind('click', function (e) {
+        //             let result = {}, filter_managers = [];
+        //
+        //             // останавливаем действие по умолчанию
+        //             e.stopPropagation();
+        //             e.preventDefault();
+        //
+        //             // указываем параметры запроса в БД
+        //             result.filter_date = null;
+        //             filter_managers.push(AMOCRM.constant('user').name);
+        //             result.filter_managers = filter_managers;
+        //
+        //             // очищаем фильтр
+        //             buttonCancel(false);
+        //             // показываем кнопку Очистить фильтр
+        //             addButtonCalcelFilter();
+        //
+        //             // запрос в БД
+        //             ajaxFilterParams(result);
+        //         });
+        //
+        //         // клик на события за сегодня
+        //         $('.filter-search__left .filter__today__events').unbind('click');
+        //         $('.filter-search__left .filter__today__events').bind('click', function (e) {
+        //             let result = {}, date_from, date_to, filter_date = {};
+        //
+        //             // останавливаем действие по умолчанию
+        //             e.stopPropagation();
+        //             e.preventDefault();
+        //
+        //             // указываем параметры запроса в БД
+        //             date_from = date_to = new Date().toLocaleDateString();
+        //             filter_date.date_from = date_from;
+        //             filter_date.date_to = date_to;
+        //
+        //             result.filter_date = filter_date;
+        //             result.filter_managers = null;
+        //
+        //             // очищаем фильтр
+        //             buttonCancel(false);
+        //             // показываем кнопку Очистить фильтр
+        //             addButtonCalcelFilter();
+        //
+        //             // запрос в БД
+        //             ajaxFilterParams(result);
+        //         });
+        //
+        //         // клик на события за вчера
+        //         $('.filter-search__left .filter__yesterday__events').unbind('click');
+        //         $('.filter-search__left .filter__yesterday__events').bind('click', function (e) {
+        //             let result = {}, date_from, date_to, filter_date = {}, d;
+        //
+        //             // останавливаем действие по умолчанию
+        //             e.stopPropagation();
+        //             e.preventDefault();
+        //
+        //             // указываем параметры запроса в БД
+        //             d = new Date();
+        //             d = d.setDate(d.getDate() - 1);
+        //             date_from = date_to = new Date(d).toLocaleDateString();
+        //             filter_date.date_from = date_from;
+        //             filter_date.date_to = date_to;
+        //
+        //             result.filter_date = filter_date;
+        //             result.filter_managers = null;
+        //
+        //             // очищаем фильтр
+        //             buttonCancel(false);
+        //             // показываем кнопку Очистить фильтр
+        //             addButtonCalcelFilter();
+        //
+        //             // запрос в БД
+        //             ajaxFilterParams(result);
+        //         });
+        //
+        //         // клик на события за месяц
+        //         $('.filter-search__left .filter__month__events').unbind('click');
+        //         $('.filter-search__left .filter__month__events').bind('click', function (e) {
+        //             let result = {}, date_from, date_to, filter_date = {}, d;
+        //
+        //             // останавливаем действие по умолчанию
+        //             e.stopPropagation();
+        //             e.preventDefault();
+        //
+        //             // указываем параметры запроса в БД
+        //             d = new Date();
+        //             date_from = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 30).toLocaleDateString();
+        //             date_to = new Date().toLocaleDateString();
+        //             filter_date.date_from = date_from;
+        //             filter_date.date_to = date_to;
+        //
+        //             result.filter_date = filter_date;
+        //             result.filter_managers = null;
+        //
+        //             // очищаем фильтр
+        //             buttonCancel(false);
+        //             // показываем кнопку Очистить фильтр
+        //             addButtonCalcelFilter();
+        //
+        //             // запрос в БД
+        //             ajaxFilterParams(result);
+        //         });
+        //     });
+        //
+        //     // клик по меню экспорт
+        //     $('.settings__search .settings__search__menu #export').unbind('click');
+        //     $('.settings__search .settings__search__menu #export').bind('click', function (e) {
+        //         // модалка экспорта
+        //         new Modal({
+        //             class_name: 'export__excel',
+        //             init: function ($modal_body) {
+        //                 var $this = $(this);
+        //                 $modal_body
+        //                     .trigger('modal:loaded')
+        //                     .html(`<div class="modal__export__excel" style="width: 100%; min-height: 180px;"></div>`)
+        //                     .trigger('modal:centrify')
+        //                     .append('');
+        //             },
+        //             destroy: function () {}
+        //         });
+        //
+        //         // кнопки Отменить и Экспорт
+        //         $('.modal__export__excel').append(`
+        //             <div class="modal-export__header">
+        //                 <h3 class="modal-export__header-title">Экспорт</h3>
+        //                 <div class="modal-export__header-buttons">
+        //                     <button type="button" class="button-input button-cancel modal__cancel__btn" tabindex="" style="">
+        //                         <span>Отменить</span>
+        //                     </button>
+        //                     <button type="button" class="button-input button-input_blue modal-export__create-button modal__export__btn" tabindex="">
+        //                         <span class="button-input-inner">
+        //                             <span class="button-input-inner__text">Экспорт</span>
+        //                         </span>
+        //                     </button>
+        //                 </div>
+        //             </div>
+        //         `);
+        //
+        //         // картинки экспорта
+        //         $('.modal__export__excel').append(`
+        //             <div class="modal-export__formats">
+        //                 <label class="modal-export__format" for="export_excel" style="cursor: auto;">
+        //                     <div class="modal-export__format-icon">
+        //                         <svg class="svg-icon svg-common--export--excel-dims">
+        //                             <use xlink:href="#common--export--excel"></use>
+        //                         </svg>
+        //                     </div>
+        //                     <div class="modal-export__format-content">
+        //                         <div class="modal-export__format-title">Excel</div>
+        //                         <div class="modal-export__format-text">Экспорт в файл формата Microsoft Excel</div>
+        //                     </div>
+        //                 </label>
+        //             </div>
+        //         `);
+        //
+        //         // кнопка Отменить
+        //         $('.export__excel .modal__cancel__btn').unbind('click');
+        //         $('.export__excel .modal__cancel__btn').bind('click', function () {
+        //             if ($('.export__excel').length) $('.export__excel').remove();
+        //         });
+        //
+        //         // кнопка Экспорт
+        //         $('.export__excel .modal__export__btn').bind('click', function () {
+        //             // отключаем кнопку
+        //             $(this).unbind('click');
+        //             $('.export__excel .modal__export__btn').addClass('button-input-loading');
+        //             $('.export__excel .modal__export__btn').attr('data-loading', 'Y');
+        //             $('.export__excel .modal__export__btn .button-input-inner').css('display', 'none');
+        //             $('.export__excel .modal__export__btn').append(`
+        //                 <div class="button-input__spinner">
+        //                     <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+        //                 </div>
+        //             `);
+        //             $('.export__excel .modal__export__btn').unbind('click');
+        //
+        //             // создаем excel файл на сервере
+        //             $.ajax({
+        //                 url: url_link_t,
+        //                 method: 'post',
+        //                 data: {
+        //                     'domain': document.domain,
+        //                     'method': 'export_excel',
+        //                     'params': {
+        //                         'filter_results': self.filter_results,
+        //                         'filter_all_time': self.filter_all_time,
+        //                         'filter_all_sum': self.filter_all_sum
+        //                     }
+        //                 },
+        //                 dataType: 'json',
+        //                 success: function (data) {
+        //                     // очищаем окно экспорта
+        //                     if ($('.modal__export__excel .modal-export__header').length) {
+        //                         $('.modal__export__excel .modal-export__header').remove();
+        //                     }
+        //
+        //                     if ($('.modal__export__excel .modal-export__formats').length) {
+        //                         $('.modal__export__excel .modal-export__formats').remove();
+        //                     }
+        //
+        //                     // вставляем данные загрузки документа
+        //                     $('.modal__export__excel').append(`
+        //                         <h2 class="modal-body__caption head_2">Экспорт завершен</h2>
+        //
+        //                         <div class="modal-export__last-file" style="display: flex; flex-direction: row; align-items: center;">
+        //                             <svg class="svg-icon svg-common--export--load-file-dims" style="width: 29px; height: 35px;">
+        //                                 <use xlink:href="#common--export--load-file"></use>
+        //                             </svg>
+        //                             <div class="modal-export__file-container" style="display: flex; flex-direction: column; flex: 1 0; align-items: flex-start; margin-left: 8px;">
+        //                                 <div class="modal-export__file-info" style="display: flex; width: 100%; justify-content: space-between;">
+        //                                     <a class="modal-export__file-name" download="export_billing.xlsx" href="https://integratorgroup.k-on.ru/andreev/billing/export_billing.xlsx">export_billing.xlsx</a>
+        //                                     <span class="modal-export__file-size"></span>
+        //                                 </div>
+        //                                 <span class="modal-export__file-time" style="margin-left: 8px;"></span>
+        //                             </div>
+        //                         </div>
+        //
+        //                         <div class="modal-body__actions">
+        //                             <a download="export_billing.xlsx" href="https://integratorgroup.k-on.ru/andreev/billing/export_billing.xlsx">
+        //                                 <button type="button" class="button-input button-input_blue modal-export__save-button" tabindex="">
+        //                                     <span class="button-input-inner ">
+        //                                         <svg class="svg-icon svg-common--export--download-dims">
+        //                                             <use xlink:href="#common--export--download"></use>
+        //                                         </svg>
+        //                                         <span class="button-input-inner__text">Скачать файл</span>
+        //                                     </span>
+        //                                 </button>
+        //                             </a>
+        //                         </div>
+        //                     `);
+        //
+        //                     $('.modal__export__excel').css('min-height', '150px');
+        //
+        //                     // размер файла
+        //                     $('.modal-export__file-container .modal-export__file-size').text(`${ data.filesize } / ${ data.count } строк`);
+        //                     // дата создания файла
+        //                     $('.modal-export__file-container .modal-export__file-time').text(`${ data.date } в ${ data.time }`);
+        //                 }
+        //             });
+        //         });
+        //     });
+        // }
 
         /* ###################################################################### */
 
         this.callbacks = {
             settings: function() {
-                self.accessRight();
+                // self.accessRight();
                 self.saveConfigSettings();
 
                 // Блок первичных настроек и авторизации
@@ -4142,7 +4448,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             },
             advancedSettings: function() {
                 // показ настроек в разделе Настройки
-                self.advancedSettings();
+                // self.advancedSettings();
             }
         };
         return this;

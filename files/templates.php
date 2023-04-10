@@ -48,7 +48,7 @@
         exit;
     }
 
-    /* ##################################################################### */
+/* ########################################################################################################## */
 
     $hostname = 'localhost';
     $username = 'n108089_andreev';
@@ -59,15 +59,57 @@
     if ($mysqli->connect_errno) die($mysqli->connect_error);
     mysqli_set_charset($mysqli, 'utf8');
 
-    /* ##################################################################### */
+    /* ########################################################################################################## */
 
     // проверка авторизации для запуска таймера
-    if ($_POST['method'] == 'isAuth') {
+    if ($_POST['method'] == 'is_auth') {
         if ($Config->CheckToken()) echo json_encode(true);
         else echo json_encode(false);
     }
 
-    /* ##################################################################### */
+    /* ########################################################################################################## */
+
+    // получение ссылки на проект
+    if ($_REQUEST['method'] == 'get_link_project' && $Config->CheckToken()) include 'timer/get_link_project.php';
+    // обновление ссылки на проект
+    if ($_REQUEST['method'] == 'edit_link_project' && $Config->CheckToken()) include 'timer/edit_link_project.php';
+
+    /* ************************************************************** */
+
+    // отображение запущенных таймеров, или нового
+    if ($_POST['method'] == 'get_timers' && $Config->CheckToken()) include 'timer/get_timers.php';
+    // старт таймера
+    if ($_POST['method'] == 'start_timer' && $Config->CheckToken()) include 'timer/timer_start.php';
+    // авто стоп таймера
+    if ($_POST['method'] == 'auto_stop_timer' && $Config->CheckToken()) include 'timer/timer_auto_stop.php';
+    // пауза таймера
+    if ($_POST['method'] == 'pause_timer' && $Config->CheckToken()) include 'timer/timer_pause.php';
+    // стоп таймера
+    if ($_POST['method'] == 'stop_timer' && $Config->CheckToken()) include 'timer/timer_stop.php';
+
+    /* ************************************************************** */
+
+    // получение контактов сущности
+    if ($_POST['method'] == 'get_clients' && $Config->CheckToken()) include 'timer/get_clients.php';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // получаем ссылку на проект
     if ($_POST['method'] == 'link_project' && $Config->CheckToken()) {
