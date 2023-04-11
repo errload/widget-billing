@@ -13,8 +13,8 @@
 
         // добавляем разницу к таймеру
         $time_work = new DateTime($result['time_work']);
-        $dateInterval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
-        $time_work->add($dateInterval)->format('d.m.Y H:i:s');
+        $date_interval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
+        $time_work->add($date_interval)->format('d.m.Y H:i:s');
 
         // если разница больше суток, дату ставим 23:59:59 как максимальную
         if ($time_work->format('d.m.Y') !== '01.01.2000') {

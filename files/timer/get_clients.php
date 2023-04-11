@@ -1,11 +1,10 @@
 <?php
 
-    include_once 'config.php';
-
     use AmoCRM\Exceptions\AmoCRMApiException;
     use AmoCRM\Models\LeadModel;
     use AmoCRM\Models\Customers\CustomerModel;
 
+    include_once 'config.php';
     $Config = new Config();
 
     // ищем ID сущности в покупателях
@@ -13,6 +12,7 @@
 
     try {
         $customer = $apiClient->customers()->getOne($_POST['essence_ID'], [LeadModel::CONTACTS]);
+        usleep(20000);
     } catch (AmoCRMApiException $e) {}
 
     // если такой сущности нет, ищем в сделках
@@ -21,6 +21,7 @@
 
         try {
             $customer = $apiClient->leads()->getOne($_POST['essence_ID'], [CustomerModel::CONTACTS]);
+            usleep(20000);
         } catch (AmoCRMApiException $e) {}
     }
 
@@ -28,6 +29,7 @@
     if (!$customer) $results = [];
     else {
         $contacts = $customer->getContacts();
+        usleep(20000);
 
         if (!$contacts) $results = [];
         else {
@@ -37,6 +39,7 @@
             foreach ($contacts as $contact) {
                 try {
                     $contact = $apiClient->contacts()->getOne($contact->id);
+                    usleep(20000);
                 } catch (AmoCRMApiException $e) {}
 
                 $results[] = [$contact->getId(), $contact->getName()];

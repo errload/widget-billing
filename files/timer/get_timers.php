@@ -27,8 +27,8 @@
 
             // добавляем разницу к таймеру
             $time_work = new DateTime($result[12]);
-            $dateInterval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
-            $time_work->add($dateInterval)->format('d.m.Y H:i:s');
+            $date_interval = new DateInterval('PT' . $time_diff->h . 'H' . $time_diff->i . 'M' . $time_diff->s . 'S');
+            $time_work->add($date_interval)->format('d.m.Y H:i:s');
 
         } else $time_work = new DateTime($result[12]);
 

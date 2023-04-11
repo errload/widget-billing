@@ -91,6 +91,8 @@
     if ($_POST['method'] == 'pause_timer' && $Config->CheckToken()) include 'timer/timer_pause.php';
     // стоп таймера
     if ($_POST['method'] == 'stop_timer' && $Config->CheckToken()) include 'timer/timer_stop.php';
+    // сохранение таймера
+    if ($_POST['method'] == 'save_timer' && $Config->CheckToken()) include 'timer/timer_save.php';
 
     /* ************************************************************** */
 
