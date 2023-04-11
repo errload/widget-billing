@@ -42,10 +42,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             return deposit_title;
         }
 
-        // очищаем интервалыы
+        // очищаем интервалы
         this.clearIntervals = function () {
             let maxInterval = setInterval(() => {}, 1);
             for (let i = 0; i < maxInterval; i++) clearInterval(i);
+        }
+
+        // отступ снизу
+        this.marginBottom = function (modal) {
+            $(`.${ modal }`).append(`
+                <div style="position: relative; width: 100%;">
+                    <div style="width: 100%; height: 80px; position: absolute;"></div>
+                </div>
+            `);
         }
 
         /**
@@ -208,11 +217,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     <a href="" class="link__add__timer" style="text-decoration: none; color: #1375ab;">
                         Добавить таймер
                     </a>
-
-                    <!-- нижняя граница, чтоб не прижималась к низу -->
-                    <div style="position: absolute; width: 100%; height: 80px;"></div>
                 </div>
             `);
+
+            // отступ снизу
+            self.marginBottom('modal__timer');
 
             // добавление таймера
             $('.modal__timer .link__add__timer').unbind('click');
@@ -301,7 +310,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             let interval = setInterval(() => {
                 // если время максимальное, останавливаем таймер
                 if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
-                    // очищаем интервал
+                    // очищаем интервалы
                     clearInterval(interval);
 
                     // показываем кнопку сохранить
@@ -597,6 +606,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
             addFinishEmploee(); // выбор ответственного
             getClients(); // имя клиента
+            getServices(); // выбор услуги
         }
 
         // выбор ответственного
@@ -652,10 +662,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 },
                 dataType: 'json',
                 success: function (data) {
-                    $.each(data, function () {
-                        clients.push({ id: this[0], option: this[1] });
-                    });
-
+                    $.each(data, function () { clients.push({ id: this[0], option: this[1] }) });
                     clients.push({ id: 'my_option', option: 'Добавить свой вариант' });
 
                     // селект с клиентами
@@ -664,7 +671,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         class_name: 'select__clients'
                     });
 
-                    $('.modal__finish .clients__wrapper span').after(select_clients);
+                    $('.modal__finish .clients__wrapper').append(select_clients);
                     $('.modal__finish .select__clients').css('margin-top', '3px');
                     $('.modal__finish .select__clients .control--select--button').css('width', '100%');
                     $('.modal__finish .select__clients ul').css({
@@ -678,7 +685,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.modal__finish .select__clients ul li').bind('click', function () {
                         // если выбор варианта, вставляем поле ввода
                         if ($(this).find('.control--select--list--item-inner').text().trim() === 'Добавить свой вариант') {
-                            var input_client_name = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                            let input_client_name = Twig({ ref: '/tmpl/controls/input.twig' }).render({
                                 name: 'input-client-name',
                                 class_name: 'input__client__name',
                                 value: '',
@@ -693,6 +700,253 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         }
                     });
                 }
+            });
+        }
+
+        // выбор услуги
+        const getServices = function () {
+            services = [];
+            services.push({ id: 'null', option: 'Выберите оказанную услугу' });
+
+            $('.modal__finish').append(`
+                <div class="services__wrapper" style="width: 100%; margin-top: 20px;">
+                    <span style="width: 100%;">Список оказанных услуг:</span><br/>
+                </div>
+            `);
+
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'get_services'
+                },
+                dataType: 'json',
+                success: function (data) {
+                    $.each(data, function () { services.push({ id: this[0], option: this[1] }) });
+
+                    // селект с клиентами и кнопка редактировать
+                    let rights = null,
+                        select_services = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                            items: services,
+                            class_name: 'select__services'
+                        }),
+                        edit_services_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                            class_name: 'edit__services__btn',
+                            text: 'Редактировать'
+                        });
+
+                    $('.modal__finish .services__wrapper').append(`
+                        <div class="services__flex" style="display: flex; flex-direction: row; padding-top: 3px;">
+                            <div class="services__select" style="width: 70%;">
+                                ${ select_services }
+                            </div>
+                            <div class="services__button" style="width: 30%; text-align: right;">
+                                ${ edit_services_btn }
+                            </div>
+                        </div>
+                    `);
+
+                    $('.modal__finish .select__services .control--select--button').css('width', '100%');
+                    $('.modal__finish .select__services ul').css({
+                        'margin-left': '13px',
+                        'width': 'auto',
+                        'min-width': $('.modal__finish').outerWidth() - 13
+                    });
+
+                    // проверка прав на редактирование
+                    if (self.config_settings.rights && self.config_settings.rights[self.user_ID]) {
+                        rights = self.config_settings.rights[self.user_ID];
+                    }
+
+                    if (!rights || !rights.includes('isEditServices')) {
+                        $('.modal__finish .services__select').css('width', '100%');
+                        $('.modal__finish .services__button').remove();
+                    }
+
+                    // редактирование списка услуг
+                    $('.modal__finish .edit__services__btn').unbind('click');
+                    $('.modal__finish .edit__services__btn').bind('click', function () {
+                        editSerives(services);
+                    });
+                }
+            });
+        }
+
+        // редактирование списка услуг
+        const editSerives = function (services) {
+            new Modal({
+                class_name: 'modal__edit__serives__wrapper',
+                init: function ($modal_body) {
+                    let $this = $(this);
+                    $modal_body
+                        .trigger('modal:loaded')
+                        .html(`
+                            <div class="modal__edit__serives" style="width: 100%; min-height: 450px;">
+                                <h2 class="modal__body__caption head_2" style="margin-bottom: 10px;">
+                                    Редактирование оказанных услуг
+                                </h2>
+                            </div>
+                        `)
+                        .trigger('modal:centrify')
+                        .append('');
+                },
+                destroy: function () {}
+            });
+
+            // ссылка добавления варианта
+            $('.modal__edit__serives').append(`
+                <a href="" class="link__add__service" style="
+                    text-decoration: block; color: #1375ab; margin-top: 10px; margin-left: 3px;">
+                    Добавить вариант
+                </a>
+            `);
+
+            // добавление варианта
+            const add_service = function (id = null, option = null) {
+                let input_edit_service = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'input-edit-service',
+                    class_name: 'input__edit__service',
+                    value: option,
+                    placeholder: 'Вариант',
+                    max_length: 50
+                });
+
+                // вставляем и ровняем поле ввода и кнопку удаления
+                $('.modal__edit__serives .link__add__service').before(`
+                    <div class="select__enums__item" style="margin-bottom: 4px; width: 100%; position: relative;">
+                        <div class="cf-field-enum__remove" title="Удалить" style="width: auto;">
+                            <svg class="svg-icon svg-common--trash-dims"><use xlink:href="#common--trash"></use></svg>
+                        </div>
+                        ${ input_edit_service }
+                    </div>
+                `);
+
+                $('.modal__edit__serives .input__edit__service').css({ 'padding-right': '25px', 'width': '100%' });
+                $('.modal__edit__serives .input__edit__service').attr('data-id', id);
+                $('.cf-field-enum__remove').css({
+                    'position': 'absolute',
+                    'top': '10px',
+                    'left': $('.modal__edit__serives .input__edit__service').outerWidth() - 20,
+                    'cursor': 'pointer'
+                });
+
+                // удаление варианта
+                $('.modal__edit__serives .cf-field-enum__remove').unbind('click');
+                $('.modal__edit__serives .cf-field-enum__remove').bind('click', function (e) {
+                    $(e.target).closest('.select__enums__item').remove();
+                });
+            }
+
+            // выводим ранее сохраненные варианты
+            if (services.length > 1) {
+                $.each(services, function () {
+                    if (this.option === 'Выберите оказанную услугу') return;
+                    add_service(this.id, this.option);
+                });
+            } else add_service();
+
+            // добавление варианта
+            $('.modal__edit__serives .link__add__service').unbind('click');
+            $('.modal__edit__serives .link__add__service').bind('click', function (e) {
+                e.preventDefault();
+
+                if (!$('.modal__edit__serives .input__edit__service').length) add_service();
+                else {
+                    let is_empty_input = false;
+
+                    $.each($('.modal__edit__serives .input__edit__service'), function () {
+                        if (!$(this).val().trim().length) {
+                            $(this).val('').focus();
+                            is_empty_input = true;
+                            return false;
+                        }
+                    });
+
+                    if (!is_empty_input) add_service();
+                }
+            });
+
+            // кнопки Сохранить и Закрыть
+            let save_services_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                    class_name: 'save__services__btn',
+                    text: 'Сохранить'
+                }),
+                close_services_btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                    class_name: 'close__services__btn',
+                    text: 'Закрыть'
+                });
+
+            $('.modal__edit__serives').append(`
+                <div class="modal__body__actions__services" style="width: 100%;">
+                    ${ save_services_btn } ${ close_services_btn }
+                </div>
+            `);
+
+            $('.modal__edit__serives .modal__body__actions__services').css('margin-top', '20px');
+
+            // отступ снизу
+            self.marginBottom('modal__edit__serives');
+            // обновление списка услуг
+            updateServices();
+        }
+
+        // обновление списка услуг
+        const updateServices = function () {
+            $('.modal__edit__serives .save__services__btn').unbind('click');
+            $('.modal__edit__serives .save__services__btn').bind('click', function () {
+                $('.modal__finish .select__services').remove();
+                $('.modal__finish .services__wrapper').css('display', 'none');
+
+                let services = [];
+
+                $.each($('.modal__edit__serives .input__edit__service'), function () {
+                    if (!$(this).val().trim().length) return;
+                    services.push($(this).val().trim());
+                });
+
+                // обновляем список услуг в БД
+                $.ajax({
+                    url: url_link_t,
+                    method: 'POST',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'update_services',
+                        'services': services
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        console.log(data);
+
+                        // services = [];
+                        // services.push({ id: 'null', option: 'Выберите оказанную услугу' });
+                        // $.each(data, function () { services.push({ id: this[0], option: this[1] }) });
+                        //
+                        // var selectServices = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                        //     items: services,
+                        //     class_name: 'modal__select__services'
+                        // });
+                        //
+                        // $('.modal__select__services__wrapper .select').append(selectServices);
+                        // $('.modal__select__services__wrapper').css('display', 'block');
+                        // $('.modal__select__services').css('margin-top', '3px');
+                        // $('.modal__select__services .control--select--button').css('width', '100%');
+                        // $('.modal__select__services ul').css({
+                        //     'margin-left': '13px',
+                        //     'width': 'auto',
+                        //     'min-width': $('.modal__timer__stop').outerWidth() - 13
+                        // });
+                    }
+                });
+
+                //     $('.timer__edit__services').remove();
+                // });
+
+                // // margin-bottom для отступа
+                // $('.modal__body__actions__services').append(`
+                //     <div class="modal__bottom" style="position: absolute; height: 100px; width: 100%;"></div>
+                // `);
+
             });
         }
 
@@ -719,7 +973,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // нажатие на ссылку таймера
                 $('.billing__link').bind('click', function (e) {
                     e.preventDefault();
-                    var interval, services = [], rights = null;
+                    let interval, services = [], rights = null;
 
                     self.getConfigSettings(); // получение настроек
                     self.essense_ID = AMOCRM.data.current_card.id; // ущность
@@ -735,7 +989,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     isAuth(); // проверка авторизации
 
                     // ссылка Истории и кнопка Закрыть
-                    var timer_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                    let timer_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
                         class_name: 'timer__close__Btn',
                         text: 'Закрыть'
                     });

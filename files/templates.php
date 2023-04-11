@@ -67,6 +67,11 @@
         else echo json_encode(false);
     }
 
+    if ($_POST['method'] == 'isAuth') {
+        if ($Config->CheckToken()) echo json_encode(true);
+        else echo json_encode(false);
+    }
+
     /* ########################################################################################################## */
 
     // получение ссылки на проект
@@ -91,6 +96,10 @@
 
     // получение контактов сущности
     if ($_POST['method'] == 'get_clients' && $Config->CheckToken()) include 'timer/get_clients.php';
+    // получение списка услуг
+    if ($_POST['method'] == 'get_services' && $Config->CheckToken()) include 'timer/get_services.php';
+    // обновление списка услуг
+    if ($_POST['method'] == 'update_services' && $Config->CheckToken()) include 'timer/update_services.php';
 
 
 
