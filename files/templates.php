@@ -105,8 +105,10 @@
 
     /* ************************************************************** */
 
-    // получаем сумму депозита
+    // получаем депозит
     if ($_POST['method'] == 'deposit_get' && $Config->CheckToken()) include 'timer/get_deposit.php';
+    // обновляем депозит
+    if ($_POST['method'] == 'update_deposit' && $Config->CheckToken()) include 'timer/update_deposit.php';
 
 
 

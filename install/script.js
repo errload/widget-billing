@@ -22,6 +22,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             if (typeof config_settings !== 'string') config_settings = JSON.stringify(config_settings);
             config_settings = JSON.parse(config_settings);
             self.config_settings = config_settings;
+
+            return config_settings;
         }
 
         // сохраняем настройки
@@ -72,15 +74,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                        <div class="modal__timer" style="width: 100%; min-height: 250px;">
-                            <h2 class="modal__body__caption head_2">Таймер</h2>
-                        </div>
-                    `)
+                            <div class="modal__timer" style="width: 100%; min-height: 250px;">
+                                <h2 class="modal__body__caption head_2">Таймер</h2>
+                            </div>
+                        `)
                             .trigger('modal:centrify')
                             .append('');
                     },
-                    destroy: function () {
-                    }
+                    destroy: function () {}
                 });
             }
 
@@ -138,17 +139,17 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     }
 
                     // проверка прав на редактирование
-                    if (rights && rights.includes('isEditLink')) {
+                    if (rights && rights.includes('is_edit_link')) {
                         $('.modal__timer .link__project__wrapper').append(`
                             <a href="" class="edit__link__project" style="text-decoration: none; color: #6b6d72;">
                                 &nbsp;(изменить)
                             </a>
                         `);
-                    }
 
-                    // редактирование ссылки на проект
-                    $('.modal__timer .edit__link__project').unbind('click');
-                    $('.modal__timer .edit__link__project').bind('click', editLinkProject);
+                        // редактирование ссылки на проект
+                        $('.modal__timer .edit__link__project').unbind('click');
+                        $('.modal__timer .edit__link__project').bind('click', editLinkProject);
+                    }
                 },
                 timeout: 2000
             });
@@ -638,12 +639,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
             $('.modal__finish').append(`
-                <div class="modal__body__actions__stop" style="width: 100%;">
+                <div class="modal__body__actions__timer__finish" style="width: 100%; margin-top: 20px;">
                     ${ finish_save_btn } ${ finish_cancel_btn }
                 </div>
             `);
-
-            $('.modal__body__actions__stop').css('margin-top', '20px');
 
             // сохранение таймера в БД
             timerSave(timer_ID);
@@ -920,12 +919,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
             $('.modal__edit__serives').append(`
-                <div class="modal__body__actions__services" style="width: 100%;">
+                <div class="modal__body__actions__services" style="width: 100%; margin-top: 20px;">
                     ${ save_services_btn } ${ close_services_btn }
                 </div>
             `);
-
-            $('.modal__edit__serives .modal__body__actions__services').css('margin-top', '20px');
 
             // отступ снизу
             self.marginBottom('modal__edit__serives');
@@ -1145,7 +1142,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 new Modal({
                     class_name: 'modal__history__wrapper',
                     init: function ($modal_body) {
-                        var $this = $(this);
+                        let $this = $(this);
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
@@ -1185,12 +1182,36 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                 $('.deposit__wrapper .deposit span').css('margin-top', '8px');
                 $('.deposit__wrapper .deposit div').css('margin-left', '5px');
+                $('.deposit__wrapper .deposit__wrapper__flex').css('margin-bottom', '10px');
 
-                // получаем сумму депозита
+                // получаем депозит
                 getDeposit();
+
+                // кнопка добавления депозита
+                if (rights && rights.includes('is_edit_deposit')) {
+                    $('.deposit__wrapper .deposit').append(`
+                    <div class="deposit__btn__wrapper">
+                        <button type="button" class="button-input add__deposit__btn">
+                            <span class="button-input-inner">
+                                <span class="button-input-inner__text">+</span>
+                            </span>
+                        </button>
+                    </div>
+                `);
+
+                    $('.deposit__wrapper .deposit__btn__wrapper').css('margin-left', '10px');
+                    $('.deposit__wrapper .add__deposit__btn').css('padding', '10px 12px 8px');
+                    $('.deposit__wrapper .add__deposit__btn .button-input-inner__text').css({
+                        'font-size': '18px', 'font-weight': 'normal'
+                    });
+
+                    // добавление депозита
+                    $('.deposit__wrapper .add__deposit__btn').unbind('click');
+                    $('.deposit__wrapper .add__deposit__btn').bind('click', addDeposit);
+                }
             }
 
-        // получаем сумму депозита
+        // получаем депозит
         const getDeposit = function () {
             $.ajax({
                 url: url_link_t,
@@ -1203,6 +1224,135 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 dataType: 'json',
                 success: function (data) { $('.deposit__wrapper .deposit .deposit__sum__int').text(data) },
                 timeout: 2000
+            });
+        }
+
+        // добавление депозита
+        const addDeposit = function () {
+            new Modal({
+                class_name: 'modal__edit__deposit__wrapper',
+                init: function ($modal_body) {
+                    let $this = $(this);
+                    $modal_body
+                        .trigger('modal:loaded')
+                        .html(`
+                            <div class="modal__edit__deposit" style="width: 100%; height: 125px;">
+                                <h2 class="modal__body__caption head_2">Добавление депозита</h2>
+                            </div>
+                        `)
+                        .trigger('modal:centrify')
+                        .append('');
+                },
+                destroy: function () {}
+            });
+
+            // поле ввода депозита
+            let input_deposit = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                name: 'input-deposit',
+                class_name: 'input__deposit',
+                placeholder: 'укажите сумму депозита'
+            });
+
+            $('.modal__edit__deposit').append(input_deposit);
+            $('.modal__edit__deposit .input__deposit').css({ 'width': '100%', 'margin-top': '10px' });
+            $('.modal__edit__deposit .input__deposit').attr('type', 'number');
+            $('.modal__edit__deposit .input__deposit').focus();
+
+            // кнопки сохранить и закрыть
+            let deposit_save_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                    class_name: 'deposit__save__btn button-input_blue',
+                    text: 'Сохранить'
+                }),
+                deposit_cancel_btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                    class_name: 'deposit__cancel__btn',
+                    text: 'Закрыть'
+                });
+
+            $('.modal__edit__deposit').append(`
+                <div class="modal__body__actions__edit__deposit" style="width: 100%; margin-top: 20px;">
+                    ${ deposit_save_btn } ${ deposit_cancel_btn }
+                </div>
+            `);
+
+            // сохранение депозита
+            saveDeposit();
+        }
+
+        // сохранение депозита
+        const saveDeposit = function () {
+            $('.modal__edit__deposit .deposit__save__btn').unbind('click');
+            $('.modal__edit__deposit .deposit__save__btn').bind('click', function () {
+                if (!$('.modal__edit__deposit .input__deposit').val().trim().length) {
+                    $('.modal__edit__deposit .input__deposit').css('border-color', '#f57d7d');
+                    $('.modal__edit__deposit .input__deposit').focus();
+                    return false;
+                }
+
+                // анимация выполнения кнопки
+                $('.modal__edit__deposit .deposit__save__btn').addClass('button-input-loading');
+                $('.modal__edit__deposit .deposit__save__btn').attr('data-loading', 'Y');
+                $('.modal__edit__deposit .deposit__save__btn .button-input-inner').css('display', 'none');
+                $('.modal__edit__deposit .deposit__save__btn').append(`
+                    <div class="button-input__spinner">
+                        <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+                    </div>
+                `);
+                $('.modal__edit__deposit .deposit__save__btn').unbind('click');
+
+                // получаем настройки для поиска поля депозита
+                let deposit_title = self.getDepositTitle(),
+                    deposit = parseInt($('.deposit__wrapper .deposit .deposit__sum__int').text().trim()),
+                    input_deposit = parseInt($('.modal__edit__deposit .input__deposit').val().trim());
+
+                deposit += input_deposit;
+
+                if (input_deposit === 0) $('.modal__edit__deposit__wrapper').remove();
+                else {
+                    // обновляем депозит
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'POST',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'update_deposit',
+                            'essence_ID': self.essense_ID,
+                            'user_ID': AMOCRM.constant('user').id,
+                            'deposit': deposit,
+                            'price': input_deposit,
+                            'deposit_title': deposit_title,
+                            'timezone': AMOCRM.constant('account').timezone
+                        },
+                        dataType: 'json',
+                        success: function (data) {
+                            // // добавляем пополнение депозита в историю
+                            // $('.modal__history__deposit__wrapper').after(`
+                            //     <div class="link__details" data-id="" style="
+                            //         display: flex; flex-direction: row; justify-content: space-between;
+                            //         width: calc(100% - 10px); border-top: 1px solid #c7efc2; border-bottom: 1px solid #c7efc2;
+                            //         margin-bottom: 2px; background: #ECFFEA; padding: 1px 10px; cursor: auto;
+                            //         ">
+                            //         <div>
+                            //             <span class="user__created_at" style="color: #979797; font-size: 13px;">
+                            //                 ${new Date().toLocaleDateString()}
+                            //             </span><br/>
+                            //             <div class="user__title">Пополнение депозита</div>
+                            //         </div>
+                            //         <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
+                            //             <div class="user__sum">${ $('.modal__input__add__deposit').val().trim() }</div>
+                            //             <div class="user_valute">р.</div>
+                            //         </div>
+                            //     </div>
+                            // `);
+
+                            // обновляем значение депозита
+                            getDeposit();
+                            // закрываем окно
+                            $('.modal__edit__deposit__wrapper').remove();
+                        },
+                        timeout: 2000
+                    });
+                }
+
             });
         }
 
@@ -1982,7 +2132,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 `);
 
                 // ссылка в сущности
-                $('.rights__wrapper').append(addRightsCheckox('Редактирование ссылки в сущности', 'is_edit_Link'));
+                $('.rights__wrapper').append(addRightsCheckox('Редактирование ссылки в сущности', 'is_edit_link'));
                 // редактировать список услуг
                 $('.rights__wrapper').append(addRightsCheckox('Редактирование списка в форме на выбор услуги', 'is_edit_services'));
                 // просмотр истории

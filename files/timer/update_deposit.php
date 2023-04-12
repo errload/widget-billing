@@ -5,67 +5,58 @@
     include_once 'config.php';
     $Config = new Config();
 
-    $select = 'SELECT * FROM billing_timer WHERE id = "' . $_POST['timer_ID'] . '"';
-    $result = $mysqli->query($select)->fetch_assoc();
+    // добавляем запись с добавлением депозита в таймер
+    $tz = $_POST['timezone'];
+    $dt = new DateTime('now', new DateTimeZone($tz));
+    $dt->setTimestamp(time());
 
-    // количество минут таймера * стоимость сотрудника
-    $time_start = '01.01.2000 00:00:00';
-    $time_finish = $result['time_work'];
-    $minutes = round(abs(strtotime($time_start) - strtotime($time_finish)) / 60);
-    $price = $minutes * (int) $_POST['price_manager'];
-
-    // время, затраченное на работу
-    $time_work = explode(' ', $result['time_work'])[1];
-
-    // обновляем состояние таймера
-    $charset = mb_detect_encoding($_POST['comment']);
-    $unicode_string = iconv($charset, "UTF-8", $_POST['comment']);
-    $comment = str_ireplace('"', '\"', $unicode_string);
-
-    $update = '
-        UPDATE billing_timer
-        SET user = "' . $_POST['user'] . '",
-            client = "' . $_POST['client'] . '",
-            service = "' . $_POST['service'] . '",
-            comment = "' . $comment . '",
-            price = "' . $price . '",
-            time_work = "' . $time_work . '",
-            status = "finish"
-        WHERE id = "' . $_POST['timer_ID'] . '"
+    $insert = '
+        INSERT INTO billing_timer
+        VALUES(
+            null,
+            "' . $_POST['essence_ID'] . '",
+            "' . $_POST['user_ID'] . '",
+            "Пополнение депозита",
+            "",
+            "",
+            "",
+            "' . $_POST['price'] . '",
+            "",
+            "' . $dt->format('d.m.Y H:i:s') . '",
+            "' . $_POST['timezone'] . '",
+            "",
+            "",
+            "finish",
+            "0"
+        )
     ';
 
-    $mysqli->query($update);
+    $mysqli->query($insert);
 
-    // обновляем депозит
     $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_ID'] . '"';
     $result = $mysqli->query($select);
 
     if (!$result->num_rows) {
         $insert = '
-                INSERT INTO billing_deposit
-                VALUES(
+            INSERT INTO billing_deposit
+            VALUES(
                 null,
-                    "' . $_POST['essence_id'] . '",
-                    0,
-                    ""
+                "' . $_POST['essence_ID'] . '",
+                "' . $_POST['deposit'] . '",
+                ""
             )
         ';
 
         $mysqli->query($insert);
-        $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_ID'] . '"';
-        $result = $mysqli->query($select);
+    } else {
+        $update = '
+            UPDATE billing_deposit
+            SET deposit = "' . $_POST['deposit'] . '"
+            WHERE essence_id = "' . $_POST['essence_ID'] . '"
+        ';
+
+        $mysqli->query($update);
     }
-
-    $result = $result->fetch_assoc();
-    $deposit = (int) $result['deposit'] - $price;
-
-    $update = '
-        UPDATE billing_deposit
-        SET deposit = "' . $deposit . '"
-        WHERE essence_id = "' . $_POST['essence_ID'] . '"
-    ';
-
-    $mysqli->query($update);
 
     // ищем ID сущности в покупателях
     $is_customer = true;
@@ -111,8 +102,7 @@
         if (!$field_ID) return;
 
         // обновляем поле
-        $custom_fields = $Config->SetFieldValue($custom_fields, $field_type, $field_ID, $deposit);
-        usleep(20000);
+        $custom_fields = $Config->SetFieldValue($custom_fields, $field_type, $field_ID, $_POST['deposit']);
 
         if ($is_customer) {
             $apiClient->customers()->updateOne($customer);
