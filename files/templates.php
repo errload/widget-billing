@@ -110,6 +110,11 @@
     // обновляем депозит
     if ($_POST['method'] == 'update_deposit' && $Config->CheckToken()) include 'timer/update_deposit.php';
 
+    /* ************************************************************** */
+
+    // получаем историю
+    if ($_POST['method'] == 'get_history' && $Config->CheckToken()) include 'timer/get_history.php';
+
 
 
 

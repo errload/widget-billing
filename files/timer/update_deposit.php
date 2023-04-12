@@ -58,6 +58,8 @@
         $mysqli->query($update);
     }
 
+    print_r(json_encode([]));
+
     // ищем ID сущности в покупателях
     $is_customer = true;
 
@@ -83,35 +85,33 @@
     $custom_fields = $customer->getCustomFieldsValues();
     usleep(20000);
 
-    // ищем остаток депозита, иначе создаем со значением 0
-    if ($custom_fields) {
-        $field_ID = null;
-        $field_type = null;
+    // ищем остаток депозита
+    if (!$custom_fields) return;
 
-        foreach ($custom_fields as $item) {
-            if (mb_strtolower($item->getFieldName()) === mb_strtolower($_POST['deposit_title'])) {
-                $field_ID = $item->getFieldId();
-                $field_type = $item->getFieldType();
+    $field_ID = null;
+    $field_type = null;
 
-                if ($field_type === 'text') $field_type = 'TextCustomFieldModel';
-                if ($field_type === 'numeric') $field_type = 'NumericCustomFieldModel';
-            }
-        }
+    foreach ($custom_fields as $item) {
+        if (mb_strtolower($item->getFieldName()) === mb_strtolower($_POST['deposit_title'])) {
+            $field_ID = $item->getFieldId();
+            $field_type = $item->getFieldType();
 
-        // если поле не найдено, выходим
-        if (!$field_ID) return;
-
-        // обновляем поле
-        $custom_fields = $Config->SetFieldValue($custom_fields, $field_type, $field_ID, $_POST['deposit']);
-
-        if ($is_customer) {
-            $apiClient->customers()->updateOne($customer);
-            usleep(20000);
-        }
-        else {
-            $apiClient->leads()->updateOne($customer);
-            usleep(20000);
+            if ($field_type === 'text') $field_type = 'TextCustomFieldModel';
+            if ($field_type === 'numeric') $field_type = 'NumericCustomFieldModel';
         }
     }
 
-    print_r(json_encode([]));
+    // если поле не найдено, выходим
+    if (!$field_ID) return;
+
+    // обновляем поле
+    $custom_fields = $Config->SetFieldValue($custom_fields, $field_type, $field_ID, $_POST['deposit']);
+
+    if ($is_customer) {
+        $apiClient->customers()->updateOne($customer);
+        usleep(20000);
+    }
+    else {
+        $apiClient->leads()->updateOne($customer);
+        usleep(20000);
+    }
