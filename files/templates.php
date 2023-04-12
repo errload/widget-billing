@@ -103,6 +103,11 @@
     // обновление списка услуг
     if ($_POST['method'] == 'update_services' && $Config->CheckToken()) include 'timer/update_services.php';
 
+    /* ************************************************************** */
+
+    // получаем сумму депозита
+    if ($_POST['method'] == 'deposit_get' && $Config->CheckToken()) include 'timer/get_deposit.php';
+
 
 
 
