@@ -1,6 +1,6 @@
 // billing
 define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function($, _, Twig, Modal) {
-    var CustomWidget_WidgetBilling = function() {
+    let CustomWidget_WidgetBilling = function() {
         let self = this,
             system = self.system,
             url_link_t = 'https://integratorgroup.k-on.ru/andreev/billing/templates.php';
@@ -72,10 +72,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
-                            <div class="modal__timer" style="width: 100%; min-height: 250px;">
-                                <h2 class="modal__body__caption head_2">Таймер</h2>
-                            </div>
-                        `)
+                        <div class="modal__timer" style="width: 100%; min-height: 250px;">
+                            <h2 class="modal__body__caption head_2">Таймер</h2>
+                        </div>
+                    `)
                             .trigger('modal:centrify')
                             .append('');
                     },
@@ -423,7 +423,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
 
             // показываем актуальную ссылку на задачу, если таймер был запущен ранее
-            if (!link_task) $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val('');
+            if (!link_task) {
+                $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val('');
+                $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).focus();
+            }
             else {
                 $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val(link_task);
                 $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).css('display', 'none');
@@ -455,6 +458,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     return false;
                 }
 
+                // прячем кнопку старт
+                $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'none');
                 // очищаем интервалы
                 self.clearIntervals();
 
@@ -490,7 +495,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         });
 
                         // показываем кнопки паузы и стоп
-                        $(`.timer__item[data-id="${ data.id }"] .timer__start__btn`).css('display', 'none');
                         $(`.timer__item[data-id="${ data.id }"] .timer__pause__btn`).css('display', 'block');
                         $(`.timer__item[data-id="${ data.id }"] .timer__stop__btn`).css('display', 'block');
 
@@ -740,7 +744,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
         }
 
-        // выбор услуги
+        // список услуг услуги
         const getServices = function () {
             let services = [];
             services.push({ id: 'null', option: 'Выберите оказанную услугу' });
@@ -796,7 +800,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         rights = self.config_settings.rights[self.user_ID];
                     }
 
-                    if (!rights || !rights.includes('isEditServices')) {
+                    if (!rights || !rights.includes('is_edit_services')) {
                         $('.modal__finish .services__select').css('width', '100%');
                         $('.modal__finish .services__button').remove();
                     }
@@ -989,9 +993,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 let is_error = false,
                     manager_ID = $('.modal__finish .select__managers .control--select--button').attr('data-value'),
                     entity_url = null,
-                    entity_ID = AMOCRM.data.current_card.id;
+                    entity_ID = AMOCRM.data.current_card.id,
+                    client = null,
+                    service = null;
 
-                // если необходимые поля не выбраны, красим в красный цвет
+                // если обязательные поля не выбраны, красим в красный цвет
                 if ($('.modal__finish .select__managers .control--select--button').text() === 'Выберите ответственного') {
                     $('.modal__finish .select__managers .control--select--button').css('border-color', '#f57d7d');
                     is_error = true;
@@ -1004,19 +1010,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             $('.modal__finish .input__client__name').val().trim()
                         );
                         is_error = true;
-                    }
-                } else {
-                    $('.modal__finish .select__clients .control--select--button')
+                    } else client = $('.modal__finish .input__client__name').val().trim();
+
+                } else if ($('.modal__finish .select__clients').length) {
                     if ($('.modal__finish .select__clients .control--select--button').text() === 'Выберите клиента') {
                         $('.modal__finish .select__clients .control--select--button').css('border-color', '#f57d7d');
                         is_error = true;
-                    }
+                    } else client = $('.modal__finish .select__clients .control--select--button').text().trim();
                 }
 
                 if ($('.modal__finish .select__services .control--select--button').text() === 'Выберите оказанную услугу') {
                     $('.modal__finish .select__services .control--select--button').css('border-color', '#f57d7d');
                     is_error = true;
-                }
+                } else service = $('.modal__finish .select__services .control--select--button').text().trim();
 
                 // возвращаем естесственные цвета в случае изменения
                 $('.modal__finish .select__managers .control--select--button').unbind('click');
@@ -1040,6 +1046,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 // останавливаем кнопку в случае отсутствия обязательного значения
+                if (!client) return false;
+                if (!service) return false;
                 if (is_error) return false;
 
                 // анимация выполнения кнопки
@@ -1075,12 +1083,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         self.price_manager = parseInt(self.price_manager) || 0;
 
                         // получаем настройки для поиска поля депозита
-                        let client = null,
-                            deposit_title = self.getDepositTitle();
-
-                        if ($('.modal__finish .select__clients .control--select--button').length) {
-                            client = $('.modal__finish .select__clients .control--select--button').text();
-                        } else client = $('.modal__finish .input__client__name').val().trim();
+                        let deposit_title = self.getDepositTitle();
 
                         // сохраняем результат в БД
                         $.ajax({
@@ -1094,7 +1097,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 'price_manager': self.price_manager,
                                 'user': $('.modal__finish .select__managers .control--select--button').text(),
                                 'client': client,
-                                'service': $('.modal__finish .select__services .control--select--button').text(),
+                                'service': service,
                                 'comment': $('.modal__finish .comment__service').val().trim(),
                                 'deposit_title': deposit_title
                             },
@@ -1142,6 +1145,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             // модалка таймера
         const modalTimer = function () {
                 // нажатие на ссылку таймера
+                $('.billing__link').unbind('click');
                 $('.billing__link').bind('click', function (e) {
                     e.preventDefault();
                     let interval, services = [], rights = null;
@@ -1178,7 +1182,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                     // отображение кнопки закрыть и ссылки истории
                     $('.modal__timer .timer__close__Btn').css({ 'margin-top': '-7px', 'padding-bottom': '3px' });
-                    if (rights && rights.includes('isShowHistory')) $('.timer__wrapper .right__history').css('display', 'block');
+                    if (rights && rights.includes('is_show_history')) {
+                        $('.modal__timer__wrapper .right__history').css('display', 'block');
+                    }
 
                     // история таймеров
                     $('.modal__timer .hystory__link').unbind('click');
@@ -1191,6 +1197,206 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     getTimers(); // отображение запущенных таймеров, или нового
                 });
             }
+
+        /**
+         *
+         * ****************************************** WIDGET SETTINGS **************************************************
+         *
+         */
+
+        const accessRight = function () {
+            self.getConfigSettings();
+
+            // покупатели
+            var select_fields_rapper = ``;
+            $('.widget_settings_block__controls').before(`
+                <div class="widget_settings_block__item_field customers__wrapper" style="margin-top: 10px;"></div>
+            `);
+
+            // список полей покупателей
+            const getCustomers = function (url) {
+                let customers = [];
+                customers.push({ option: 'Выберите поле' });
+
+                $.ajax({
+                    url: url,
+                    success: function (data) {
+                        $.each(data._embedded.custom_fields, function () {
+                            customers.push({ id: this.id, option: this.name });
+                        });
+
+                        if (data._links.next) getCustomers(data._links.next.href);
+                        else {
+                            let select_customers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                                items: customers,
+                                class_name: 'select__customers'
+                            });
+
+                            $('.widget_settings_block__item_field.customers__wrapper').append(`
+                                <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+                                    Настройка поля для депозита:
+                                </div>
+                                <div class="widget_settings_block__input_field" style="width: 100%;">
+                                    ${ select_customers }
+                                </div>
+                            `);
+
+                            $('.customers__wrapper .select__customers .control--select--button').css('width', '100%');
+                            $('.customers__wrapper .select__customers ul').css({
+                                'margin-left': '13px',
+                                'width': '100%',
+                                'min-width': $('.customers__wrapper').outerWidth() - 13
+                            });
+
+                            // если ранее значение было, отмечаем
+                            if (self.config_settings.deposit_title && self.config_settings.deposit_title.length) {
+                                $.each($('.customers__wrapper ul li'), function () {
+                                    if ($(this).hasClass('control--select--list--item-selected')) {
+                                        $(this).removeClass('control--select--list--item-selected');
+                                    }
+
+                                    if ($(this).find('span').text().trim() === self.config_settings.deposit_title) {
+                                        $(this).addClass('control--select--list--item-selected');
+                                        $('.control--select--button-inner').text(self.config_settings.deposit_title);
+                                    }
+                                });
+                            }
+
+                            // обновляем права пользователя
+                            $('.customers__wrapper .select__customers ul li').unbind('click');
+                            $('.customers__wrapper .select__customers ul li').bind('click', function () {
+                                if (!self.config_settings.deposit_title) self.config_settings.deposit_title = '';
+
+                                let deposit_title = $(this).find('span').text().trim();
+                                if (deposit_title === 'Выберите поле') deposit_title = '';
+
+                                self.config_settings.deposit_title = deposit_title;
+                                self.saveConfigSettings();
+                            });
+                        }
+                    },
+                    timeout: 5000
+                });
+            }
+
+            getCustomers('/api/v4/customers/custom_fields?limit=50');
+
+            // список активных пользователей
+            let managers = [], checkbox;
+            managers.push({ option: 'Выберите пользователя' });
+
+            $.each(AMOCRM.constant('managers'), function () {
+                if (!this.active) return;
+                managers.push({ id: this.id, option: this.title });
+            });
+
+            var select_managers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                items: managers,
+                class_name: 'select__managers'
+            });
+
+            $('.widget_settings_block__controls').before(`
+                <div class="widget_settings_block__item_field managers__wrapper" style="margin-top: 10px;">
+                    <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+                        Настройка прав пользователей:
+                    </div>
+                    <div class="widget_settings_block__input_field" style="width: 100%;">
+                        ${ select_managers }
+                    </div>
+                </div>
+            `);
+
+            $('.managers__wrapper .select__managers .control--select--button').css('width', '100%');
+            $('.managers__wrapper .select__managers ul').css({
+                'margin-left': '13px',
+                'width': '100%',
+                'min-width': $('.managers__wrapper').outerWidth() - 13
+            });
+
+            // выбор пользователя
+            $('.managers__wrapper .select__managers ul li').unbind('click');
+            $('.managers__wrapper .select__managers ul li').bind('click', function () {
+                let manager_ID = $(this).attr('data-value');
+
+                // очищаем перед запуском чекбоксы
+                $('.rights__wrapper').remove();
+                if ($(this).find('span').text() === 'Выберите пользователя') return;
+
+                // ддобавление чекбокса
+                const addRightsCheckox = function (value, data_value) {
+                    let rights_checkox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
+                        class_name: 'rights__checkox',
+                        checked: false,
+                        value: value,
+                        input_class_name: 'rights__checkox__item',
+                        name: 'rights-checkox',
+                        text: value,
+                        dataValue: data_value
+                    });
+
+                    return rights_checkox;
+                }
+
+                $('.widget_settings_block__controls').before(`
+                    <div class="rights__wrapper" style="width: 100%; margin-top: 10px;"></div>
+                `);
+
+                // ссылка в сущности
+                $('.rights__wrapper').append(addRightsCheckox('Редактирование ссылки в сущности', 'is_edit_Link'));
+                // редактировать список услуг
+                $('.rights__wrapper').append(addRightsCheckox('Редактирование списка в форме на выбор услуги', 'is_edit_services'));
+                // просмотр истории
+                $('.rights__wrapper').append(addRightsCheckox('Просмотр истории выполненных задач в сущности', 'is_show_history'));
+                // редактирование истории
+                $('.rights__wrapper').append(addRightsCheckox('Редактирование истории', 'is_edit_history'));
+                // редактирование депозита
+                $('.rights__wrapper').append(addRightsCheckox('Редактирование депозита', 'is_edit_deposit'));
+
+                // выравниваем чекбоксы
+                $('.rights__wrapper .rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
+
+                // если ранее были отмечены, отображаем
+                if (self.config_settings.rights) {
+                    $.each(self.config_settings.rights, function (key, value) {
+                        if (key !== manager_ID) return;
+                        let rights = self.config_settings.rights[manager_ID];
+
+                        $.each($('.rights__wrapper .rights__checkox'), function () {
+                            var value = $(this).find('.rights__checkox__item').attr('data-value');
+
+                            if (rights.includes(value)) {
+                                $(this).addClass('is-checked');
+                                $(this).trigger('click');
+                            }
+                        });
+                    });
+                }
+
+                // обновляем права пользователя
+                $('.rights__wrapper .rights__checkox').unbind('change');
+                $('.rights__wrapper .rights__checkox').bind('change', function () {
+                    // если ранее не был отмечен, создаем
+                    if (!self.config_settings.rights) self.config_settings.rights = {};
+                    let rights = [];
+
+                    // обновляем список выбранных вариантов
+                    $.each($('.rights__wrapper .rights__checkox'), function () {
+                        if ($(this).hasClass('is-checked')) rights.push(
+                            $(this).find('.rights__checkox__item').attr('data-value')
+                        );
+                    });
+
+                    self.config_settings.rights[manager_ID] = rights;
+                    self.saveConfigSettings();
+                });
+            });
+        }
+
+        /**
+         *
+         * ****************************************** SETTINGS FILTER **************************************************
+         *
+         */
 
 
 
@@ -2321,201 +2527,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         //
         //
         //
-        // // настройка прав доступа
-        // this.accessRight = function () {
-        //     self.getConfigSettings();
-        //
-        //     // div для полей покупателей
-        //     var select_fields_rapper = `<div class="widget_settings_block__item_field select__fields__wrapper" style="margin-top: 10px;"></div>`;
-        //     $('.widget_settings_block__controls').before(select_fields_rapper);
-        //
-        //     // список полей покупателей
-        //     const ajaxFields = function (url) {
-        //         let fields = [];
-        //         fields.push({ option: 'Выберите поле' });
-        //
-        //         $.ajax({
-        //             url: url,
-        //             success: function (data) {
-        //                 $.each(data._embedded.custom_fields, function () {
-        //                     fields.push({ id: this.id, option: this.name });
-        //                 });
-        //
-        //                 if (data._links.next) ajaxFields(data._links.next.href);
-        //                 else {
-        //                     // селект с полями
-        //                     var select_fields = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-        //                         items: fields,
-        //                         class_name: 'select__fields'
-        //                     });
-        //
-        //                     $('.select__fields__wrapper').append(`
-        //                         <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
-        //                             Настройка поля для депозита:
-        //                         </div>
-        //                         <div class="widget_settings_block__input_field" style="width: 100%;">
-        //                             ${ select_fields }
-        //                         </div>
-        //                     `);
-        //
-        //                     $('.select__managers__wrapper .control--select--button').css('width', '100%');
-        //                     $('.select__managers__wrapper ul').css({
-        //                         'margin-left': '13px',
-        //                         'width': '100%',
-        //                         'min-width': $('.select__managers__wrapper').outerWidth() - 13
-        //                     });
-        //
-        //                     // если ранее значение было, отмечаем
-        //                     if (self.config_settings.deposit_title && self.config_settings.deposit_title.length) {
-        //                         $.each($('.select__fields__wrapper ul li'), function () {
-        //                             if ($(this).hasClass('control--select--list--item-selected')) {
-        //                                 $(this).removeClass('control--select--list--item-selected');
-        //                             }
-        //
-        //                             if ($(this).find('span').text().trim() === self.config_settings.deposit_title) {
-        //                                 $(this).addClass('control--select--list--item-selected');
-        //                                 $('.control--select--button-inner').text(self.config_settings.deposit_title);
-        //                             }
-        //                         });
-        //                     }
-        //
-        //                     // обновляем права пользователя
-        //                     $('.select__fields__wrapper ul li').unbind('click');
-        //                     $('.select__fields__wrapper ul li').bind('click', function () {
-        //                         if (!self.config_settings.deposit_title) self.config_settings.deposit_title = '';
-        //
-        //                         let deposit_title = $(this).find('span').text().trim();
-        //                         if (deposit_title === 'Выберите поле') deposit_title = '';
-        //
-        //                         self.config_settings.deposit_title = deposit_title;
-        //                         self.saveConfigSettings();
-        //                     });
-        //                 }
-        //             },
-        //             timeout: 5000
-        //         });
-        //     }
-        //
-        //     ajaxFields('/api/v4/customers/custom_fields?limit=50');
-        //
-        //     // список активных пользователей
-        //     var managers = [], checkbox;
-        //     managers.push({ option: 'Выберите пользователя' });
-        //
-        //     $.each(AMOCRM.constant('managers'), function () {
-        //         if (!this.active) return;
-        //         managers.push({ id: this.id, option: this.title });
-        //     });
-        //
-        //     // селект с пользователями
-        //     var selectManagers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-        //         items: managers,
-        //         class_name: 'select__managers'
-        //     });
-        //
-        //     var selectManagersWrapper = `
-        //         <div class="widget_settings_block__item_field select__managers__wrapper" style="margin-top: 10px;">
-        //             <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
-        //                 Настройка прав пользователей:
-        //             </div>
-        //             <div class="widget_settings_block__input_field" style="width: 100%;">
-        //                 ${ selectManagers }
-        //             </div>
-        //         </div>
-        //     `;
-        //
-        //     $('.widget_settings_block__controls').before(selectManagersWrapper);
-        //     $('.select__managers__wrapper .control--select--button').css('width', '100%');
-        //     $('.select__managers__wrapper ul').css({
-        //         'margin-left': '13px',
-        //         'width': '100%',
-        //         'min-width': $('.select__managers__wrapper').outerWidth() - 13
-        //     });
-        //
-        //     // выбор пользователя
-        //     $('.select__managers__wrapper ul li').unbind('click');
-        //     $('.select__managers__wrapper ul li').bind('click', function () {
-        //         var managerID = $(this).attr('data-value');
-        //
-        //         // очищаем перед запуском чекбоксы
-        //         $('.modal__rights__checkox__wrapper').remove();
-        //         $('.input__price__wrapper').remove();
-        //         if ($(this).find('span').text() === 'Выберите пользователя') {
-        //             $('.modal__rights__checkox__wrapper').remove();
-        //             $('.input__price__wrapper').remove();
-        //             return;
-        //         }
-        //
-        //         // ддобавление чекбокса
-        //         const addCheckbox = function (value, dataValue) {
-        //             checkbox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
-        //                 class_name: 'modal__rights__checkox',
-        //                 checked: false,
-        //                 value: value,
-        //                 input_class_name: 'modal__rights__checkox__item',
-        //                 name: 'modal-rights--checkox',
-        //                 text: value,
-        //                 dataValue: dataValue
-        //             });
-        //
-        //             return checkbox;
-        //         }
-        //
-        //         checkboxWrapper = '<div class="modal__rights__checkox__wrapper" style="width: 100%; margin-top: 10px;"></div>';
-        //         $('.widget_settings_block__controls').before(checkboxWrapper);
-        //
-        //         // ссылка в сущности
-        //         var isEditLink = addCheckbox('Редактирование ссылки в сущности', 'isEditLink');
-        //         $('.modal__rights__checkox__wrapper').append(isEditLink);
-        //         // список в форме на выбор услуги
-        //         var isEditServices = addCheckbox('Редактирование списка в форме на выбор услуги', 'isEditServices');
-        //         $('.modal__rights__checkox__wrapper').append(isEditServices);
-        //         // смотреть историю выполненных задач в сущности
-        //         var isShowHistory = addCheckbox('Просмотр истории выполненных задач в сущности', 'isShowHistory');
-        //         $('.modal__rights__checkox__wrapper').append(isShowHistory);
-        //         // редактирование истории
-        //         var isEditHistory = addCheckbox('Редактирование истории', 'isEditHistory');
-        //         $('.modal__rights__checkox__wrapper').append(isEditHistory);
-        //         // редактирование депозита
-        //         var isEditDeposit = addCheckbox('Редактирование депозита', 'isEditDeposit');
-        //         $('.modal__rights__checkox__wrapper').append(isEditDeposit);
-        //         // выравниваем чекбоксы
-        //         $('.modal__rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
-        //
-        //         // если ранее были отмечены, отображаем
-        //         if (self.config_settings.rights) {
-        //             $.each(self.config_settings.rights, function (key, value) {
-        //                 if (key !== managerID) return;
-        //                 var rights = self.config_settings.rights[managerID];
-        //
-        //                 $.each($('.modal__rights__checkox'), function () {
-        //                     var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
-        //                     if (rights.includes(value)) {
-        //                         $(this).addClass('is-checked');
-        //                         $(this).trigger('click');
-        //                     }
-        //                 });
-        //             });
-        //         }
-        //
-        //         // обновляем права пользователя
-        //         $('.modal__rights__checkox').unbind('change');
-        //         $('.modal__rights__checkox').bind('change', function () {
-        //             // если ранее не был отмечен, создаем
-        //             if (!self.config_settings.rights) self.config_settings.rights = {};
-        //             var rights = [];
-        //
-        //             // обновляем список выбранных вариантов
-        //             $.each($('.modal__rights__checkox'), function () {
-        //                 var value = $(this).find('.modal__rights__checkox__item').attr('data-value');
-        //                 if ($(this).hasClass('is-checked')) rights.push(value);
-        //             });
-        //
-        //             self.config_settings.rights[managerID] = rights;
-        //             self.saveConfigSettings();
-        //         });
-        //     });
-        // }
+
         //
         //
         //
@@ -4232,8 +4244,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         this.callbacks = {
             settings: function() {
-                // self.accessRight();
+                accessRight();
                 self.saveConfigSettings();
+
+                // $(`#${ self.get_settings().widget_code }_custom`).val('');
+                // $(`#${ self.get_settings().widget_code }_custom`).trigger('change');
 
                 // Блок первичных настроек и авторизации
                 var _settings = self.get_settings();

@@ -71,7 +71,7 @@
     $is_customer = true;
 
     try {
-        $customer = $apiClient->customers()->getOne($_POST['essence_id']);
+        $customer = $apiClient->customers()->getOne($_POST['essence_ID']);
         usleep(20000);
     } catch (AmoCRMApiException $e) {}
 
@@ -80,7 +80,7 @@
         $is_customer = false;
 
         try {
-            $customer = $apiClient->leads()->getOne($_POST['essence_id']);
+            $customer = $apiClient->leads()->getOne($_POST['essence_ID']);
             usleep(20000);
         } catch (AmoCRMApiException $e) {}
     }
