@@ -122,6 +122,8 @@
     if ($_POST['method'] == 'get_history_filter' && $Config->CheckToken()) include 'timer/get_history_filter.php';
     // поиск таймера по ID
     if ($_POST['method'] == 'get_timer' && $Config->CheckToken()) include 'timer/get_timer.php';
+    // обновление истории
+    if ($_POST['method'] == 'update_history' && $Config->CheckToken()) include 'timer/update_history.php';
 
 
 
