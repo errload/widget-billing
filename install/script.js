@@ -1225,6 +1225,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             </div>
                         `);
 
+                        // обновлям итого и средний расход за 30 дней
                         let IDs = [];
                         $.each(data, function () {
                             if (this[3] === 'Пополнение депозита') return;
@@ -1246,7 +1247,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 method: 'POST',
                 data: {
                     'domain': document.domain,
-                    'method': 'getHistoryResultsSum',
+                    'method': 'get_history_results_sum',
                     'IDs': IDs
                 },
                 dataType: 'json',
@@ -1257,14 +1258,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
         }
 
-        // средний расход
+        // средний расход за 30 дней
         const getHistoryConsumptionSum = function (IDs) {
             $.ajax({
                 url: url_link_t,
                 method: 'POST',
                 data: {
                     'domain': document.domain,
-                    'method': 'getHistoryConsumptionSum',
+                    'method': 'get_history_consumption_sum',
                     'IDs': IDs
                 },
                 dataType: 'json',
@@ -1613,25 +1614,162 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         //     /* ###################################################################### */
         //
         //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
 
+
+        // фильтр поиска
+        const historyFilter = function () {
+            $('.modal__history .link__filter').unbind('click');
+            $('.modal__history .link__filter').bind('click', function (e) {
+                e.preventDefault();
+
+                // модалка фильтра
+                new Modal({
+                    class_name: 'modal__filter__wrapper',
+                    init: function ($modal_body) {
+                        var $this = $(this);
+                        $modal_body
+                            .trigger('modal:loaded')
+                            .html(`
+                                <div class="modal__filter" style="width: 100%; height: 160px;">
+                                    <h2 class="modal__body__caption__filter head_2">Фильтр поиска</h2>
+                                </div>
+                            `)
+                            .trigger('modal:centrify')
+                            .append('');
+                    },
+                    destroy: function () {}
+                });
+
+                // даты от - до
+                let input_filter_from = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
+                        // class_name: 'modal__filter__input__from',
+                        input_class: 'input__filter__from',
+                        value: '',
+                        placeholder: 'введите значение от:'
+                    }),
+                    input_filter_to = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
+                        // class_name: 'modal__filter__input__to',
+                        input_class: 'input__filter__to',
+                        value: '',
+                        placeholder: 'введите значение до:'
+                    });
+
+                $('.modal__filter').append(`
+                    <div class="input__filter__wrapper" style="width: 100%; margin-top: 20px;">
+                        <span style="width: 100%;">Введите дату поиска (от - до):</span><br/>
+                        <div class="input__filter__flex" style="
+                            display: flex; flex-direction: row; width: 100%; margin-top: 3px;">
+                            <div class="date_from">${ input_filter_from }</div>
+                            <div style="padding: 8px 10px 0; color: #dbdedf;">-</div>
+                            <div class="date_to">${ input_filter_to }</div>
+                        </div>
+                    </div>
+                `);
+
+                // кнопки Показать, Закрыть
+                let filter_save_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                        class_name: 'filter__save__btn',
+                        text: 'Показать'
+                    }),
+                    filter_cancel_btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                        class_name: 'filter__cancel__btn',
+                        text: 'Закрыть'
+                    });
+
+                $('.modal__filter').append(`
+                    <div class="modal__body__actions__filter" style="width: 100%; margin-top: 20px;">
+                        ${ filter_save_btn } ${ filter_cancel_btn }
+                    </div>
+                `);
+
+                // интервал истории по фильтру
+                getHistoryFilter();
+            });
+        }
+
+        // поиск истории по фильтру
+        const getHistoryFilter = function () {
+            $('.modal__filter .filter__save__btn').unbind('click');
+            $('.modal__filter .filter__save__btn').bind('click', function () {
+                let filter_from = $('.modal__filter .input__filter__from'),
+                    filter_to = $('.modal__filter .input__filter__to'),
+                    isErrorFilter = false;
+
+                if (!filter_from.val().length) {
+                    filter_from.css('border-color', '#f37575');
+                    isErrorFilter = true;
+                }
+
+                if (!filter_to.val().length) {
+                    filter_to.css('border-color', '#f37575');
+                    isErrorFilter = true;
+                }
+
+                // возвращаем естесственные цвета
+                filter_from.unbind('click');
+                filter_from.bind('click', function () { filter_from.css('border-color', '#dbdedf') });
+
+                filter_to.unbind('click');
+                filter_to.bind('click', function () { filter_to.css('border-color', '#dbdedf') });
+
+                if (isErrorFilter) return false;
+
+                // поиск таймеров по фильтру
+                $.ajax({
+                    url: url_link_t,
+                    method: 'POST',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'get_history_filter',
+                        'essence_ID': self.essense_ID,
+                        'filter_from': filter_from.val().trim(),
+                        'filter_to': filter_to.val().trim(),
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        let IDs = [];
+
+                        // очищаем прежний вывод
+                        if ($('.modal__history .history__details').length) $('.modal__history .history__details').remove();
+                        if ($('.modal__history .filter__no__result').length) $('.modal__history .filter__no__result').remove();
+                        if ($('.modal__history .filter__title').length) $('.modal__history .filter__title').remove();
+
+                        if (!data || !data.length) {
+                            $('.modal__history .deposit__wrapper').after(`
+                                <div class="filter__no__result" style="
+                                    width: 100%; text-align: center; padding: 30px 0 10px;">
+                                    Таймеров не найдено
+                                </div>
+                            `);
+                        } else {
+                            $.each(data, function () {
+                                // добавляем таймер
+                                addHistoryItem(this)
+
+                                // обновлям итого и средний расход за 30 дней
+                                if (this[3] === 'Пополнение депозита') return;
+                                IDs.push(this[0]);
+                            });
+                        }
+
+                        // обновлям итого и средний расход за 30 дней
+                        getHistoryResultsSum(IDs);
+                        getHistoryConsumptionSum(IDs);
+
+                        // добавляем надпись фильтра дат
+                        $('.modal__history .deposit__wrapper').after(`
+                            <div class="filter__title" style="
+                                width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
+                                Фильтр таймеров с ${ filter_from.val() }г. по ${ filter_to.val() }г.:
+                            </div>
+                        `);
+
+                        // закрываем окно
+                        $('.modal__filter__wrapper').remove();
+                    }
+                });
+            });
+        }
 
         // история таймеров
         const timerHistory = function (e) {
@@ -1711,6 +1849,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 $('.deposit__wrapper .add__deposit__btn').unbind('click');
                 $('.deposit__wrapper .add__deposit__btn').bind('click', addDeposit);
             }
+
+            // фильтр поиска
+            historyFilter();
 
             // ссылка экспорта и кнопка закрыть
             let history_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
