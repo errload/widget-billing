@@ -1137,6 +1137,53 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
          *
          */
 
+        // добавление записи в историю
+        const addHistoryItem = function (item) {
+            let history_ID = item[0],
+                history_created_at = item[9].split(' ')[0],
+                history_user = item[3],
+                history_price = item[7];
+
+            $('.modal__history .deposit__wrapper').after(`
+                <div class="history__details" data-id="${ history_ID }" style="
+                    display: flex; flex-direction: row; justify-content: space-between;
+                    width: calc(100% - 10px); border-top: 1px solid #dbdedf; 
+                    border-bottom: 1px solid #dbdedf; margin-bottom: 2px; background: #fcfcfc;
+                    padding: 1px 10px; cursor: pointer;">
+                    <div>
+                        <span class="history__created__at" style="color: #979797; font-size: 13px;">
+                            ${ history_created_at }
+                        </span><br/>
+                        <div class="history__user">${ history_user }</div>
+                    </div>
+                    <div class="history__price" style="
+                        display: flex; flex-direction: row; align-items: center;">
+                        <div class="history__price__int">${ history_price }</div>
+                        <div class="history__price__valute">&nbsp;р.</div>
+                    </div>
+                </div>
+            `);
+
+            // если это пополнение депозита, красим строку и убираем курсор
+            if (history_user === 'Пополнение депозита') {
+                $(`.history__details[data-id="${ history_ID }"]`).css({
+                    'cursor': 'auto', 'background': '#ECFFEA',
+                    'border-top': '1px solid #c7efc2', 'border-bottom': '1px solid #c7efc2'
+                });
+            } else {
+                // иначе просмотр истории по ID
+                $(`.history__details[data-id="${ history_ID }"]`).unbind('click');
+                $(`.history__details[data-id="${ history_ID }"]`).bind('click', function () {
+                    historyDetails(history_ID);
+                });
+            }
+        }
+
+        // просмотр истории по ID
+        const historyDetails = function (history_ID) {
+            console.log(history_ID);
+        }
+
         // получаем историю
         const getHistory = function () {
             $.ajax({
@@ -1157,61 +1204,23 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             </div>
                         `);
                     } else {
-                        $.each(data, function () {
-                            let history_ID = this[0],
-                                history_created_at = this[9].split(' ')[0],
-                                history_user = this[3],
-                                history_price = this[7];
-
-                            $('.modal__history .deposit__wrapper').after(`
-                                <div class="history__details" data-id="${ history_ID }" style="
-                                    display: flex; flex-direction: row; justify-content: space-between;
-                                    width: calc(100% - 10px); border-top: 1px solid #dbdedf; 
-                                    border-bottom: 1px solid #dbdedf; margin-bottom: 2px; background: #fcfcfc;
-                                    padding: 1px 10px; cursor: pointer;">
-                                    <div>
-                                        <span class="history__created__at" style="color: #979797; font-size: 13px;">
-                                            ${ history_created_at }
-                                        </span><br/>
-                                        <div class="history__user">${ history_user }</div>
-                                    </div>
-                                    <div class="history__price" style="
-                                        display: flex; flex-direction: row; align-items: center;">
-                                        <div class="history__price__int">${ history_price }</div>
-                                        <div class="history__price__valute">р.</div>
-                                    </div>
-                                </div>
-                            `);
-
-                            // если это пополнение депозита, красим строку и убираем курсор
-                            if (history_user === 'Пополнение депозита') {
-                                $(`.history__details[data-id="${ history_ID }"]`).css({
-                                    'cursor': 'auto', 'background': '#ECFFEA',
-                                    'border-top': '1px solid #c7efc2', 'border-bottom': '1px solid #c7efc2'
-                                });
-                            }
-                        });
-
-                        $('.modal__history .history__details').unbind('click');
-                        $('.modal__history .history__details').bind('click', function () {
-                            console.log('click');
-                        });
+                        $.each(data, function () { addHistoryItem(this) });
 
                         // итоговая сумма истории и средний расход по списанию
                         $('.modal__history').append(`
                             <div class="itogo" style="padding-bottom: 30px;
-                                font-style: italic; margin-top: 15px; display: flex; justify-content: space-between;">
-                                <div class="consumption__sum__title" style="
-                                    width: 100%; display: flex; flex-direction: row; justify-content: left;">
-                                    Средний расход:&nbsp;
-                                    <div class="consumption__sum__int">0</div>
-                                    <div class="consumption__sum__valute">р.</div>
-                                </div>
+                                font-style: italic; margin-top: 15px; display: flex; flex-direction: column;">
                                 <div class="results__sum__title" style=" 
                                     width: 100%; display: flex; flex-direction: row; justify-content: right;">
                                     Итого:&nbsp;
                                     <div class="results__sum__int">0</div>
-                                    <div class="results__sum__valute">р.</div>
+                                    <div class="results__sum__valute">&nbsp;р.</div>
+                                </div>
+                                <div class="consumption__sum__title" style="
+                                    width: 100%; display: flex; flex-direction: row; justify-content: right;">
+                                    Средний расход за последние 30 дней:&nbsp;
+                                    <div class="consumption__sum__int">0</div>
+                                    <div class="consumption__sum__valute">&nbsp;р.</div>
                                 </div>
                             </div>
                         `);
@@ -1264,222 +1273,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 },
                 timeout: 2000
             });
-        }
-
-        //     $.ajax({
-        //         url: url_link_t,
-        //         method: 'post',
-        //         data: {
-        //             'domain': document.domain,
-        //             'method': 'hystory',
-        //             'essence_id': essenseID
-        //         },
-        //         dataType: 'json',
-        //         success: function (data) {
-        //             if ($('.history__no__result').length) $('.history__no__result').remove();
-        //
-        //             if (!data) {
-        //                 $('.result__sum').text('Итого: 0р.');
-        //                 $('.modal__history__deposit__wrapper').after(`
-        //                     <div class="history__no__result" style="
-        //                         width: 100%; text-align: center; padding: 30px 0 10px;">
-        //                         Таймеров не найдено.
-        //                     </div>
-        //                 `);
-        //             }
-        //
-        //             // добавляем историю таймеров (дата, ответственный, сумма)
-        //             $.each(data, function () {
-        //                 var history_id = this[0],
-        //                     history_created_at = this[1].split(' ')[0],
-        //                     history_user = this[2],
-        //                     history_price = this[3];
-        //
-        //                 var historyItem = `
-        //                     <div class="link__details" data-id="${ history_id }" style="
-        //                         display: flex;
-        //                         flex-direction: row;
-        //                         justify-content: space-between;
-        //                         width: calc(100% - 10px);
-        //                         border-top: 1px solid #dbdedf;
-        //                         border-bottom: 1px solid #dbdedf;
-        //                         margin-bottom: 2px;
-        //                         background: #fcfcfc;
-        //                         padding: 1px 10px;
-        //                         cursor: pointer;
-        //                         ">
-        //                         <div>
-        //                             <span class="user__created_at" style="color: #979797; font-size: 13px;">
-        //                                 ${ history_created_at }
-        //                             </span><br/>
-        //                             <div class="user__title">${ history_user }</div>
-        //                         </div>
-        //                         <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
-        //                             <div class="user__sum">${ history_price }</div>
-        //                             <div class="user_valute">р.</div>
-        //                         </div>
-        //                     </div>
-        //                 `;
-        //
-        //                 $('.modal__timer__history').append(historyItem);
-        //                 $('.link__details').unbind('click');
-        //                 $('.link__details').bind('click', self.showDetails);
-        //             });
-        //
-        //             // красим пополнение депозита в зеленый цвет
-        //             if ($('.modal__timer__history .link__details').length) {
-        //                 $.each($('.modal__timer__history .link__details'), function () {
-        //                     if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
-        //
-        //                     $(this).unbind('click');
-        //                     $(this).css({
-        //                         'border-top': '1px solid #c7efc2',
-        //                         'border-bottom': '1px solid #c7efc2',
-        //                         'background': '#ECFFEA',
-        //                         'cursor': 'auto'
-        //                     });
-        //                 });
-        //             }
-        //
-        //             // итоговая сумма истории
-        //             $('.modal__timer__history').append(`<div class="x__bottom"></div>`);
-        //             self.resultSum();
-        //
-        //             // отступ снизу
-        //             $('.modal__timer__history').append('<div style="height: 30px;"></div>');
-        //         }
-        //     });
-        //
-        //     /* ###################################################################### */
-        //
-        //     // кнопка Закрыть
-        //     hystoryCancelBtn = `
-        //         <a href="#" class="hystory__cancel__btn" style="
-        //             text-decoration: none;
-        //             color: #92989b;
-        //             font-size: 14px;
-        //             font-weight: bold;
-        //             top: 3px;
-        //             right: 0;
-        //             position: absolute;
-        //         ">Закрыть</a>
-        //     `;
-        //
-        //     $('.modal__timer__history').append(hystoryCancelBtn);
-        //     $('.hystory__cancel__btn').bind('click', function (e) {
-        //         e.preventDefault();
-        //         $('.timer__history').remove();
-        //     });
-        // }
-
-        // история таймеров
-        const timerHistory = function (e) {
-            e.preventDefault();
-
-            // права доступа
-            let rights = null;
-            rights = getRights();
-
-            // запуск модалки истории
-            new Modal({
-                class_name: 'modal__history__wrapper',
-                init: function ($modal_body) {
-                    let $this = $(this);
-                    $modal_body
-                        .trigger('modal:loaded')
-                        .html(`
-                            <div class="modal__history" style="width: 100%; height: 600px;">
-                                <h2 class="modal__body__caption head_2">История таймеров</h2>
-                            </div>
-                        `)
-                        .trigger('modal:centrify')
-                        .append('');
-                },
-                destroy: function () {}
-            });
-
-            $('.modal__history__wrapper .modal-body').css('overflow', 'auto');
-            $('.modal__history').css('position', 'relative');
-
-            // сумма депозита
-            $('.modal__history').append(`
-                <div class="deposit__wrapper" style="width: 100%; margin-top: 20px;">
-                    <div class="deposit__wrapper__flex" style="display: flex; flex-direction: row;">
-                        <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
-                            <span>Сумма депозита:</span>
-                            <div class="deposit__sum" style="margin-top: 8px;">
-                                <span class="deposit__sum__int">0</span>р.
-                            </div>
-                        </div>
-                        <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
-                            <a href="" class="link__filter" style="
-                                text-decoration: none; color: #1375ab; word-break: break-all;">
-                                Фильтр
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `);
-
-            $('.deposit__wrapper .deposit span').css('margin-top', '8px');
-            $('.deposit__wrapper .deposit div').css('margin-left', '5px');
-            $('.deposit__wrapper .deposit__wrapper__flex').css('margin-bottom', '10px');
-
-            // получаем депозит
-            getDeposit();
-
-            // кнопка добавления депозита
-            if (rights && rights.includes('is_edit_deposit')) {
-                $('.deposit__wrapper .deposit').append(`
-                    <div class="deposit__btn__wrapper">
-                        <button type="button" class="button-input add__deposit__btn">
-                            <span class="button-input-inner">
-                                <span class="button-input-inner__text">+</span>
-                            </span>
-                        </button>
-                    </div>
-                `);
-
-                $('.deposit__wrapper .deposit__btn__wrapper').css('margin-left', '10px');
-                $('.deposit__wrapper .add__deposit__btn').css('padding', '10px 12px 8px');
-                $('.deposit__wrapper .add__deposit__btn .button-input-inner__text').css({
-                    'font-size': '18px', 'font-weight': 'normal'
-                });
-
-                // добавление депозита
-                $('.deposit__wrapper .add__deposit__btn').unbind('click');
-                $('.deposit__wrapper .add__deposit__btn').bind('click', addDeposit);
-            }
-
-            // ссылка экспорта и кнопка закрыть
-            let history_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                class_name: 'history__close__Btn',
-                text: 'Закрыть'
-            });
-
-            $('.modal__history').append(`
-                <div class="right__title" style="
-                    height: 25px; position: absolute; right: 0; top: 0; margin-top: 5px; 
-                    display: flex; flex-direction: row; padding-top: -3px;">
-                    <div class="right__export" style="
-                        padding-right: 12px; border-right: 1px solid #dbdedf;">
-                        <a href="" class="export__link" style="text-decoration: none; color: #1375ab;">
-                            Экспорт
-                        </a>
-                    </div>
-                    <div class="right__close" style="padding-left: 5px; margin-top: -4px;">
-                        ${ history_close_Btn }
-                    </div>
-                </div>
-            `);
-
-            $('.modal__history .hystory__cancel__btn').bind('click', function (e) {
-                e.preventDefault();
-                $('.modal__history').remove();
-            });
-
-            // получаем историю
-            getHistory();
         }
 
         // получаем депозит
@@ -1595,26 +1388,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         },
                         dataType: 'json',
                         success: function (data) {
-                            // // добавляем пополнение депозита в историю
-                            // $('.modal__history__deposit__wrapper').after(`
-                            //     <div class="link__details" data-id="" style="
-                            //         display: flex; flex-direction: row; justify-content: space-between;
-                            //         width: calc(100% - 10px); border-top: 1px solid #c7efc2; border-bottom: 1px solid #c7efc2;
-                            //         margin-bottom: 2px; background: #ECFFEA; padding: 1px 10px; cursor: auto;
-                            //         ">
-                            //         <div>
-                            //             <span class="user__created_at" style="color: #979797; font-size: 13px;">
-                            //                 ${new Date().toLocaleDateString()}
-                            //             </span><br/>
-                            //             <div class="user__title">Пополнение депозита</div>
-                            //         </div>
-                            //         <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
-                            //             <div class="user__sum">${ $('.modal__input__add__deposit').val().trim() }</div>
-                            //             <div class="user_valute">р.</div>
-                            //         </div>
-                            //     </div>
-                            // `);
-
+                            // добавляем пополнение депозита в историю
+                            addHistoryItem(data);
                             // обновляем значение депозита
                             getDeposit();
                             // закрываем окно
@@ -1857,6 +1632,116 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         //
         //
 
+
+        // история таймеров
+        const timerHistory = function (e) {
+            e.preventDefault();
+
+            // права доступа
+            let rights = null;
+            rights = getRights();
+
+            // запуск модалки истории
+            new Modal({
+                class_name: 'modal__history__wrapper',
+                init: function ($modal_body) {
+                    let $this = $(this);
+                    $modal_body
+                        .trigger('modal:loaded')
+                        .html(`
+                            <div class="modal__history" style="width: 100%; height: 600px;">
+                                <h2 class="modal__body__caption head_2">История таймеров</h2>
+                            </div>
+                        `)
+                        .trigger('modal:centrify')
+                        .append('');
+                },
+                destroy: function () {}
+            });
+
+            $('.modal__history__wrapper .modal-body').css('overflow', 'auto');
+            $('.modal__history').css('position', 'relative');
+
+            // сумма депозита
+            $('.modal__history').append(`
+                <div class="deposit__wrapper" style="width: 100%; margin-top: 20px;">
+                    <div class="deposit__wrapper__flex" style="display: flex; flex-direction: row;">
+                        <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
+                            <span>Сумма депозита:</span>
+                            <div class="deposit__sum" style="margin-top: 8px;">
+                                <span class="deposit__sum__int">0</span>&nbsp;р.
+                            </div>
+                        </div>
+                        <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
+                            <a href="" class="link__filter" style="
+                                text-decoration: none; color: #1375ab; word-break: break-all;">
+                                Фильтр
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            $('.deposit__wrapper .deposit span').css('margin-top', '8px');
+            $('.deposit__wrapper .deposit div').css('margin-left', '5px');
+            $('.deposit__wrapper .deposit__wrapper__flex').css('margin-bottom', '10px');
+
+            // получаем депозит
+            getDeposit();
+
+            // кнопка добавления депозита
+            if (rights && rights.includes('is_edit_deposit')) {
+                $('.deposit__wrapper .deposit').append(`
+                    <div class="deposit__btn__wrapper">
+                        <button type="button" class="button-input add__deposit__btn">
+                            <span class="button-input-inner">
+                                <span class="button-input-inner__text">+</span>
+                            </span>
+                        </button>
+                    </div>
+                `);
+
+                $('.deposit__wrapper .deposit__btn__wrapper').css('margin-left', '10px');
+                $('.deposit__wrapper .add__deposit__btn').css('padding', '10px 12px 8px');
+                $('.deposit__wrapper .add__deposit__btn .button-input-inner__text').css({
+                    'font-size': '18px', 'font-weight': 'normal'
+                });
+
+                // добавление депозита
+                $('.deposit__wrapper .add__deposit__btn').unbind('click');
+                $('.deposit__wrapper .add__deposit__btn').bind('click', addDeposit);
+            }
+
+            // ссылка экспорта и кнопка закрыть
+            let history_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                class_name: 'history__close__Btn',
+                text: 'Закрыть'
+            });
+
+            $('.modal__history').append(`
+                <div class="right__title" style="
+                    height: 25px; position: absolute; right: 0; top: 0; margin-top: 5px; 
+                    display: flex; flex-direction: row; padding-top: -3px;">
+                    <div class="right__export" style="
+                        padding-right: 12px; border-right: 1px solid #dbdedf;">
+                        <a href="" class="export__link" style="text-decoration: none; color: #1375ab;">
+                            Экспорт
+                        </a>
+                    </div>
+                    <div class="right__close" style="padding-left: 5px; margin-top: -4px;">
+                        ${ history_close_Btn }
+                    </div>
+                </div>
+            `);
+
+            $('.modal__history .hystory__cancel__btn').bind('click', function (e) {
+                e.preventDefault();
+                $('.modal__history').remove();
+            });
+
+            // получаем историю
+            getHistory();
+        }
 
         /*
          *

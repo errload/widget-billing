@@ -33,6 +33,17 @@
 
     $mysqli->query($insert);
 
+    // для возврата значения пополнения истории
+    $insert_ID = $mysqli->insert_id;
+    $insert_ID = 'SELECT * FROM billing_timer WHERE id = "' . $insert_ID . '"';
+    $insert_ID = $mysqli->query($insert_ID)->fetch_assoc();
+
+    $results[0] = $insert_ID['id'];
+    $results[3] = $insert_ID['user'];
+    $results[7] = $insert_ID['price'];
+    $results[9] = $insert_ID['created_at'];
+
+    // обновляем депозит
     $select = 'SELECT * FROM billing_deposit WHERE essence_id = "' . $_POST['essence_ID'] . '"';
     $result = $mysqli->query($select);
 
@@ -58,7 +69,7 @@
         $mysqli->query($update);
     }
 
-    print_r(json_encode([]));
+    print_r(json_encode($results));
 
     // ищем ID сущности в покупателях
     $is_customer = true;
