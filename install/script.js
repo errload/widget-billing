@@ -625,10 +625,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $modal_body
                         .trigger('modal:loaded')
                         .html(`
-                        <div class="modal__finish" style="width: 100%; min-height: 385px;">
-                            <h2 class="modal__body__caption head_2">Сохранение таймера</h2>
-                        </div>
-                    `)
+                            <div class="modal__finish" style="width: 100%; min-height: 385px;">
+                                <h2 class="modal__body__caption head_2">Сохранение таймера</h2>
+                            </div>
+                        `)
                         .trigger('modal:centrify')
                         .append('');
                 },
@@ -1149,10 +1149,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 },
                 dataType: 'json',
                 success: function (data) {
-                    console.log(data);
-
                     if (!data.length) {
-                        // $('.result__sum').text('Итого: 0р.');
                         $('.modal__history').append(`
                             <div class="history__no__results" style="
                                 width: 100%; text-align: center; padding: 30px 0 10px;">
@@ -1193,13 +1190,77 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                     'border-top': '1px solid #c7efc2', 'border-bottom': '1px solid #c7efc2'
                                 });
                             }
-
-                            $('.modal__history .history__details').unbind('click');
-                            $('.modal__history .history__details').bind('click', function () {
-                                console.log('click');
-                            });
                         });
+
+                        $('.modal__history .history__details').unbind('click');
+                        $('.modal__history .history__details').bind('click', function () {
+                            console.log('click');
+                        });
+
+                        // итоговая сумма истории и средний расход по списанию
+                        $('.modal__history').append(`
+                            <div class="itogo" style="padding-bottom: 30px;
+                                font-style: italic; margin-top: 15px; display: flex; justify-content: space-between;">
+                                <div class="consumption__sum__title" style="
+                                    width: 100%; display: flex; flex-direction: row; justify-content: left;">
+                                    Средний расход:&nbsp;
+                                    <div class="consumption__sum__int">0</div>
+                                    <div class="consumption__sum__valute">р.</div>
+                                </div>
+                                <div class="results__sum__title" style=" 
+                                    width: 100%; display: flex; flex-direction: row; justify-content: right;">
+                                    Итого:&nbsp;
+                                    <div class="results__sum__int">0</div>
+                                    <div class="results__sum__valute">р.</div>
+                                </div>
+                            </div>
+                        `);
+
+                        let IDs = [];
+                        $.each(data, function () {
+                            if (this[3] === 'Пополнение депозита') return;
+                            IDs.push(this[0]);
+                        });
+
+                        getHistoryResultsSum(IDs);
+                        getHistoryConsumptionSum(IDs);
                     }
+                },
+                timeout: 2000
+            });
+        }
+
+        // итого
+        const getHistoryResultsSum = function (IDs) {
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'getHistoryResultsSum',
+                    'IDs': IDs
+                },
+                dataType: 'json',
+                success: function (data) {
+                    $('.modal__history .itogo .results__sum__int').text(data);
+                },
+                timeout: 2000
+            });
+        }
+
+        // средний расход
+        const getHistoryConsumptionSum = function (IDs) {
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'getHistoryConsumptionSum',
+                    'IDs': IDs
+                },
+                dataType: 'json',
+                success: function (data) {
+                    $('.modal__history .itogo .consumption__sum__int').text(data);
                 },
                 timeout: 2000
             });
@@ -1327,10 +1388,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $modal_body
                         .trigger('modal:loaded')
                         .html(`
-                        <div class="modal__history" style="width: 100%; height: 600px;">
-                            <h2 class="modal__body__caption head_2">История таймеров</h2>
-                        </div>
-                    `)
+                            <div class="modal__history" style="width: 100%; height: 600px;">
+                                <h2 class="modal__body__caption head_2">История таймеров</h2>
+                            </div>
+                        `)
                         .trigger('modal:centrify')
                         .append('');
                 },
@@ -1347,7 +1408,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         <div class="deposit" style="width: 80%; display: flex; flex-direction: row;">
                             <span>Сумма депозита:</span>
                             <div class="deposit__sum" style="margin-top: 8px;">
-                                <span class="deposit__sum__int" style="font-weight: bold;">0</span> р.
+                                <span class="deposit__sum__int">0</span>р.
                             </div>
                         </div>
                         <div class="filter" style="width: 20%; text-align: right; padding-top: 7px;">
@@ -1398,9 +1459,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
             $('.modal__history').append(`
                 <div class="right__title" style="
-                    height: 22px; position: absolute; right: 0; top: 0; margin-top: 5px; 
-                    display: flex; flex-direction: row;">
-                    <div class="right__export" style="padding-right: 12px; border-right: 1px solid #dbdedf;">
+                    height: 25px; position: absolute; right: 0; top: 0; margin-top: 5px; 
+                    display: flex; flex-direction: row; padding-top: -3px;">
+                    <div class="right__export" style="
+                        padding-right: 12px; border-right: 1px solid #dbdedf;">
                         <a href="" class="export__link" style="text-decoration: none; color: #1375ab;">
                             Экспорт
                         </a>
@@ -1418,8 +1480,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
             // получаем историю
             getHistory();
-            // отступ снизу
-            self.marginBottom('modal__history');
         }
 
         // получаем депозит
@@ -1830,18 +1890,18 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 });
 
                 $('.modal__timer').append(`
-                        <div class="right__title" style="
-                            position: absolute; right: 23px; margin-top: -20px; display: flex; flex-direction: row;">
-                            <div class="right__history" style="
-                                padding-right: 12px; border-right: 1px solid #dbdedf; display: none;">
-                                <a href="" class="hystory__link" style="text-decoration: none; color: #1375ab;">История</a>
-                            </div>
-                            <div class="right__close" style="padding-left: 5px;">${ timer_close_Btn }</div>
+                    <div class="right__title" style="
+                        position: absolute; right: 23px; margin-top: -20px; display: flex; flex-direction: row;">
+                        <div class="right__history" style="
+                            padding-right: 12px; border-right: 1px solid #dbdedf; display: none;">
+                            <a href="" class="hystory__link" style="text-decoration: none; color: #1375ab;">История</a>
                         </div>
-                    `);
+                        <div class="right__close" style="margin-top: -7px; padding-left: 5px; padding-top: 3px;">
+                            ${ timer_close_Btn }
+                        </div>
+                    </div>
+                `);
 
-                // отображение кнопки закрыть и ссылки истории
-                $('.modal__timer .timer__close__Btn').css({ 'margin-top': '-7px', 'padding-bottom': '3px' });
                 if (rights && rights.includes('is_show_history')) {
                     $('.modal__timer__wrapper .right__history').css('display', 'block');
                 }

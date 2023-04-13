@@ -114,6 +114,10 @@
 
     // получаем историю
     if ($_POST['method'] == 'get_history' && $Config->CheckToken()) include 'timer/get_history.php';
+    // итоговая сумма истории
+    if ($_POST['method'] == 'getHistoryResultsSum' && $Config->CheckToken()) include 'timer/getHistoryResultsSum.php';
+    // средний расход по списанию
+    if ($_POST['method'] == 'getHistoryConsumptionSum' && $Config->CheckToken()) include 'timer/getHistoryConsumptionSum.php';
 
 
 
