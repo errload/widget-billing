@@ -1179,9 +1179,831 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             }
         }
 
+        // редактирование истории
+        const editHistoryDetails = function (history_ID) {
+            let title = null;
+
+            $('.modal__details .details__edit__btn').unbind('click');
+            $('.modal__details .details__edit__btn').bind('click', function () {
+                // показываем кнопку сохранить
+                $('.modal__details .details__edit__btn').css('display', 'none');
+                $('.modal__details .details__save__btn').css({ 'display': 'block', 'margin-left': '0'});
+
+                // ответственный
+                let input_user_details_item = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'input-user-details-item', class_name: 'input__user__details__item',
+                    value: '', placeholder: 'введите имя ответственного'
+                });
+
+                title = $('.modal__details .user__details__item').text().trim();
+                $('.modal__details .user__details__item').text('');
+                $('.modal__details .user__details__item').append(input_user_details_item);
+                $('.modal__details .input__user__details__item').val(title);
+                $('.modal__details .input__user__details__item').css('width', '100%');
+                $(`.modal__details .title__user__details__item`).css('padding-top', '19px');
+
+                // имя клиента
+                let input_client_details_item = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'input-client-details-item', class_name: 'input__client__details__item',
+                    value: '', placeholder: 'введите имя клиента'
+                });
+
+                title = $('.modal__details .client__details__item').text().trim();
+                $('.modal__details .client__details__item').text('');
+                $('.modal__details .client__details__item').append(input_client_details_item);
+                $('.modal__details .input__client__details__item').val(title);
+                $('.modal__details .input__client__details__item').css('width', '100%');
+                $(`.modal__details .title__client__details__item`).css('padding-top', '19px');
+
+                // оказанная услуга
+                let input_service_details_item = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'input-service-details-item', class_name: 'input__service__details__item',
+                    value: '', placeholder: 'введите оказанную услугу'
+                });
+
+                title = $('.modal__details .service__details__item').text().trim();
+                $('.modal__details .service__details__item').text('');
+                $('.modal__details .service__details__item').append(input_service_details_item);
+                $('.modal__details .input__service__details__item').val(title);
+                $('.modal__details .input__service__details__item').css('width', '100%');
+                $(`.modal__details .title__service__details__item`).css('padding-top', '19px');
+
+                // комментарий
+                let input_comment_details_item = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
+                    name: 'input-comment-details-item',
+                    class_name: 'input__comment__details__item',
+                    placeholder: 'введите комментарий'
+                });
+
+                title = $('.modal__details .comment__details__item').text().trim();
+                $('.modal__details .comment__details__item').text('');
+                $('.modal__details .comment__details__item').append(input_comment_details_item);
+                $('.modal__details .input__comment__details__item').val(title);
+                $('.modal__details .input__comment__details__item').css('width', '100%');
+                $(`.modal__details .title__comment__details__item`).css('padding-top', '19px');
+
+                // стоимость работы
+                let input_price_details_item = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'input-price-details-item', class_name: 'input__price__details__item',
+                    value: '', placeholder: 'введите стоимость работы'
+                });
+
+                title = $('.modal__details .price__details__item').text().trim();
+                $('.modal__details .price__details__item').text('');
+                $('.modal__details .price__details__item').append(input_price_details_item);
+                $('.modal__details .input__price__details__item').val(title);
+                $('.modal__details .input__price__details__item').css('width', '100%');
+                $(`.modal__details .title__price__details__item`).css('padding-top', '19px');
+
+                // ссылка на задачу
+                let input_link_task_details_item = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                    name: 'input-link-task-details-item', class_name: 'input__link__task__details__item',
+                    value: '', placeholder: 'введите ссылку на задачу'
+                });
+
+                title = $('.modal__details .link__task__details__item').text().trim();
+                $('.modal__details .link__task__details__item').text('');
+                $('.modal__details .link__task__details__item').append(input_link_task_details_item);
+                $('.modal__details .input__link__task__details__item').val(title);
+                $('.modal__details .input__link__task__details__item').css('width', '100%');
+                $(`.modal__details .title__link__task__details__item`).css('padding-top', '19px');
+
+                // время работы
+                title = $('.modal__details .time__work__details__item').text().trim();
+                $('.time__work__details__item').text('');
+
+                $('.modal__details .value.time__work__details__item').append(`
+                    <input type="time" 
+                        name="input-time-work-details-item" 
+                        class="input__time__work__details__item text-input" 
+                        placeholder="введите время работы"
+                        value="${ title }"
+                        step="2"
+                    />
+                `);
+
+                $('.input__time__work__details__item').css('width', '100%');
+                $('.title__time__work__details__item').css('padding-top', '19px');
+                $('.modal__details .is__change__time__work').css('padding-top', '19px');
+
+                // обновление истории
+                updateHistoryDetails(history_ID);
+            });
+        }
+
+        // обновление истории
+        const updateHistoryDetails = function (history_ID) {
+            $('.modal__details .details__save__btn').unbind('click');
+            $('.modal__details .details__save__btn').bind('click', function () {
+                let user = $('.modal__details .input__user__details__item'),
+                    client = $('.modal__details .input__client__details__item'),
+                    service = $('.modal__details .input__service__details__item'),
+                    comment = $('.modal__details .input__comment__details__item'),
+                    price = $('.modal__details .input__price__details__item'),
+                    link_task = $('.modal__details .input__link__task__details__item'),
+                    time_work = $('.modal__details .input__time__work__details__item'),
+                    is_error = false,
+                    entity_url = null,
+                    entity_ID = AMOCRM.data.current_card.id;
+
+                // проверка поля на пустое значение
+                const isEmptyInput = function (value) {
+                    if (!value.val().trim().length) {
+                        value.val('').focus();
+                        value.css('border-color', '#f37575');
+                        is_error = true;
+                    } else value.css('border-color', '#dbdedf');
+                }
+
+                // красим поля в случае ошибки
+                isEmptyInput(link_task);
+                isEmptyInput(price);
+                isEmptyInput(comment);
+                isEmptyInput(service);
+                isEmptyInput(client);
+                isEmptyInput(user);
+                isEmptyInput(time_work);
+
+                // в случае ошибки останавливаем кнопку
+                if (is_error) return false;
+
+                // анимация выполнения кнопки
+                $('.modal__details .details__save__btn').addClass('button-input-loading');
+                $('.modal__details .details__save__btn').attr('data-loading', 'Y');
+                $('.modal__details .details__save__btn .button-input-inner').css('display', 'none');
+                $('.modal__details .details__save__btn').append(`
+                    <div class="button-input__spinner">
+                        <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+                    </div>
+                `);
+                $('.modal__details .details__save__btn').unbind('click');
+
+                // поиск цены сотрудника в кастомных полях
+                if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
+                if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
+
+
+
+
+                // // сохранение истории
+                // $('.modal__saveEditBtn__details').unbind('click');
+                // $('.modal__saveEditBtn__details').bind('click', function () {
+                //
+                //     $.ajax({
+                //         url: entity_url,
+                //         method: 'get',
+                //         success: function (data) {
+                //             if (!data.custom_fields_values) return;
+                //
+                //             $.each(data.custom_fields_values, function () {
+                //                 // если не сотрудник истории, пропускаем
+                //                 if (this.field_name !== user.val().trim()) return;
+                //                 // цена сотрудника
+                //                 self.price_manager = this.values[0].value;
+                //             });
+                //
+                //             // преобразуем в число
+                //             self.price_manager = parseInt(self.price_manager) || 0;
+                //
+                //             // считаем разницу во времени
+                //             new_time = time_work.val();
+                //             old_time = time_edit;
+                //             price = parseInt(price.val()) || 0;
+                //
+                //             // если время было изменено
+                //             if (new_time !== old_time) {
+                //                 // считаем разницу во времени
+                //                 const getDate = function (date) {
+                //                     return new Date(0, 0, 0, date.split(':')[0], date.split(':')[1], date.split(':')[2]);
+                //                 }
+                //
+                //                 // если новая дата больше старой, прибавляем к стоимости работы, иначе онимаем
+                //                 if (getDate(new_time) > getDate(old_time)) {
+                //                     price += ((getDate(new_time) - getDate(old_time)) / 60000) * self.price_manager;
+                //                 } else if (getDate(new_time) < getDate(old_time)) {
+                //                     price -= ((getDate(old_time) - getDate(new_time)) / 60000) * self.price_manager;
+                //                 }
+                //             }
+                //
+                //             // получаем настройки для поиска поля депозита
+                //             let deposit_title = self.getDepositTitle();
+                //
+                //             // обновляем данные в БД
+                //             $.ajax({
+                //                 url: url_link_t,
+                //                 method: 'post',
+                //                 data: {
+                //                     'domain': document.domain,
+                //                     'method': 'edit_history_details',
+                //                     'history_id': historyID,
+                //                     'essence_id': AMOCRM.data.current_card.id,
+                //                     'user': $('.modal__input__user__edit__details').val(),
+                //                     'client': $('.modal__input__client__edit__details').val(),
+                //                     'service': $('.modal__input__service__edit__details').val(),
+                //                     'price': price,
+                //                     'link_task': $('.modal__input__link__task__edit__details').val(),
+                //                     'time_work': $('.modal__input__time_work__edit__details').val(),
+                //                     'comment': $('.modal__textarea__comment__edit__details').val().trim(),
+                //                     'deposit_title': deposit_title
+                //                 },
+                //                 dataType: 'json',
+                //                 success: function (data) {
+                //                     var timer = data[0];
+                //                     var deposit = data[1];
+                //
+                //                     // обновляем сумму депозита
+                //                     $('.deposit .deposit__sum__int').text(deposit);
+                //
+                //                     // обновляем историю
+                //                     $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
+                //                     $(`.link__details[data-id="${ timer.id }"] .user__price .user__sum`).text(timer.price);
+                //
+                //                     // обновляем детализацию
+                //                     $('.modal__input__user__edit__details').remove();
+                //                     $('.modal__input__client__edit__details').remove();
+                //                     $('.modal__input__service__edit__details').remove();
+                //                     $('.modal__textarea__comment__edit__details').remove();
+                //                     $('.modal__input__price__edit__details').remove();
+                //                     $('.modal__input__link__task__edit__details').remove();
+                //                     $('.modal__input__time_work__edit__details').remove();
+                //
+                //                     $('.user__details__item').text(timer.user);
+                //                     $('.client__details__item').text(timer.client);
+                //                     $('.service__details__item').text(timer.service);
+                //                     $('.comment__details__item').text(timer.comment);
+                //                     $('.price__details__item').text(timer.price + 'р.');
+                //                     $('.link__task__details__item').html(`
+                //                         <a href="${ timer.link_task }" target="_blank" style="
+                //                             text-decoration: none; color: #1375ab; word-break: break-all;
+                //                         ">${ timer.link_task }</a>
+                //                     `);
+                //                     $('.time_work__details__item').text(timer.time_work);
+                //
+                //                     $(`.title__user__details__item`).css('padding-top', '10px');
+                //                     $(`.title__client__details__item`).css('padding-top', '10px');
+                //                     $(`.title__service__details__item`).css('padding-top', '10px');
+                //                     $(`.title__comment__details__item`).css('padding-top', '10px');
+                //                     $(`.title__price__details__item`).css('padding-top', '10px');
+                //                     $(`.title__link__task__details__item`).css('padding-top', '10px');
+                //                     $(`.time_work__details__item`).css('padding-top', '10px');
+                //                     $(`.title.title__time_work__details__item`).css('padding-top', '10px');
+                //
+                //                     // если время изменено, показываем блок "(изменено)"
+                //                     if (timer.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
+                //
+                //                     // меняем итоговую сумму внизу истории
+                //                     price = 0;
+                //
+                //                     $.each($('.user__price .user__sum'), function () {
+                //                         price += parseInt($(this).text());
+                //                     });
+                //
+                //                     $('.result__sum .result__price').text(price);
+                //                     time_edit = $('.time_work__details__item').text().trim();
+                //
+                //                     $('.modal__editBtn__details').css('display', 'block');
+                //                     $('.modal__saveEditBtn__details').css('display', 'none');
+                //                 }
+                //             });
+                //
+                //             self.price_manager = 0;
+                //         },
+                //         timeout: 2000
+                //     });
+                //
+                // });
+            });
+        }
+
         // просмотр истории по ID
         const historyDetails = function (history_ID) {
-            console.log(history_ID);
+            // модалка таймера
+            new Modal({
+                class_name: 'modal__details__wrapper',
+                init: function ($modal_body) {
+                    let $this = $(this);
+                    $modal_body
+                        .trigger('modal:loaded')
+                        .html(`
+                            <div class="modal__details" data-id="${ history_ID }" style="width: 100%; min-height: 550px;">
+                                <h2 class="modal-body__caption__details head_2" style="margin-bottom: 20px;">
+                                    Детализация
+                                </h2>
+                            </div>
+                        `)
+                        .trigger('modal:centrify')
+                        .append('');
+                },
+                destroy: function () {}
+            });
+
+            // поиск таймера по ID
+            $.ajax({
+                url: url_link_t,
+                method: 'post',
+                data: {
+                    'domain': document.domain,
+                    'method': 'get_timer',
+                    'history_ID': history_ID
+                },
+                dataType: 'json',
+                success: function (data) {
+                    let rights = getRights();
+
+                    // добавляем элементы истории
+                    const addHistoryItem = function (title, value, class_item = '') {
+                        $('.modal__details').append(`
+                            <div class="details_flex" style="
+                                display: flex; flex-direction: row; background: #fcfcfc; border-top: 1px solid #dbdedf;
+                                border-bottom: 1px solid #dbdedf; margin-bottom: 2px;">
+                                <div class="title title__${ class_item }" style="
+                                    width: 200px; text-align: right; padding: 10px; color: #92989b;">
+                                    ${ title }
+                                </div>
+                                <div class="value ${ class_item }" style="
+                                    width: 100%; padding: 10px 10px 10px 0; word-wrap: break-word; max-width: 280px;">
+                                    ${ value }
+                                </div>
+                            </div>
+                        `);
+                    }
+
+                    addHistoryItem('Дата таймера', data.created_at.split(' ')[0] + 'г.');
+                    addHistoryItem('Ответственный', data.user, 'user__details__item');
+                    addHistoryItem('Имя клиента', data.client, 'client__details__item');
+                    addHistoryItem('Оказанная услуга', data.service, 'service__details__item');
+                    addHistoryItem('Комментарий', data.comment, 'comment__details__item');
+                    addHistoryItem('Стоимость работы', data.price + 'р.', 'price__details__item');
+                    addHistoryItem(
+                        'Ссылка на задачу',
+                        `
+                            <a href="${ data.link_task }" target="_blank" style="
+                                text-decoration: none; color: #1375ab; word-break: break-all;">
+                                ${ data.link_task }
+                            </a>
+                        `,
+                        'link__task__details__item'
+                    );
+                    addHistoryItem('Время работы', data.time_work, 'time__work__details__item');
+
+                    $('.modal__details .value.time__work__details__item').css('width', '50%');
+                    $('.modal__details .value.time__work__details__item').after(`
+                        <div class="is__change__time__work" style="
+                            width: calc(50% - 30px); padding: 10px; text-align: right; color: #92989b;">
+                        </div>
+                    `);
+
+                    // если время изменено, показываем блок "(изменено)"
+                    if (data.is_change_time != 0) $('.modal__details .is__change__time__work').text('(изменено)');
+
+                    // права на редактирование истории
+                    if (rights && rights.includes('is_edit_history')) {
+                        // кнопки редактировать, сохранить
+                        let details_edit_btn = Twig({ref: '/tmpl/controls/button.twig'}).render({
+                                class_name: 'details__edit__btn',
+                                text: 'Редактировать'
+                            }),
+                            details_save_btn = Twig({ref: '/tmpl/controls/button.twig'}).render({
+                                class_name: 'details__save__btn button-input_blue',
+                                text: 'Сохранить'
+                            });
+
+                        editBtnWrapper = `<div class="modal__body__actions__details" style="width: 100%;"></div>`;
+
+                        $('.modal__details').append(`
+                            <div class="modal__body__actions__details" style="width: 100%;">
+                                ${ details_edit_btn } ${ details_save_btn }
+                            </div>
+                        `);
+
+                        $('.modal__details .details__save__btn').css('display', 'none');
+                        $('.modal__details .modal__body__actions__details').css('margin-top', '10px');
+
+                        // редактирование истории
+                        editHistoryDetails(data.id);
+                        // отступ снизу
+                        self.marginBottom('modal__details');
+                    }
+                },
+                timeout: 2000
+            });
+
+            // кнопка закрыть
+            let details_close_btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                class_name: 'details__close__btn',
+                text: 'Закрыть'
+            });
+
+            $('.modal__details').append(`
+                <div class="details__close" style="position: absolute; right: 20px; top: 27px;">
+                    ${ details_close_btn }
+                </div>
+            `);
+
+
+
+
+
+            //     $.ajax({
+            //         url: url_link_t,
+            //         method: 'post',
+            //         data: {
+            //             'domain': document.domain,
+            //             'method': 'history_details',
+            //             'history_id': historyID
+            //         },
+            //         dataType: 'json',
+            //         success: function (data) {
+            //             addHistoryItem('Дата таймера', data.created_at.split(' ')[0] + 'г.');
+            //             addHistoryItem('Ответственный', data.user, 'user__details__item');
+            //             addHistoryItem('Имя клиента', data.client, 'client__details__item');
+            //             addHistoryItem('Оказанная услуга', data.service, 'service__details__item');
+            //             addHistoryItem('Комментарий', data.comment, 'comment__details__item');
+            //             addHistoryItem('Стоимость работы', data.price + 'р.', 'price__details__item');
+            //             addHistoryItem('Ссылка на задачу', `
+            //                 <a href="${ data.link_task }" target="_blank" style="
+            //                     text-decoration: none; color: #1375ab; word-break: break-all;
+            //                 ">${ data.link_task }</a>
+            //             `, 'link__task__details__item');
+            //             addHistoryItem('Время работы', data.time_work, 'time_work__details__item');
+            //
+            //             $('.value.time_work__details__item').css('width', '50%');
+            //             $('.value.time_work__details__item').after(`
+            //                 <div class="is__change__time_work" style="width: calc(50% - 30px); padding: 10px; text-align: right; color: #92989b;"></div>
+            //             `);
+            //
+            //             // если время изменено, показываем блок "(изменено)"
+            //             if (data.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
+            //
+            //             /* ###################################################################### */
+            //
+            //             // права на редактирование истории
+            //             if (rights && rights.includes('isEditHistory')) {
+            //                 // кнопки Редактировать, Сохранить
+            //                 var editBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+            //                         class_name: 'modal__editBtn__details',
+            //                         text: 'Редактировать'
+            //                     }),
+            //                     saveEditBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+            //                         class_name: 'modal__saveEditBtn__details button-input_blue',
+            //                         text: 'Сохранить'
+            //                     }),
+            //                     editBtnWrapper = `<div class="modal__body__actions__details" style="width: 100%;"></div>`;
+            //
+            //                 $('.modal__hystory__details').append(editBtnWrapper);
+            //                 $('.modal__body__actions__details').append(editBtn);
+            //                 $('.modal__body__actions__details').append(saveEditBtn);
+            //                 $('.modal__saveEditBtn__details').css('display', 'none');
+            //                 $('.modal__body__actions__details').css('margin-top', '10px');
+            //
+            //                 /* ###################################################################### */
+            //
+            //                 // время работы для для подсчета разницы даты после редактирования
+            //                 let old_time, new_time, price, time_edit;
+            //
+            //                 // редактирование истории
+            //                 $('.modal__editBtn__details').unbind('click');
+            //                 $('.modal__editBtn__details').bind('click', function () {
+            //                     $('.modal__editBtn__details').css('display', 'none');
+            //                     $('.modal__saveEditBtn__details').css('display', 'block');
+            //
+            //                     // возвращаем стандартные аттрибуты кнопки
+            //                     if ($('.modal__saveEditBtn__details').hasClass('button-input-loading')) $('.modal__saveBtn__timer').removeClass('button-input-loading')
+            //                     $('.modal__saveEditBtn__details').attr('data-loading', '');
+            //                     if ($('.modal__saveEditBtn__details .button-input-inner').css('display') === 'none') $('.modal__saveEditBtn__details .button-input-inner').css('display', 'block');
+            //                     if ($('.modal__saveEditBtn__details .button-input__spinner').length) $('.modal__saveEditBtn__details .button-input__spinner').remove();
+            //
+            //                     const toEdit = function (class_text, class_input, name_input, value, placeholder) {
+            //                         var input = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+            //                             name: name_input,
+            //                             class_name: class_input,
+            //                             value: '',
+            //                             placeholder: placeholder
+            //                         });
+            //
+            //                         $(`.${ class_text }`).text('');
+            //                         $(`.${ class_text }`).append(input);
+            //                         $(`.${ class_input }`).val(value);
+            //                         $(`.${ class_input }`).css('width', '100%');
+            //                         $(`.title__${ class_text }`).css('padding-top', '19px');
+            //                     }
+            //
+            //                     // ответственный
+            //                     toEdit(
+            //                         'user__details__item',
+            //                         'modal__input__user__edit__details',
+            //                         'modal-input-client-edit-details',
+            //                         $('.user__details__item').text().trim(),
+            //                         'введите имя ответственного'
+            //                     );
+            //
+            //                     // имя клиента
+            //                     toEdit(
+            //                         'client__details__item',
+            //                         'modal__input__client__edit__details',
+            //                         'modal-input-client-edit-details',
+            //                         $('.client__details__item').text().trim(),
+            //                         'введите имя клиента'
+            //                     );
+            //
+            //                     // оказанная услуга
+            //                     toEdit(
+            //                         'service__details__item',
+            //                         'modal__input__service__edit__details',
+            //                         'modal-input-service-edit-details',
+            //                         $('.service__details__item').text().trim(),
+            //                         'введите оказанную услугу'
+            //                     );
+            //
+            //                     var textarea = Twig({ ref: '/tmpl/controls/textarea.twig' }).render({
+            //                         name: 'modal-textarea-comment-edit-details',
+            //                         class_name: 'modal__textarea__comment__edit__details',
+            //                         placeholder: 'введите комментарий'
+            //                     });
+            //                     var text = $('.comment__details__item').text().trim();
+            //                     $('.comment__details__item').text('');
+            //                     $('.comment__details__item').append(textarea);
+            //                     $('.modal__textarea__comment__edit__details').val(text);
+            //                     $('.modal__textarea__comment__edit__details').css('width', '100%');
+            //                     $('.title__comment__details__item').css('padding-top', '19px');
+            //
+            //                     // стоимость работы
+            //                     toEdit(
+            //                         'price__details__item',
+            //                         'modal__input__price__edit__details',
+            //                         'modal-input-price-edit-details',
+            //                         $('.price__details__item').text().trim().slice(0, -2),
+            //                         'введите стоимость работы'
+            //                     );
+            //                     $('.modal__input__price__edit__details').attr('type', 'number');
+            //
+            //                     // ссылка на задачу
+            //                     toEdit(
+            //                         'link__task__details__item',
+            //                         'modal__input__link__task__edit__details',
+            //                         'modal-input-link__task-edit-details',
+            //                         $('.link__task__details__item').text().trim(),
+            //                         'введите ссылку на задачу'
+            //                     );
+            //
+            //                     // время работы
+            //                     time_edit = $('.time_work__details__item').text().trim();
+            //                     $('.time_work__details__item').text('');
+            //
+            //                     $('.value.time_work__details__item').append(`
+            //                         <input
+            //                             type="time"
+            //                             name="modal-input-time_work-edit-details"
+            //                             class="modal__input__time_work__edit__details text-input"
+            //                             placeholder="введите время работы"
+            //                             value="${ time_edit }"
+            //                             step="2"
+            //                         />
+            //                     `);
+            //
+            //                     $('.modal__input__time_work__edit__details').css('width', '100%');
+            //                     $('.title__time_work__details__item').css('padding-top', '19px');
+            //                 });
+            //
+            //                 /* ###################################################################### */
+            //
+            //                 // сохранение истории
+            //                 $('.modal__saveEditBtn__details').unbind('click');
+            //                 $('.modal__saveEditBtn__details').bind('click', function () {
+            //                     var user = $('.modal__input__user__edit__details');
+            //                     var client = $('.modal__input__client__edit__details');
+            //                     var service = $('.modal__input__service__edit__details');
+            //                     var comment = $('.modal__textarea__comment__edit__details');
+            //                     price = $('.modal__input__price__edit__details');
+            //                     var link_task = $('.modal__input__link__task__edit__details');
+            //                     var time_work = $('.modal__input__time_work__edit__details');
+            //                     var isError = false;
+            //
+            //                     // красим поля в случае ошибки
+            //                     if (!link_task.val().trim().length) {
+            //                         link_task.val('').focus();
+            //                         isError = true;
+            //                         $('.modal__input__link__task__edit__details').css('border-color', '#f37575');
+            //                     }
+            //                     // возвращаем естесственные цвета
+            //                     $('.modal__input__link__task__edit__details').unbind('change');
+            //                     $('.modal__input__link__task__edit__details').bind('change', function () {
+            //                         $('.modal__input__link__task__edit__details').css('border-color', '#dbdedf');
+            //                     });
+            //
+            //                     if (!price.val().trim().length) {
+            //                         price.val('').focus();
+            //                         isError = true;
+            //                         $('.modal__input__price__edit__details').css('border-color', '#f37575');
+            //                     }
+            //
+            //                     // возвращаем естесственные цвета
+            //                     $('.modal__input__price__edit__details').unbind('change');
+            //                     $('.modal__input__price__edit__details').bind('change', function () {
+            //                         $('.modal__input__price__edit__details').css('border-color', '#dbdedf');
+            //                     });
+            //
+            //                     if (!service.val().trim().length) {
+            //                         service.val('').focus();
+            //                         isError = true;
+            //                         $('.modal__input__service__edit__details').css('border-color', '#f37575');
+            //                     }
+            //
+            //                     // возвращаем естесственные цвета
+            //                     $('.modal__input__service__edit__details').unbind('change');
+            //                     $('.modal__input__service__edit__details').bind('change', function () {
+            //                         $('.modal__input__service__edit__details').css('border-color', '#dbdedf');
+            //                     });
+            //
+            //                     if (!client.val().trim().length) {
+            //                         client.val('').focus();
+            //                         isError = true;
+            //                         $('.modal__input__client__edit__details').css('border-color', '#f37575');
+            //                     }
+            //
+            //                     // возвращаем естесственные цвета
+            //                     $('.modal__input__client__edit__details').unbind('change');
+            //                     $('.modal__input__client__edit__details').bind('change', function () {
+            //                         $('.modal__input__client__edit__details').css('border-color', '#dbdedf');
+            //                     });
+            //
+            //                     if (!user.val().trim().length) {
+            //                         user.val('').focus();
+            //                         isError = true;
+            //                         $('.modal__input__user__edit__details').css('border-color', '#f37575');
+            //                     }
+            //
+            //                     // возвращаем естесственные цвета
+            //                     $('.modal__input__user__edit__details').unbind('change');
+            //                     $('.modal__input__user__edit__details').bind('change', function () {
+            //                         $('.modal__input__user__edit__details').css('border-color', '#dbdedf');
+            //                     });
+            //
+            //                     if (isError) return false;
+            //
+            //                     // меняем аттрибуты кнопки
+            //                     $('.modal__saveEditBtn__details').addClass('button-input-loading');
+            //                     $('.modal__saveEditBtn__details').attr('data-loading', 'Y');
+            //                     $('.modal__saveEditBtn__details .button-input-inner').css('display', 'none');
+            //                     $('.modal__saveEditBtn__details').append(`
+            //                         <div class="button-input__spinner">
+            //                             <span class="button-input__spinner__icon spinner-icon spinner-icon-white"></span>
+            //                         </div>
+            //                     `);
+            //                     $('.modal__editBtn__details').css('display', 'none');
+            //
+            //                     // поиск цены сотрудника в кастомных полях
+            //                     let entity_url, entity_ID = AMOCRM.data.current_card.id;
+            //                     if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID;
+            //                     if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID;
+            //
+            //                     $.ajax({
+            //                         url: entity_url,
+            //                         method: 'get',
+            //                         success: function (data) {
+            //                             if (!data.custom_fields_values) return;
+            //
+            //                             $.each(data.custom_fields_values, function () {
+            //                                 // если не сотрудник истории, пропускаем
+            //                                 if (this.field_name !== user.val().trim()) return;
+            //                                 // цена сотрудника
+            //                                 self.price_manager = this.values[0].value;
+            //                             });
+            //
+            //                             // преобразуем в число
+            //                             self.price_manager = parseInt(self.price_manager) || 0;
+            //
+            //                             // считаем разницу во времени
+            //                             new_time = time_work.val();
+            //                             old_time = time_edit;
+            //                             price = parseInt(price.val()) || 0;
+            //
+            //                             // если время было изменено
+            //                             if (new_time !== old_time) {
+            //                                 // считаем разницу во времени
+            //                                 const getDate = function (date) {
+            //                                     return new Date(0, 0, 0, date.split(':')[0], date.split(':')[1], date.split(':')[2]);
+            //                                 }
+            //
+            //                                 // если новая дата больше старой, прибавляем к стоимости работы, иначе онимаем
+            //                                 if (getDate(new_time) > getDate(old_time)) {
+            //                                     price += ((getDate(new_time) - getDate(old_time)) / 60000) * self.price_manager;
+            //                                 } else if (getDate(new_time) < getDate(old_time)) {
+            //                                     price -= ((getDate(old_time) - getDate(new_time)) / 60000) * self.price_manager;
+            //                                 }
+            //                             }
+            //
+            //                             // получаем настройки для поиска поля депозита
+            //                             let deposit_title = self.getDepositTitle();
+            //
+            //                             // обновляем данные в БД
+            //                             $.ajax({
+            //                                 url: url_link_t,
+            //                                 method: 'post',
+            //                                 data: {
+            //                                     'domain': document.domain,
+            //                                     'method': 'edit_history_details',
+            //                                     'history_id': historyID,
+            //                                     'essence_id': AMOCRM.data.current_card.id,
+            //                                     'user': $('.modal__input__user__edit__details').val(),
+            //                                     'client': $('.modal__input__client__edit__details').val(),
+            //                                     'service': $('.modal__input__service__edit__details').val(),
+            //                                     'price': price,
+            //                                     'link_task': $('.modal__input__link__task__edit__details').val(),
+            //                                     'time_work': $('.modal__input__time_work__edit__details').val(),
+            //                                     'comment': $('.modal__textarea__comment__edit__details').val().trim(),
+            //                                     'deposit_title': deposit_title
+            //                                 },
+            //                                 dataType: 'json',
+            //                                 success: function (data) {
+            //                                     var timer = data[0];
+            //                                     var deposit = data[1];
+            //
+            //                                     // обновляем сумму депозита
+            //                                     $('.deposit .deposit__sum__int').text(deposit);
+            //
+            //                                     // обновляем историю
+            //                                     $(`.link__details[data-id="${ timer.id }"] .user__title`).text(timer.user);
+            //                                     $(`.link__details[data-id="${ timer.id }"] .user__price .user__sum`).text(timer.price);
+            //
+            //                                     // обновляем детализацию
+            //                                     $('.modal__input__user__edit__details').remove();
+            //                                     $('.modal__input__client__edit__details').remove();
+            //                                     $('.modal__input__service__edit__details').remove();
+            //                                     $('.modal__textarea__comment__edit__details').remove();
+            //                                     $('.modal__input__price__edit__details').remove();
+            //                                     $('.modal__input__link__task__edit__details').remove();
+            //                                     $('.modal__input__time_work__edit__details').remove();
+            //
+            //                                     $('.user__details__item').text(timer.user);
+            //                                     $('.client__details__item').text(timer.client);
+            //                                     $('.service__details__item').text(timer.service);
+            //                                     $('.comment__details__item').text(timer.comment);
+            //                                     $('.price__details__item').text(timer.price + 'р.');
+            //                                     $('.link__task__details__item').html(`
+            //                                         <a href="${ timer.link_task }" target="_blank" style="
+            //                                             text-decoration: none; color: #1375ab; word-break: break-all;
+            //                                         ">${ timer.link_task }</a>
+            //                                     `);
+            //                                     $('.time_work__details__item').text(timer.time_work);
+            //
+            //                                     $(`.title__user__details__item`).css('padding-top', '10px');
+            //                                     $(`.title__client__details__item`).css('padding-top', '10px');
+            //                                     $(`.title__service__details__item`).css('padding-top', '10px');
+            //                                     $(`.title__comment__details__item`).css('padding-top', '10px');
+            //                                     $(`.title__price__details__item`).css('padding-top', '10px');
+            //                                     $(`.title__link__task__details__item`).css('padding-top', '10px');
+            //                                     $(`.time_work__details__item`).css('padding-top', '10px');
+            //                                     $(`.title.title__time_work__details__item`).css('padding-top', '10px');
+            //
+            //                                     // если время изменено, показываем блок "(изменено)"
+            //                                     if (timer.is_change_time != 0) $('.is__change__time_work').text('(изменено)');
+            //
+            //                                     // меняем итоговую сумму внизу истории
+            //                                     price = 0;
+            //
+            //                                     $.each($('.user__price .user__sum'), function () {
+            //                                         price += parseInt($(this).text());
+            //                                     });
+            //
+            //                                     $('.result__sum .result__price').text(price);
+            //                                     time_edit = $('.time_work__details__item').text().trim();
+            //
+            //                                     $('.modal__editBtn__details').css('display', 'block');
+            //                                     $('.modal__saveEditBtn__details').css('display', 'none');
+            //                                 }
+            //                             });
+            //
+            //                             self.price_manager = 0;
+            //                         },
+            //                         timeout: 2000
+            //                     });
+            //
+            //                 });
+            //
+            //             }
+            //         }
+            //     });
+            //
+            //     // кнопка Закрыть
+            //     $('.modal__hystory__details').css('position', 'relative');
+            //     var cancelBtn = `
+            //         <a href="#" class="modal__cancelBtn__details" style="
+            //             text-decoration: none;
+            //             color: #92989b;
+            //             font-size: 14px;
+            //             font-weight: bold;
+            //             top: 3px;
+            //             right: 0;
+            //             position: absolute;
+            //         ">Закрыть</a>
+            //     `;
+            //     $('.modal__hystory__details').append(cancelBtn);
+            //     $('.modal__cancelBtn__details').bind('click', function (e) {
+            //         e.preventDefault();
+            //         $('.hystory__details').remove();
+            //     });
+            // }
         }
 
         // получаем историю
@@ -1403,219 +2225,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
         }
 
-
-
-
-
-
-
-
-
-
-
-
-        //     // фильтр поиска
-        //     $('.link__filter').unbind('click');
-        //     $('.link__filter').bind('click', function (e) {
-        //         e.preventDefault();
-        //
-        //         new Modal({
-        //             class_name: 'timer__filter',
-        //             init: function ($modal_body) {
-        //                 var $this = $(this);
-        //                 $modal_body
-        //                     .trigger('modal:loaded')
-        //                     .html(`
-        //                     <div class="modal__history__filter" style="width: 100%; height: 175px;">
-        //                         <h2 class="modal__body__caption__filter head_2">Фильтр поиска</h2>
-        //                     </div>
-        //                 `)
-        //                     .trigger('modal:centrify')
-        //                     .append('');
-        //             },
-        //             destroy: function () {}
-        //         });
-        //
-        //         // даты от - до
-        //         var modalInputFrom = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
-        //                 class_name: 'modal__filter__input__from',
-        //                 input_class: 'input__modal__filter__input__from',
-        //                 value: '',
-        //                 placeholder: 'введите значение от:'
-        //             }),
-        //             modalInputTo = Twig({ ref: '/tmpl/controls/date_field.twig' }).render({
-        //                 class_name: 'modal__filter__input__to',
-        //                 input_class: 'input__modal__filter__input__to',
-        //                 value: '',
-        //                 placeholder: 'введите значение до:'
-        //             }),
-        //             linkFilterWrapper = `<div class="modal__filter__input__wrapper" style="width: 100%; margin-top: 20px;">
-        //                 <span style="width: 100%;">Введите дату поиска (от - до):</span><br/>
-        //                 <div class="modal__filter__input__flex" style="
-        //                     display: flex;
-        //                     flex-direction: row;
-        //                     width: 100%;
-        //                     margin-top: 3px;
-        //                 ">
-        //                     <div class="date_from">${ modalInputFrom }</div>
-        //                     <div style="padding: 8px 10px 0; color: #dbdedf;">-</div>
-        //                     <div class="date_to">${ modalInputTo }</div>
-        //                 </div>
-        //             </div>`;
-        //         $('.modal__history__filter').append(linkFilterWrapper);
-        //
-        //         // кнопки Показать, Закрыть
-        //         var showBtn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
-        //                 class_name: 'modal__showBtn__filter',
-        //                 text: 'Показать'
-        //             }),
-        //             cancelBtn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-        //                 class_name: 'modal__cancelBtn__filter',
-        //                 text: 'Закрыть'
-        //             }),
-        //             actionBtnWrapper = `<div class="modal__body__actions__filter" style="
-        //                 width: 100%; margin-top: 20px;">
-        //                 ${ showBtn } ${ cancelBtn }
-        //             </div>`;
-        //
-        //         $('.modal__history__filter').append(actionBtnWrapper);
-        //         $('.modal__body__caption__filter').css('margin-top', '20px');
-        //
-        //         /* ###################################################################### */
-        //
-        //         // показ интервала истории
-        //         $('.modal__showBtn__filter').unbind('click');
-        //         $('.modal__showBtn__filter').bind('click', function () {
-        //             var filter_from = $('.input__modal__filter__input__from');
-        //             var filter_to = $('.input__modal__filter__input__to');
-        //             var isErrorFilter = false;
-        //
-        //             if (!filter_from.val().length) {
-        //                 filter_from.css('border-color', '#f37575');
-        //                 isErrorFilter = true;
-        //             }
-        //
-        //             if (!filter_to.val().length) {
-        //                 filter_to.css('border-color', '#f37575');
-        //                 isErrorFilter = true;
-        //             }
-        //
-        //             // возвращаем естесственные цвета
-        //             filter_from.unbind('click');
-        //             filter_from.bind('click', function () { filter_from.css('border-color', '#dbdedf') });
-        //             filter_to.unbind('click');
-        //             filter_to.bind('click', function () { filter_to.css('border-color', '#dbdedf') });
-        //
-        //             if (isErrorFilter) return false;
-        //
-        //             $.ajax({
-        //                 url: url_link_t,
-        //                 method: 'post',
-        //                 data: {
-        //                     'domain': document.domain,
-        //                     'method': 'filter_history',
-        //                     'essence_id': essenseID,
-        //                     'from': filter_from.val(),
-        //                     'to': filter_to.val(),
-        //                 },
-        //                 dataType: 'json',
-        //                 success: function (data) {
-        //                     // очищаем прежний вывод
-        //                     $.each($('.link__details'), function () { this.remove(); });
-        //                     if ($('.filter__no__result').length) $('.filter__no__result').remove();
-        //
-        //                     // добавляем надпись фильтра дат
-        //                     if ($('.filter__timers__title').length) $('.filter__timers__title').remove();
-        //                     $('.modal__history__deposit__wrapper').after(`
-        //                         <div class="filter__timers__title" style="
-        //                             width: 100%; margin-bottom: 3px; color: #92989b; font-size: 14px;">
-        //                             Фильтр таймеров с ${ filter_from.val() }г. по ${ filter_to.val() }г.:
-        //                         </div>
-        //                     `);
-        //
-        //                     if (!data) {
-        //                         if ($('.history__no__result').length) $('.history__no__result').remove();
-        //
-        //                         $('.result__sum').text('Итого: 0р.');
-        //                         $('.filter__timers__title').after(`
-        //                             <div class="filter__no__result" style="
-        //                                 width: 100%; text-align: center; padding: 30px 0 10px;">
-        //                                 Фильтр не дал результатов.
-        //                             </div>
-        //                         `);
-        //                         return;
-        //                     }
-        //
-        //                     // выводим результат
-        //                     var result_sum = 0;
-        //                     $.each(data, function () {
-        //                         var history_id = this[0],
-        //                             history_created_at = this[1].split(' ')[0],
-        //                             history_user = this[2],
-        //                             history_price = this[3],
-        //                             history_sum = this[4];
-        //
-        //                         var historyItem = `
-        //                             <div class="link__details" data-id="${history_id}" style="
-        //                                 display: flex;
-        //                                 flex-direction: row;
-        //                                 justify-content: space-between;
-        //                                 width: calc(100% - 10px);
-        //                                 border-top: 1px solid #dbdedf;
-        //                                 border-bottom: 1px solid #dbdedf;
-        //                                 margin-bottom: 2px;
-        //                                 background: #fcfcfc;
-        //                                 padding: 1px 10px;
-        //                                 cursor: pointer;
-        //                                 ">
-        //                                 <div>
-        //                                     <span class="user__created_at" style="color: #979797; font-size: 13px;">
-        //                                         ${ history_created_at }
-        //                                     </span><br/>
-        //                                     <div class="user__title">${ history_user }</div>
-        //                                 </div>
-        //                                 <div class="user__price" style="display: flex; flex-direction: row; align-items: center;">
-        //                                     <div class="user__sum">${ history_price }</div>
-        //                                     <div class="user_valute">р.</div>
-        //                                 </div>
-        //                             </div>
-        //                         `;
-        //
-        //                         $('.x__bottom').before(historyItem);
-        //                         $('.link__details').unbind('click');
-        //                         $('.link__details').bind('click', self.showDetails);
-        //                         if (history_user !== 'Пополнение депозита') result_sum += parseInt(history_sum);
-        //                     });
-        //
-        //                     // красим пополнение депозита в зеленый цвет
-        //                     if ($('.modal__timer__history .link__details').length) {
-        //                         $.each($('.modal__timer__history .link__details'), function () {
-        //                             if ($(this).find('.user__title').text().trim() !== 'Пополнение депозита') return;
-        //
-        //                             $(this).unbind('click');
-        //                             $(this).css({
-        //                                 'border-top': '1px solid #c7efc2',
-        //                                 'border-bottom': '1px solid #c7efc2',
-        //                                 'background': '#ECFFEA',
-        //                                 'cursor': 'auto'
-        //                             });
-        //                         });
-        //                     }
-        //
-        //                     // меняем итоговую сумму внизу истории
-        //                     self.resultSum(result_sum);
-        //                 }
-        //             });
-        //
-        //             $('.timer__filter').remove();
-        //         });
-        //     });
-        //
-        //     /* ###################################################################### */
-        //
-        //
-
-
         // фильтр поиска
         const historyFilter = function () {
             $('.modal__history .link__filter').unbind('click');
@@ -1626,7 +2235,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 new Modal({
                     class_name: 'modal__filter__wrapper',
                     init: function ($modal_body) {
-                        var $this = $(this);
+                        let $this = $(this);
                         $modal_body
                             .trigger('modal:loaded')
                             .html(`
@@ -1766,7 +2375,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // закрываем окно
                         $('.modal__filter__wrapper').remove();
-                    }
+                    },
+                    timeout: 2000
                 });
             });
         }
@@ -1854,8 +2464,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             historyFilter();
 
             // ссылка экспорта и кнопка закрыть
-            let history_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                class_name: 'history__close__Btn',
+            let history_close_btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                class_name: 'history__close__btn',
                 text: 'Закрыть'
             });
 
@@ -1870,7 +2480,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         </a>
                     </div>
                     <div class="right__close" style="padding-left: 5px; margin-top: -4px;">
-                        ${ history_close_Btn }
+                        ${ history_close_btn }
                     </div>
                 </div>
             `);
@@ -1910,8 +2520,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 isAuth(); // проверка авторизации
 
                 // ссылка истории и кнопка закрыть
-                let timer_close_Btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
-                    class_name: 'timer__close__Btn',
+                let timer_close_btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
+                    class_name: 'timer__close__btn',
                     text: 'Закрыть'
                 });
 
@@ -1923,7 +2533,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             <a href="" class="hystory__link" style="text-decoration: none; color: #1375ab;">История</a>
                         </div>
                         <div class="right__close" style="margin-top: -7px; padding-left: 5px; padding-top: 3px;">
-                            ${ timer_close_Btn }
+                            ${ timer_close_btn }
                         </div>
                     </div>
                 `);
@@ -1954,7 +2564,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             self.getConfigSettings();
 
             // покупатели
-            var select_fields_rapper = ``;
             $('.widget_settings_block__controls').before(`
                 <div class="widget_settings_block__item_field customers__wrapper" style="margin-top: 10px;"></div>
             `);
@@ -2036,7 +2645,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 managers.push({ id: this.id, option: this.title });
             });
 
-            var select_managers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+            let select_managers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
                 items: managers,
                 class_name: 'select__managers'
             });
@@ -2108,7 +2717,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         let rights = self.config_settings.rights[manager_ID];
 
                         $.each($('.rights__wrapper .rights__checkox'), function () {
-                            var value = $(this).find('.rights__checkox__item').attr('data-value');
+                            let value = $(this).find('.rights__checkox__item').attr('data-value');
 
                             if (rights.includes(value)) {
                                 $(this).addClass('is-checked');

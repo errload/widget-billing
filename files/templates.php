@@ -120,6 +120,8 @@
     if ($_POST['method'] == 'get_history_consumption_sum' && $Config->CheckToken()) include 'timer/get_history_consumption_sum.php';
     // поиск истории по фильтру
     if ($_POST['method'] == 'get_history_filter' && $Config->CheckToken()) include 'timer/get_history_filter.php';
+    // поиск таймера по ID
+    if ($_POST['method'] == 'get_timer' && $Config->CheckToken()) include 'timer/get_timer.php';
 
 
 
