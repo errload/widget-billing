@@ -125,6 +125,11 @@
     // обновление истории
     if ($_POST['method'] == 'update_history' && $Config->CheckToken()) include 'timer/update_history.php';
 
+    /* ************************************************************** */
+
+    // поиск запущенных таймеров для меню
+    if ($_POST['method'] == 'search_timers' && $Config->CheckToken()) include 'timer/search_timers.php';
+
 
 
 

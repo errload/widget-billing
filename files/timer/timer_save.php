@@ -70,7 +70,7 @@
         $mysqli->query($update);
     }
 
-    print_r(json_encode([]));
+    print_r(json_encode(true));
 
     // ищем ID сущности в покупателях
     $is_customer = true;

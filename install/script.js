@@ -73,6 +73,157 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         /*
          *
+         * ****************************************** TIMER RIGHT MENU *************************************************
+         *
+         */
+
+        // отображаем таймер в меню
+        const getTimersInfo = function () {
+            // очищаем прошлые значение
+            if ($('.billing__timers .timer__items').length) $('.billing__timers .timer__items').remove();
+
+            // кнопка таймера
+            let billing_link_btn = Twig({ ref: '/tmpl/controls/button.twig' }).render({
+                class_name: 'billing__link__btn',
+                text: 'Открыть таймер'
+            });
+
+            // рендер таймера
+            let render = `
+                <div class="billing__timers" style="
+                    display: flex; flex-direction: column; padding-bottom: 5px; margin-bottom: 10px;
+                    border-bottom: 3px solid #ffffff;">
+                    <div class="timer__link" style="margin-top: 7px;">
+                        <a href="" class="billing__link">${ billing_link_btn }</a>
+                    </div>
+                </div>
+            `;
+
+            if (!$('.widget__billing').length) {
+                self.render_template({
+                    body: '',
+                    caption: {class_name: 'widget__billing'},
+                    render: render
+                });
+            }
+
+            // выравниваем картинку с блоком
+            $('.widget__billing .card-widgets__widget__caption__logo_min').css('padding', '0')
+            $('.widget__billing .card-widgets__widget__caption__logo_min').css('width', '100%')
+            $('.widget__billing .card-widgets__widget__caption__logo_min').css('height', '36px')
+            $('.widget__billing').next().css('padding', '10px 10px 0 10px');
+            $('.widget__billing .card-widgets__widget__caption__logo').css('margin', '0');
+            $('.widget__billing .card-widgets__widget__caption__logo').css('width', '100%');
+            $('.billing__timers .billing__link__btn').css('width', '100%');
+
+            // поиск запущенных таймеров
+            let essense_ID = AMOCRM.data.current_card.id; // ущность
+            let user_ID = AMOCRM.constant('user').id; // ID пользователя
+
+            $.ajax({
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'search_timers',
+                    'essense_ID': essense_ID,
+                    'user_ID': user_ID
+                },
+                dataType: 'json',
+                success: function (data) {
+                    if (!data || !data.length) {
+                        $('.billing__timers').prepend(`
+                            <div class="timer__items" style="text-align: center; margin-bottom: 3px;">
+                                Таймеров нет
+                            </div>
+                        `);
+
+                        return;
+                    }
+
+                    $.each(data, function () {
+                        if (this.status === 'pause') {
+                            $('.billing__timers .timer__link').before(`
+                                <div class="timer__items" style="display: flex; flex-direction: row; margin-bottom: 3px;
+                                    justify-content: center; background: #ffffff; color: #000000;">
+                                    <div class="items__time" style="padding: 3px 10px;">
+                                        ${ this.time_work }
+                                    </div>
+                                    <div class="items__icon" style="padding-top: 4px;">
+                                        <svg data-name="Layer 1" height="18" id="Layer_1" viewBox="0 0 200 200" 
+                                            width="18" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M100,15a85,85,0,1,0,85,85A84.93,84.93,0,0,0,100,15Zm0,150a65,
+                                                65,0,1,1,65-65A64.87,64.87,0,0,1,100,165ZM120,60a10,10,0,0,0-10,10v60a10,
+                                                10,0,0,0,20,0V70A10,10,0,0,0,120,60ZM80,60A10,10,0,0,0,70,70v60a10,
+                                                10,0,0,0,20,0V70A10,10,0,0,0,80,60Z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            `);
+                        }
+
+                        else if (this.status === 'stop') {
+                            $('.billing__timers .timer__link').before(`
+                                <div class="timer__items" style="display: flex; flex-direction: row; margin-bottom: 3px;
+                                    justify-content: center; background: #ffffff; color: #000000;">
+                                    <div class="items__time" style="padding: 3px 10px;">
+                                        ${ this.time_work }
+                                    </div>
+                                    <div class="items__icon" style="padding-top: 4px;">
+                                        <svg height="16" viewBox="0 0 512 512" width="16" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M328 160h-144C170.8 160 160 170.8 160 184v144C160 341.2 170.8 352 
+                                            184 352h144c13.2 0 24-10.8 24-24v-144C352 170.8 341.2 160 328 160zM256 
+                                            0C114.6 0 0 114.6 0 256s114.6 256 256 256s256-114.6 256-256S397.4 0 256 
+                                            0zM256 464c-114.7 0-208-93.31-208-208S141.3 48 256 48s208 93.31 208 208S370.7 
+                                            464 256 464z"/><
+                                        /svg>
+                                    </div>
+                                </div>
+                            `);
+                        }
+
+                        else if (this.status === 'start') {
+                            $('.billing__timers .timer__link').before(`
+                                <div class="timer__items timer__interval" style="display: flex; flex-direction: row; margin-bottom: 3px;
+                                    justify-content: center; background: #ffffff; color: #000000;">
+                                    <div class="items__time" style="padding: 3px 10px;">
+                                        ${ this.time_work }
+                                    </div>
+                                    <div class="items__icon" style="padding-top: 4px;">
+                                        <svg height="18" viewBox="0 0 48 48" width="18" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M0 0h48v48H0z" fill="none"/>
+                                            <path d="M20 33l12-9-12-9v18zm4-29C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 
+                                                20-20S35.05 4 24 4zm0 36c-8.82 0-16-7.18-16-16S15.18 8 24 8s16 7.18 16 
+                                                16-7.18 16-16 16z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            `);
+
+                            // запускаем интервал
+                            let date = new Date(), time = null;
+
+                            time = this.time_work.split(':');
+                            date.setHours(time[0]);
+                            date.setMinutes(time[1]);
+                            date.setSeconds(time[2]);
+
+                            setInterval(() => {
+                                // +1 сек к времени в интервале
+                                date.setSeconds(date.getSeconds() + 1);
+                                $('.billing__timers .timer__items.timer__interval .items__time').text(
+                                    date.toLocaleTimeString()
+                                );
+                            }, 1000);
+                        }
+                    });
+                },
+                timeout: 2000
+            });
+        }
+
+        /*
+         *
          * ****************************************** TIMER ************************************************************
          *
          */
@@ -331,6 +482,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 if (date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59) {
                     // очищаем интервалы
                     clearInterval(interval);
+                    // перезапускаем таймеры в меню
+                    getTimersInfo();
 
                     // показываем кнопку сохранить
                     $(`.timer__item[data-id="${ timer_ID }"] .timer__start__btn`).css('display', 'none');
@@ -536,6 +689,8 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // запускаем интервал
                         startInterval(date, data.id);
+                        // перезапускаем таймеры в меню
+                        getTimersInfo();
                     },
                     timeout: 2000
                 });
@@ -567,7 +722,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         'timer_ID': timer_ID
                     },
                     dataType: 'json',
-                    success: function (data) {},
+                    success: function (data) {
+                        // перезапускаем таймеры в меню
+                        getTimersInfo();
+                    },
                     timeout: 2000
                 });
             });
@@ -601,7 +759,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         'timer_ID': timer_ID
                     },
                     dataType: 'json',
-                    success: function (data) {},
+                    success: function (data) {
+                        // перезапускаем таймеры в меню
+                        getTimersInfo();
+                    },
                     timeout: 2000
                 });
 
@@ -1076,19 +1237,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     url: entity_url,
                     method: 'GET',
                     success: function (data) {
-                        if (!data.custom_fields_values) return;
+                        if (!data.custom_fields_values) self.price_manager = 0;
+                        else {
+                            $.each(data.custom_fields_values, function () {
+                                if (this.field_name !== $('.modal__finish .select__managers .control--select--button').text()) {
+                                    return;
+                                }
 
-                        $.each(data.custom_fields_values, function () {
-                            if (this.field_name !== $('.modal__finish .select__managers .control--select--button').text()) {
-                                return;
-                            }
-
-                            self.price_manager = this.values[0].value;
-                        });
+                                self.price_manager = this.values[0].value;
+                            });
+                        }
 
                         // преобразуем в число
                         self.price_manager = parseInt(self.price_manager) || 0;
-
                         // получаем настройки для поиска поля депозита
                         let deposit_title = self.getDepositTitle();
 
@@ -1109,7 +1270,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 'deposit_title': deposit_title
                             },
                             dataType: 'json',
-                            success: function (data) {},
+                            success: function (data) {
+                                // перезапускаем таймеры в меню
+                                getTimersInfo();
+                            },
                             timeout: 2000
                         });
 
@@ -1896,9 +2060,10 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         if ($('.modal__history .history__details').length) $('.modal__history .history__details').remove();
                         if ($('.modal__history .history__no__results').length) $('.modal__history .history__no__results').remove();
                         if ($('.modal__history .filter__title').length) $('.modal__history .filter__title').remove();
+                        $('.modal__history .itogo .consumption__sum__title').css('display', 'none');
 
                         if (!data || !data.length) {
-                            $('.modal__history').append(`
+                            $('.modal__history .deposit__wrapper').after(`
                                 <div class="history__no__results" style="
                                     width: 100%; text-align: center; padding: 30px 0 10px;">
                                     Таймеров не найдено
@@ -2070,6 +2235,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 rights = getRights();
 
                 self.clearIntervals(); // очищаем интервалы
+                getTimersInfo(); // перезапускаем таймеры в меню
                 timerOpen(); // запуск модалки таймера
                 isAuth(); // проверка авторизации
 
@@ -4189,6 +4355,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
         /* ###################################################################### */
 
+
+
+
+
+
+
+
+
+
         this.callbacks = {
             settings: function() {
                 accessRight();
@@ -4227,31 +4402,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             },
             render: function() {
                 // ссылка на запуск таймера
-                if ((AMOCRM.getBaseEntity() === 'customers' || AMOCRM.getBaseEntity() === 'leads')
-                    && AMOCRM.isCard()) {
-
-                    self.render_template({
-                        body: '',
-                        caption: { class_name: 'widget__billing' },
-                        render: `<a href="#" class="billing__link" style="
-                            font-size: 16px;
-                            text-decoration: none;
-                            color: #1375ab;
-                            margin-left: 12px;
-                            margin-top: 10px;
-                        ">Открыть таймер</a>`
-                    });
-
-                    // выравниваем картинку с блоком
-                    $('.widget__billing .card-widgets__widget__caption__logo_min').css('padding', '0')
-                    $('.widget__billing .card-widgets__widget__caption__logo_min').css('width', '100%')
-                    $('.widget__billing .card-widgets__widget__caption__logo_min').css('height', '36px')
-                    $('.widget__billing').next().css('padding', '10px 10px 0 10px');
-                    $('.widget__billing .card-widgets__widget__caption__logo').css('margin', '0');
-                    $('.widget__billing .card-widgets__widget__caption__logo').css('width', '100%');
-
-                    // запускаем модалку с таймером
-                    modalTimer();
+                if ((AMOCRM.getBaseEntity() === 'customers' || AMOCRM.getBaseEntity() === 'leads') && AMOCRM.isCard()) {
+                    getTimersInfo(); // отображаем таймер в меню
+                    modalTimer(); // запускаем модалку с таймером
                 }
 
                 return true;

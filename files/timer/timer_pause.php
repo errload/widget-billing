@@ -28,4 +28,4 @@
     ';
 
     $mysqli->query($update);
-
+    print_r(json_encode(true));
