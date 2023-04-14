@@ -134,6 +134,8 @@
 
     // выгрузка фильтра
     if ($_POST['method'] == 'filter_events' && $Config->CheckToken()) include 'timer/filter_events.php';
+    // экспорт фильтра
+    if ($_POST['method'] == 'export_filter' && $Config->CheckToken()) include 'timer/export.php';
 
 
 
