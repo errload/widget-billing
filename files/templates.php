@@ -130,6 +130,11 @@
     // поиск запущенных таймеров для меню
     if ($_POST['method'] == 'search_timers' && $Config->CheckToken()) include 'timer/search_timers.php';
 
+    /* ************************************************************** */
+
+    // выгрузка фильтра
+    if ($_POST['method'] == 'filter_events' && $Config->CheckToken()) include 'timer/filter_events.php';
+
 
 
 
