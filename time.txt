@@ -9,11 +9,3 @@
 10. 6 часов
 11. 1 час
 12. 2 часа
-
-
-start_timer => timer_start
-auto_stop_timer => timer_auto_stop
-pause_timer => timer_pause
-stop_timer => timer_stop
-save_timer => timer_save
-deposit_get => get_deposit

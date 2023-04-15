@@ -11,9 +11,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         this.timezone = AMOCRM.constant('account').timezone; // timezone AMO
         this.filter_date = null; // даты для фильтра
         this.filter_managers = []; // сотрудники для фильтра
-        this.filter_results = []; // результирующий массив для экспорта
-        this.filter_all_time = null; // общее время для экспорта
-        this.filter_all_sum = null; // общая сумма для экспорта
         this.price_manager = 0;
 
         // получаем настройки
@@ -62,13 +59,151 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             for (let i = 0; i < maxInterval; i++) clearInterval(i);
         }
 
-        // отступ снизу
-        this.marginBottom = function (modal) {
-            $(`.${ modal }`).append(`
-                <div style="position: relative; width: 100%;">
-                    <div style="width: 100%; height: 80px; position: absolute;"></div>
+        /*
+         *
+         * ****************************************** EXPORT ***********************************************************
+         *
+         */
+
+        // экспорт
+        const exportTimers = function (IDs) {
+            // модалка экспорта
+            new Modal({
+                class_name: 'modal__export__wrapper',
+                init: function ($modal_body) {
+                    var $this = $(this);
+                    $modal_body
+                        .trigger('modal:loaded')
+                        .html(`<div class="modal__export" style="width: 100%; min-height: 180px;"></div>`)
+                        .trigger('modal:centrify')
+                        .append('');
+                },
+                destroy: function () {}
+            });
+
+            // кнопки отменить и Экспорт
+            $('.modal__export').append(`
+                <div class="modal-export__header">
+                    <h3 class="modal-export__header-title">Экспорт</h3>
+                    <div class="modal-export__header-buttons">
+                        <button type="button" class="button-input button-cancel export__cancel__btn" tabindex="" style="">
+                            <span>Отменить</span>
+                        </button>
+                        <button type="button" class="button-input button-input_blue modal-export__create-button 
+                            export__export__btn" tabindex="">
+                            <span class="button-input-inner">
+                                <span class="button-input-inner__text">Экспорт</span>
+                            </span>
+                        </button>
+                    </div>
                 </div>
             `);
+
+            // картинки экспорта
+            $('.modal__export').append(`
+                <div class="modal-export__formats">
+                    <label class="modal-export__format" for="export_excel" style="cursor: auto;">
+                        <div class="modal-export__format-icon">
+                            <svg class="svg-icon svg-common--export--excel-dims">
+                                <use xlink:href="#common--export--excel"></use>
+                            </svg>
+                        </div>
+                        <div class="modal-export__format-content">
+                            <div class="modal-export__format-title">Excel</div>
+                            <div class="modal-export__format-text">Экспорт в файл формата Microsoft Excel</div>
+                        </div>
+                    </label>
+                </div>
+            `);
+
+            // кнопка отменить
+            $('.modal__export .export__cancel__btn').unbind('click');
+            $('.modal__export .export__cancel__btn').bind('click', function () {
+                $('.modal__export__wrapper').remove();
+            });
+
+            // кнопка экспорт
+            $('.modal__export .export__export__btn').bind('click', function () {
+                // отключаем кнопку
+                $(this).unbind('click');
+                // анимация выполнения кнопки
+                btnSpinner('.modal__export .export__export__btn');
+
+                // создаем excel файл на сервере
+                $.ajax({
+                    url: url_link_t,
+                    method: 'POST',
+                    data: {
+                        'domain': document.domain,
+                        'method': 'export_filter',
+                        'IDs': IDs
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        // очищаем окно экспорта
+                        if ($('.modal__export .modal-export__header').length) {
+                            $('.modal__export .modal-export__header').remove();
+                        }
+
+                        if ($('.modal__export .modal-export__formats').length) {
+                            $('.modal__export .modal-export__formats').remove();
+                        }
+
+                        // вставляем данные загрузки документа
+                        $('.modal__export').append(`
+                            <h2 class="modal-body__caption head_2">Экспорт завершен</h2>
+
+                            <div class="modal-export__last-file" style="
+                                display: flex; flex-direction: row; align-items: center;">
+                                <svg class="svg-icon svg-common--export--load-file-dims" style="width: 29px; height: 35px;">
+                                    <use xlink:href="#common--export--load-file"></use>
+                                </svg>
+                                <div class="modal-export__file-container" style="
+                                    display: flex; flex-direction: column; flex: 1 0; align-items: 
+                                    flex-start; margin-left: 8px;">
+                                    <div class="modal-export__file-info" style="
+                                        display: flex; width: 100%; justify-content: space-between;">
+                                        <a class="modal-export__file-name" download="export_timers.xlsx" 
+                                            href="https://integratorgroup.k-on.ru/andreev/billing/export_timers.xlsx">
+                                            export_timers.xlsx
+                                        </a>
+                                        <span class="modal-export__file-size"></span>
+                                    </div>
+                                    <span class="modal-export__file-time" style="margin-left: 8px;"></span>
+                                </div>
+                            </div>
+
+                            <div class="modal-body__actions">
+                                <a download="export_timers.xlsx" 
+                                    href="https://integratorgroup.k-on.ru/andreev/billing/export_timers.xlsx">
+                                    <button type="button" class="button-input button-input_blue modal-export__save-button" 
+                                        tabindex="">
+                                        <span class="button-input-inner ">
+                                            <svg class="svg-icon svg-common--export--download-dims">
+                                                <use xlink:href="#common--export--download"></use>
+                                            </svg>
+                                            <span class="button-input-inner__text">Скачать файл</span>
+                                        </span>
+                                    </button>
+                                </a>
+                            </div>
+                        `);
+
+                        $('.modal__export').css('min-height', '150px');
+
+                        // размер файла
+                        $('.modal-export__file-container .modal-export__file-size').text(`
+                            ${ data.filesize } / ${ data.count } строк
+                        `);
+
+                        // дата создания файла
+                        $('.modal-export__file-container .modal-export__file-time').text(`
+                            ${ data.date } в ${ data.time }
+                        `);
+                    },
+                    timeout: 2000
+                });
+            });
         }
 
         /*
@@ -262,6 +397,15 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
         }
 
+        // отступ снизу
+        const marginBottom = function (modal) {
+            $(`.${ modal }`).append(`
+                <div style="position: relative; width: 100%;">
+                    <div style="width: 100%; height: 80px; position: absolute;"></div>
+                </div>
+            `);
+        }
+
         // проверка авторизации
         const isAuth = function () {
             $.ajax({
@@ -402,7 +546,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             `);
 
             // отступ снизу
-            self.marginBottom('modal__timer');
+            marginBottom('modal__timer');
 
             // добавление таймера
             $('.modal__timer .link__add__timer').unbind('click');
@@ -511,7 +655,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         method: 'POST',
                         data: {
                             'domain': document.domain,
-                            'method': 'auto_stop_timer',
+                            'method': 'timer_auto_stop',
                             'timer_ID': timer_ID
                         },
                         dataType: 'json',
@@ -649,7 +793,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     method: 'POST',
                     data: {
                         'domain': document.domain,
-                        'method': 'start_timer',
+                        'method': 'timer_start',
                         'essence_ID': self.essense_ID,
                         'user_ID': self.user_ID,
                         'link_task': $(`.timer__item[data-id="${ timer_ID }"] .input__link__task`).val().trim(),
@@ -732,7 +876,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     method: 'POST',
                     data: {
                         'domain': document.domain,
-                        'method': 'pause_timer',
+                        'method': 'timer_pause',
                         'timer_ID': timer_ID
                     },
                     dataType: 'json',
@@ -769,7 +913,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     method: 'POST',
                     data: {
                         'domain': document.domain,
-                        'method': 'stop_timer',
+                        'method': 'timer_stop',
                         'timer_ID': timer_ID
                     },
                     dataType: 'json',
@@ -1110,7 +1254,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             `);
 
             // отступ снизу
-            self.marginBottom('modal__edit__serives');
+            marginBottom('modal__edit__serives');
             // обновление списка услуг
             updateServices();
         }
@@ -1265,7 +1409,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             method: 'POST',
                             data: {
                                 'domain': document.domain,
-                                'method': 'save_timer',
+                                'method': 'timer_save',
                                 'essence_ID': self.essense_ID,
                                 'timer_ID': timer_ID,
                                 'price_manager': self.price_manager,
@@ -1707,7 +1851,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // редактирование истории
                         editHistoryDetails(data.id);
                         // отступ снизу
-                        self.marginBottom('modal__details');
+                        marginBottom('modal__details');
                     }
                 },
                 timeout: 2000
@@ -1825,7 +1969,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 method: 'POST',
                 data: {
                     'domain': document.domain,
-                    'method': 'deposit_get',
+                    'method': 'get_deposit',
                     'essence_ID': self.essense_ID
                 },
                 dataType: 'json',
@@ -2196,9 +2340,24 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 </div>
             `);
 
+            // кнопка закрыть
+            $('.modal__history .hystory__cancel__btn').unbind('click');
             $('.modal__history .hystory__cancel__btn').bind('click', function (e) {
                 e.preventDefault();
                 $('.modal__history').remove();
+            });
+
+            // экспорт таймеров
+            $('.modal__history .export__link').unbind('click');
+            $('.modal__history .export__link').bind('click', function (e) {
+                e.preventDefault();
+                let IDs = [];
+
+                $.each($('.modal__history .history__details'), function () {
+                    IDs.push($(this).attr('data-id'));
+                });
+
+                exportTimers(IDs);
             });
 
             // получаем историю
@@ -2696,8 +2855,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             // обнуляем значения фильтра
             self.filter_date = null;
             self.filter_managers = [];
-            // обнуляем значения экспорта
-            self.filter_results = [];
 
             // удаляем окно фильтра
             $('.settings__search__filter .js-filter-sidebar.filter-search').remove();
@@ -2888,8 +3045,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 },
                 dataType: 'json',
                 success: function (data) {
-                    self.filter_results = data.results;
-
                     // показываем количество строк и очищаем прошлый результат
                     $('.list-top-search__summary-text').text(`${ data.results.length } событий`);
                     if ($('.list__table__holder').length) $('.list__table__holder').remove();
@@ -3293,9 +3448,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     // удаляем старый результат
                     if ($('.list__table__holder').length) $('.list__table__holder').remove();
 
-                    // обнуляем значения экспорта
-                    self.filter_results = [];
-
                     // иначе обнуляем значениe даты и делаем запрос в БД
                 } else {
                     self.filter_date = null;
@@ -3325,9 +3477,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     self.filter_managers = [];
                     // удаляем старый результат
                     if ($('.list__table__holder').length) $('.list__table__holder').remove();
-
-                    // обнуляем значения экспорта
-                    self.filter_results = [];
 
                     // иначе обнуляем массив менеджеров и делаем запрос в БД
                 } else {
@@ -3922,154 +4071,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             });
         }
 
-        // экспорт
-        const exportTimers = function () {
-            // модалка экспорта
-            new Modal({
-                class_name: 'modal__export__wrapper',
-                init: function ($modal_body) {
-                    var $this = $(this);
-                    $modal_body
-                        .trigger('modal:loaded')
-                        .html(`<div class="modal__export" style="width: 100%; min-height: 180px;"></div>`)
-                        .trigger('modal:centrify')
-                        .append('');
-                },
-                destroy: function () {}
-            });
-
-            // кнопки отменить и Экспорт
-            $('.modal__export').append(`
-                <div class="modal-export__header">
-                    <h3 class="modal-export__header-title">Экспорт</h3>
-                    <div class="modal-export__header-buttons">
-                        <button type="button" class="button-input button-cancel export__cancel__btn" tabindex="" style="">
-                            <span>Отменить</span>
-                        </button>
-                        <button type="button" class="button-input button-input_blue modal-export__create-button 
-                            export__export__btn" tabindex="">
-                            <span class="button-input-inner">
-                                <span class="button-input-inner__text">Экспорт</span>
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            `);
-
-            // картинки экспорта
-            $('.modal__export').append(`
-                <div class="modal-export__formats">
-                    <label class="modal-export__format" for="export_excel" style="cursor: auto;">
-                        <div class="modal-export__format-icon">
-                            <svg class="svg-icon svg-common--export--excel-dims">
-                                <use xlink:href="#common--export--excel"></use>
-                            </svg>
-                        </div>
-                        <div class="modal-export__format-content">
-                            <div class="modal-export__format-title">Excel</div>
-                            <div class="modal-export__format-text">Экспорт в файл формата Microsoft Excel</div>
-                        </div>
-                    </label>
-                </div>
-            `);
-
-            // кнопка отменить
-            $('.modal__export .export__cancel__btn').unbind('click');
-            $('.modal__export .export__cancel__btn').bind('click', function () {
-                $('.modal__export__wrapper').remove();
-            });
-
-            // кнопка экспорт
-            $('.modal__export .export__export__btn').bind('click', function () {
-                // отключаем кнопку
-                $(this).unbind('click');
-                // анимация выполнения кнопки
-                btnSpinner('.modal__export .export__export__btn');
-
-                // ID таймеров для экспорта
-                let IDs = [];
-
-                $.each($('.list-row.js-list-row.js-pager-list-item__1'), function () {
-                    if (!$(this).attr('data-id')) return;
-                    IDs.push($(this).attr('data-id'));
-                });
-
-                // создаем excel файл на сервере
-                $.ajax({
-                    url: url_link_t,
-                    method: 'POST',
-                    data: {
-                        'domain': document.domain,
-                        'method': 'export_filter',
-                        'IDs': IDs
-                    },
-                    dataType: 'json',
-                    success: function (data) {
-                        // очищаем окно экспорта
-                        if ($('.modal__export .modal-export__header').length) {
-                            $('.modal__export .modal-export__header').remove();
-                        }
-
-                        if ($('.modal__export .modal-export__formats').length) {
-                            $('.modal__export .modal-export__formats').remove();
-                        }
-
-                        // вставляем данные загрузки документа
-                        $('.modal__export').append(`
-                            <h2 class="modal-body__caption head_2">Экспорт завершен</h2>
-
-                            <div class="modal-export__last-file" style="
-                                display: flex; flex-direction: row; align-items: center;">
-                                <svg class="svg-icon svg-common--export--load-file-dims" style="width: 29px; height: 35px;">
-                                    <use xlink:href="#common--export--load-file"></use>
-                                </svg>
-                                <div class="modal-export__file-container" style="
-                                    display: flex; flex-direction: column; flex: 1 0; align-items: 
-                                    flex-start; margin-left: 8px;">
-                                    <div class="modal-export__file-info" style="
-                                        display: flex; width: 100%; justify-content: space-between;">
-                                        <a class="modal-export__file-name" download="export_timers.xlsx" 
-                                            href="https://integratorgroup.k-on.ru/andreev/billing/export_timers.xlsx">
-                                            export_timers.xlsx
-                                        </a>
-                                        <span class="modal-export__file-size"></span>
-                                    </div>
-                                    <span class="modal-export__file-time" style="margin-left: 8px;"></span>
-                                </div>
-                            </div>
-
-                            <div class="modal-body__actions">
-                                <a download="export_timers.xlsx" 
-                                    href="https://integratorgroup.k-on.ru/andreev/billing/export_timers.xlsx">
-                                    <button type="button" class="button-input button-input_blue modal-export__save-button" 
-                                        tabindex="">
-                                        <span class="button-input-inner ">
-                                            <svg class="svg-icon svg-common--export--download-dims">
-                                                <use xlink:href="#common--export--download"></use>
-                                            </svg>
-                                            <span class="button-input-inner__text">Скачать файл</span>
-                                        </span>
-                                    </button>
-                                </a>
-                            </div>
-                        `);
-
-                        $('.modal__export').css('min-height', '150px');
-
-                        // размер файла
-                        $('.modal-export__file-container .modal-export__file-size').text(`
-                            ${ data.filesize } / ${ data.count } строк
-                        `);
-
-                        // дата создания файла
-                        $('.modal-export__file-container .modal-export__file-time').text(`
-                            ${ data.date } в ${ data.time }
-                        `);
-                    },
-                    timeout: 2000
-                });
-            });
-        }
 
         // фильтр в разделе настроек
         this.advancedSettings = function () {
@@ -4197,38 +4198,16 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             // экспорт таймеров
             $('.settings__search .settings__search__menu #export').unbind('click');
             $('.settings__search .settings__search__menu #export').bind('click', function (e) {
-                exportTimers();
+                let IDs = [];
+
+                $.each($('.list-row.js-list-row.js-pager-list-item__1'), function () {
+                    if (!$(this).attr('data-id')) return;
+                    IDs.push($(this).attr('data-id'));
+                });
+
+                exportTimers(IDs);
             });
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /* ###################################################################### */
-
-
-
-
-
-
-
-
-
 
         this.callbacks = {
             settings: function() {
@@ -4276,7 +4255,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 // обнуляем значение фильтра при рендере
                 self.filter_date = null;
                 self.filter_managers = [];
-                self.filter_results = [];
 
                 return true;
             },

@@ -84,15 +84,15 @@
     // отображение запущенных таймеров, или нового
     if ($_POST['method'] == 'get_timers' && $Config->CheckToken()) include 'timer/get_timers.php';
     // старт таймера
-    if ($_POST['method'] == 'start_timer' && $Config->CheckToken()) include 'timer/timer_start.php';
+    if ($_POST['method'] == 'timer_start' && $Config->CheckToken()) include 'timer/timer_start.php';
     // авто стоп таймера
-    if ($_POST['method'] == 'auto_stop_timer' && $Config->CheckToken()) include 'timer/timer_auto_stop.php';
+    if ($_POST['method'] == 'timer_auto_stop' && $Config->CheckToken()) include 'timer/timer_auto_stop.php';
     // пауза таймера
-    if ($_POST['method'] == 'pause_timer' && $Config->CheckToken()) include 'timer/timer_pause.php';
+    if ($_POST['method'] == 'timer_pause' && $Config->CheckToken()) include 'timer/timer_pause.php';
     // стоп таймера
-    if ($_POST['method'] == 'stop_timer' && $Config->CheckToken()) include 'timer/timer_stop.php';
+    if ($_POST['method'] == 'timer_stop' && $Config->CheckToken()) include 'timer/timer_stop.php';
     // сохранение таймера
-    if ($_POST['method'] == 'save_timer' && $Config->CheckToken()) include 'timer/timer_save.php';
+    if ($_POST['method'] == 'timer_save' && $Config->CheckToken()) include 'timer/timer_save.php';
 
     /* ************************************************************** */
 
@@ -106,7 +106,7 @@
     /* ************************************************************** */
 
     // получаем депозит
-    if ($_POST['method'] == 'deposit_get' && $Config->CheckToken()) include 'timer/get_deposit.php';
+    if ($_POST['method'] == 'get_deposit' && $Config->CheckToken()) include 'timer/get_deposit.php';
     // обновляем депозит
     if ($_POST['method'] == 'update_deposit' && $Config->CheckToken()) include 'timer/update_deposit.php';
 
