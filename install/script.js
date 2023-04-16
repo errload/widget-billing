@@ -135,7 +135,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     method: 'POST',
                     data: {
                         'domain': document.domain,
-                        'method': 'export_filter',
+                        'method': 'export',
                         'IDs': IDs
                     },
                     dataType: 'json',
@@ -404,31 +404,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     <div style="width: 100%; height: 80px; position: absolute;"></div>
                 </div>
             `);
-        }
-
-        // проверка авторизации
-        const isAuth = function () {
-            $.ajax({
-                url: url_link_t,
-                method: 'POST',
-                data: {
-                    'domain': document.domain,
-                    'method': 'is_auth'
-                },
-                dataType: 'html',
-                success: function (data) {
-                    if (!data) {
-                        $('.hystory__link').css('display', 'none');
-                        $('.modal__timer .modal__body__caption').after(`
-                            <div class="not__auth" style="
-                                display: flex; align-items: center; justify-content: center; height: 150px;">
-                                Виджет не авторизован<br/>
-                            </div>
-                        `);
-                    }
-                },
-                timeout: 2000
-            });
         }
 
         // ссылка на проект
@@ -2376,6 +2351,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             $('.billing__link').unbind('click');
             $('.billing__link').bind('click', function (e) {
                 e.preventDefault();
+
                 let interval, services = [], rights = null;
 
                 self.getConfigSettings(); // получение настроек
@@ -2388,7 +2364,6 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 self.clearIntervals(); // очищаем интервалы
                 getTimersInfo(); // перезапускаем таймеры в меню
                 timerOpen(); // запуск модалки таймера
-                isAuth(); // проверка авторизации
 
                 // ссылка истории и кнопка закрыть
                 let timer_close_btn = Twig({ ref: '/tmpl/controls/cancel_button.twig' }).render({
@@ -4248,8 +4223,23 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             render: function() {
                 // ссылка на запуск таймера
                 if ((AMOCRM.getBaseEntity() === 'customers' || AMOCRM.getBaseEntity() === 'leads') && AMOCRM.isCard()) {
-                    getTimersInfo(); // отображаем таймер в меню
-                    modalTimer(); // запускаем модалку с таймером
+                    // отображаем таймер, если виджет авторизован
+                    $.ajax({
+                        url: url_link_t,
+                        method: 'POST',
+                        data: {
+                            'domain': document.domain,
+                            'method': 'is_auth'
+                        },
+                        dataType: 'html',
+                        success: function (data) {
+                            if (data) {
+                                getTimersInfo(); // показываем таймер справа в меню
+                                modalTimer(); // запускаем работу таймера
+                            }
+                        },
+                        timeout: 2000
+                    });
                 }
 
                 // обнуляем значение фильтра при рендере

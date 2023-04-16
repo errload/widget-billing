@@ -63,8 +63,8 @@
 
     // проверка авторизации для запуска таймера
     if ($_POST['method'] == 'is_auth') {
-        if ($Config->CheckToken()) echo json_encode(true);
-        else echo json_encode(false);
+        if ($Config->CheckToken()) echo json_encode('true');
+        else echo json_encode('false');
     }
 
     /* ########################################################################################################## */
@@ -129,5 +129,8 @@
 
     // выгрузка фильтра
     if ($_POST['method'] == 'filter_events' && $Config->CheckToken()) include 'timer/filter_events.php';
+
+    /* ************************************************************** */
+
     // экспорт фильтра
-    if ($_POST['method'] == 'export_filter' && $Config->CheckToken()) include 'timer/export.php';
+    if ($_POST['method'] == 'export' && $Config->CheckToken()) include 'timer/export.php';
