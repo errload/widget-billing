@@ -2409,19 +2409,19 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
         const accessRight = function () {
             self.getConfigSettings();
 
-            // покупатели
-            $('.widget_settings_block__controls').before(`
-                <div class="widget_settings_block__item_field customers__wrapper" style="margin-top: 10px;"></div>
-            `);
-
             // список полей покупателей
-            const getCustomers = function (url) {
-                let customers = [];
-                customers.push({ option: 'Выберите поле' });
-
+            const getCustomersAndManagers = function (url) {
                 $.ajax({
                     url: url,
                     success: function (data) {
+                        // покупатели
+                        $('.widget_settings_block__controls').before(`
+                            <div class="widget_settings_block__item_field customers__wrapper" style="margin-top: 10px;"></div>
+                        `);
+
+                        let customers = [];
+                        customers.push({ option: 'Выберите поле' });
+
                         $.each(data._embedded.custom_fields, function () {
                             customers.push({ id: this.id, option: this.name });
                         });
@@ -2475,122 +2475,122 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 self.saveConfigSettings();
                             });
                         }
+
+                        // список активных пользователей
+                        let managers = [], checkbox;
+                        managers.push({ option: 'Выберите пользователя' });
+
+                        $.each(AMOCRM.constant('managers'), function () {
+                            if (!this.active) return;
+                            managers.push({ id: this.id, option: this.title });
+                        });
+
+                        let select_managers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                            items: managers,
+                            class_name: 'select__managers'
+                        });
+
+                        $('.widget_settings_block__controls').before(`
+                            <div class="widget_settings_block__item_field managers__wrapper" style="margin-top: 10px;">
+                                <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
+                                    Настройка прав пользователей:
+                                </div>
+                                <div class="widget_settings_block__input_field" style="width: 100%;">
+                                    ${ select_managers }
+                                </div>
+                            </div>
+                        `);
+
+                        $('.managers__wrapper .select__managers .control--select--button').css('width', '100%');
+                        $('.managers__wrapper .select__managers ul').css({
+                            'margin-left': '13px',
+                            'width': '100%',
+                            'min-width': $('.managers__wrapper').outerWidth() - 13
+                        });
+
+                        // выбор пользователя
+                        $('.managers__wrapper .select__managers ul li').unbind('click');
+                        $('.managers__wrapper .select__managers ul li').bind('click', function () {
+                            let manager_ID = $(this).attr('data-value');
+
+                            // очищаем перед запуском чекбоксы
+                            $('.rights__wrapper').remove();
+                            if ($(this).find('span').text() === 'Выберите пользователя') return;
+
+                            // ддобавление чекбокса
+                            const addRightsCheckox = function (value, data_value) {
+                                let rights_checkox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
+                                    class_name: 'rights__checkox',
+                                    checked: false,
+                                    value: value,
+                                    input_class_name: 'rights__checkox__item',
+                                    name: 'rights-checkox',
+                                    text: value,
+                                    dataValue: data_value
+                                });
+
+                                return rights_checkox;
+                            }
+
+                            $('.widget_settings_block__controls').before(`
+                                <div class="rights__wrapper" style="width: 100%; margin-top: 10px;"></div>
+                            `);
+
+                            // ссылка в сущности
+                            $('.rights__wrapper').append(addRightsCheckox('Редактирование ссылки в сущности', 'is_edit_link'));
+                            // редактировать список услуг
+                            $('.rights__wrapper').append(addRightsCheckox('Редактирование списка в форме на выбор услуги', 'is_edit_services'));
+                            // просмотр истории
+                            $('.rights__wrapper').append(addRightsCheckox('Просмотр истории выполненных задач в сущности', 'is_show_history'));
+                            // редактирование истории
+                            $('.rights__wrapper').append(addRightsCheckox('Редактирование истории', 'is_edit_history'));
+                            // редактирование депозита
+                            $('.rights__wrapper').append(addRightsCheckox('Редактирование депозита', 'is_edit_deposit'));
+
+                            // выравниваем чекбоксы
+                            $('.rights__wrapper .rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
+
+                            // если ранее были отмечены, отображаем
+                            if (self.config_settings.rights) {
+                                $.each(self.config_settings.rights, function (key, value) {
+                                    if (key !== manager_ID) return;
+                                    let rights = self.config_settings.rights[manager_ID];
+
+                                    $.each($('.rights__wrapper .rights__checkox'), function () {
+                                        let value = $(this).find('.rights__checkox__item').attr('data-value');
+
+                                        if (rights.includes(value)) {
+                                            $(this).addClass('is-checked');
+                                            $(this).trigger('click');
+                                        }
+                                    });
+                                });
+                            }
+
+                            // обновляем права пользователя
+                            $('.rights__wrapper .rights__checkox').unbind('change');
+                            $('.rights__wrapper .rights__checkox').bind('change', function () {
+                                // если ранее не был отмечен, создаем
+                                if (!self.config_settings.rights) self.config_settings.rights = {};
+                                let rights = [];
+
+                                // обновляем список выбранных вариантов
+                                $.each($('.rights__wrapper .rights__checkox'), function () {
+                                    if ($(this).hasClass('is-checked')) rights.push(
+                                        $(this).find('.rights__checkox__item').attr('data-value')
+                                    );
+                                });
+
+                                self.config_settings.rights[manager_ID] = rights;
+                                self.saveConfigSettings();
+                            });
+                        });
                     },
                     timeout: 5000
                 });
             }
 
-            getCustomers('/api/v4/customers/custom_fields?limit=50');
-
-            // список активных пользователей
-            let managers = [], checkbox;
-            managers.push({ option: 'Выберите пользователя' });
-
-            $.each(AMOCRM.constant('managers'), function () {
-                if (!this.active) return;
-                managers.push({ id: this.id, option: this.title });
-            });
-
-            let select_managers = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-                items: managers,
-                class_name: 'select__managers'
-            });
-
-            $('.widget_settings_block__controls').before(`
-                <div class="widget_settings_block__item_field managers__wrapper" style="margin-top: 10px;">
-                    <div class="widget_settings_block__title_field" title="" style="margin-bottom: 3px;">
-                        Настройка прав пользователей:
-                    </div>
-                    <div class="widget_settings_block__input_field" style="width: 100%;">
-                        ${ select_managers }
-                    </div>
-                </div>
-            `);
-
-            $('.managers__wrapper .select__managers .control--select--button').css('width', '100%');
-            $('.managers__wrapper .select__managers ul').css({
-                'margin-left': '13px',
-                'width': '100%',
-                'min-width': $('.managers__wrapper').outerWidth() - 13
-            });
-
-            // выбор пользователя
-            $('.managers__wrapper .select__managers ul li').unbind('click');
-            $('.managers__wrapper .select__managers ul li').bind('click', function () {
-                let manager_ID = $(this).attr('data-value');
-
-                // очищаем перед запуском чекбоксы
-                $('.rights__wrapper').remove();
-                if ($(this).find('span').text() === 'Выберите пользователя') return;
-
-                // ддобавление чекбокса
-                const addRightsCheckox = function (value, data_value) {
-                    let rights_checkox = Twig({ ref: '/tmpl/controls/checkbox.twig' }).render({
-                        class_name: 'rights__checkox',
-                        checked: false,
-                        value: value,
-                        input_class_name: 'rights__checkox__item',
-                        name: 'rights-checkox',
-                        text: value,
-                        dataValue: data_value
-                    });
-
-                    return rights_checkox;
-                }
-
-                $('.widget_settings_block__controls').before(`
-                    <div class="rights__wrapper" style="width: 100%; margin-top: 10px;"></div>
-                `);
-
-                // ссылка в сущности
-                $('.rights__wrapper').append(addRightsCheckox('Редактирование ссылки в сущности', 'is_edit_link'));
-                // редактировать список услуг
-                $('.rights__wrapper').append(addRightsCheckox('Редактирование списка в форме на выбор услуги', 'is_edit_services'));
-                // просмотр истории
-                $('.rights__wrapper').append(addRightsCheckox('Просмотр истории выполненных задач в сущности', 'is_show_history'));
-                // редактирование истории
-                $('.rights__wrapper').append(addRightsCheckox('Редактирование истории', 'is_edit_history'));
-                // редактирование депозита
-                $('.rights__wrapper').append(addRightsCheckox('Редактирование депозита', 'is_edit_deposit'));
-
-                // выравниваем чекбоксы
-                $('.rights__wrapper .rights__checkox').css({ 'width': '100%', 'margin-top': '3px' });
-
-                // если ранее были отмечены, отображаем
-                if (self.config_settings.rights) {
-                    $.each(self.config_settings.rights, function (key, value) {
-                        if (key !== manager_ID) return;
-                        let rights = self.config_settings.rights[manager_ID];
-
-                        $.each($('.rights__wrapper .rights__checkox'), function () {
-                            let value = $(this).find('.rights__checkox__item').attr('data-value');
-
-                            if (rights.includes(value)) {
-                                $(this).addClass('is-checked');
-                                $(this).trigger('click');
-                            }
-                        });
-                    });
-                }
-
-                // обновляем права пользователя
-                $('.rights__wrapper .rights__checkox').unbind('change');
-                $('.rights__wrapper .rights__checkox').bind('change', function () {
-                    // если ранее не был отмечен, создаем
-                    if (!self.config_settings.rights) self.config_settings.rights = {};
-                    let rights = [];
-
-                    // обновляем список выбранных вариантов
-                    $.each($('.rights__wrapper .rights__checkox'), function () {
-                        if ($(this).hasClass('is-checked')) rights.push(
-                            $(this).find('.rights__checkox__item').attr('data-value')
-                        );
-                    });
-
-                    self.config_settings.rights[manager_ID] = rights;
-                    self.saveConfigSettings();
-                });
-            });
+            getCustomersAndManagers('/api/v4/customers/custom_fields?limit=50');
         }
 
         /*
