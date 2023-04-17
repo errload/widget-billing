@@ -1759,7 +1759,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 $('.modal__details .client__details__item').text(data.client);
                                 $('.modal__details .service__details__item').text(data.service);
                                 $('.modal__details .comment__details__item').text(data.comment);
-                                $('.modal__details .price__details__item').text(data.price);
+                                $('.modal__details .price__details__item').text(`${ data.price } р.`);
                                 $('.modal__details .link__task__details__item').text(data.link_task);
                                 $('.modal__details .time__work__details__item').text(data.time_work);
                                 // прайс в истории
@@ -1860,7 +1860,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     addHistoryItem('Имя клиента', data.client, 'client__details__item');
                     addHistoryItem('Оказанная услуга', data.service, 'service__details__item');
                     addHistoryItem('Комментарий', data.comment, 'comment__details__item');
-                    addHistoryItem('Стоимость работы', data.price + 'р.', 'price__details__item');
+                    addHistoryItem('Стоимость работы', data.price + ' р.', 'price__details__item');
                     addHistoryItem(
                         'Ссылка на задачу',
                         `

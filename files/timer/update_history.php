@@ -41,15 +41,21 @@
     $minutes = null;
 
     // если есть разница во времени
+    $price = $_POST['price'];
+
     if ($new_time !== $old_time) {
         if ($new_time > $old_time) {
             // отнимаем от депозита время в минутах * на стоимость сотрудника
             $minutes = round(abs($new_time - $old_time) / 60);
             $deposit = $deposit - ($minutes * (int) $_POST['price_manager']);
+            // прибавляем к стоимости новую стоимость в минутах
+            $price += $minutes * (int) $_POST['price_manager'];
         } else {
             // прибавляем к депозиту время в минутах * на стоимость сотрудника
             $minutes = round(abs($old_time - $new_time) / 60);
             $deposit = $deposit + ($minutes * (int) $_POST['price_manager']);
+            // отнимаем от стоимости новую стоимость в минутах
+            $price -= $minutes * (int) $_POST['price_manager'];
         }
     }
 
@@ -65,7 +71,7 @@
             service = "' . $_POST['service'] . '",
             comment = "' . $comment . '",
             link_task = "' . $_POST['link_task'] . '",
-            price = "' . $_POST['price'] . '",
+            price = "' . $price . '",
             time_work = "' . $_POST['time_work'] . '",
             is_change_time = "' . $is_change_time . '"
         WHERE id = "' . $_POST['history_ID'] . '"
