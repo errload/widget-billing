@@ -1733,7 +1733,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 'user': user.val().trim(),
                                 'client': client.val().trim(),
                                 'service': service.val().trim(),
-                                'price': price.val().trim().trim(),
+                                'price': price.val().trim(),
                                 'link_task': link_task.val().trim(),
                                 'time_work': time_work.val().trim(),
                                 'comment': comment.val().trim(),
