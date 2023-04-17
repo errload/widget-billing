@@ -41,7 +41,7 @@
     $minutes = null;
 
     // если есть разница во времени
-    $price = $_POST['price'];
+    $price = (int) $_POST['price'];
 
     if ($new_time !== $old_time) {
         if ($new_time > $old_time) {
