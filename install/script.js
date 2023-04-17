@@ -365,8 +365,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             }, 1000);
                         }
                     });
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -445,8 +444,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.modal__timer .edit__link__project').unbind('click');
                         $('.modal__timer .edit__link__project').bind('click', editLinkProject);
                     }
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -504,8 +502,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     // редактирование ссылки на проект
                     $('.modal__timer .edit__link__project').unbind('click');
                     $('.modal__timer .edit__link__project').bind('click', editLinkProject);
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -602,8 +599,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             }
                         });
                     }
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -633,8 +629,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             'timer_ID': timer_ID
                         },
                         dataType: 'json',
-                        success: function (data) {},
-                        timeout: 2000
+                        success: function (data) {}
                     });
 
                     // событие на кнопку завершения
@@ -823,8 +818,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         startInterval(date, data.id);
                         // перезапускаем таймеры в меню
                         getTimersInfo();
-                    },
-                    timeout: 2000
+                    }
                 });
             });
         }
@@ -857,8 +851,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     success: function (data) {
                         // перезапускаем таймеры в меню
                         getTimersInfo();
-                    },
-                    timeout: 2000
+                    }
                 });
             });
         }
@@ -894,8 +887,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     success: function (data) {
                         // перезапускаем таймеры в меню
                         getTimersInfo();
-                    },
-                    timeout: 2000
+                    }
                 });
 
                 // событие на кнопку завершения
@@ -1058,16 +1050,14 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                                     // если последний элемент, добавляем контакты в селект
                                     if (count === contacts_length) addClients(clients);
-                                },
-                                timeout: 2000
+                                }
                             });
                         });
 
                         // иначе отображаем селект без контактов
                     } else addClients(clients);
 
-                },
-                timeout: 2000
+                }
             });
 
             /* поиск контактов на сервере */
@@ -1119,8 +1109,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
             //                 $('.modal__finish .input__client__name').focus();
             //             }
             //         });
-            //     },
-            //     timeout: 2000
+            //     }
             // });
         }
 
@@ -1188,8 +1177,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.modal__finish .edit__services__btn').bind('click', function () {
                         editSerives(services);
                     });
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -1338,8 +1326,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         getServices();
                         // закрываем редактирование списка услуг
                         $('.modal__edit__serives__wrapper').remove();
-                    },
-                    timeout: 2000
+                    }
                 });
             });
         }
@@ -1473,8 +1460,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             success: function (data) {
                                 // перезапускаем таймеры в меню
                                 getTimersInfo();
-                            },
-                            timeout: 2000
+                            }
                         });
 
                         // пауза для эффекта сохранения
@@ -1489,8 +1475,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             // обновляем прайс сотрудника
                             self.price_manager = 0;
                         }, '1500');
-                    },
-                    timeout: 2000
+                    }
                 });
             });
         }
@@ -1790,13 +1775,11 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                                 // обновляем значение депозита
                                 getDeposit();
-                            },
-                            timeout: 2000
+                            }
                         });
 
                         self.price_manager = 0;
-                    },
-                    timeout: 2000
+                    }
                 });
             });
         }
@@ -1903,8 +1886,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         // отступ снизу
                         marginBottom('modal__details');
                     }
-                },
-                timeout: 2000
+                }
             });
 
             // кнопка закрыть
@@ -1971,8 +1953,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         getHistoryResultsSum(IDs);
                         getHistoryConsumptionSum(IDs);
                     }
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -1989,8 +1970,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 dataType: 'json',
                 success: function (data) {
                     $('.modal__history .itogo .results__sum__int').text(data);
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -2007,8 +1987,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 dataType: 'json',
                 success: function (data) {
                     $('.modal__history .itogo .consumption__sum__int').text(data);
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -2023,8 +2002,9 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     'essence_ID': self.essense_ID
                 },
                 dataType: 'json',
-                success: function (data) { $('.deposit__wrapper .deposit .deposit__sum__int').text(data) },
-                timeout: 2000
+                success: function (data) {
+                    $('.deposit__wrapper .deposit .deposit__sum__int').text(data)
+                }
             });
         }
 
@@ -2123,8 +2103,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                             getDeposit();
                             // закрываем окно
                             $('.modal__edit__deposit__wrapper').remove();
-                        },
-                        timeout: 2000
+                        }
                     });
                 }
 
@@ -2280,8 +2259,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
 
                         // закрываем окно
                         $('.modal__filter__wrapper').remove();
-                    },
-                    timeout: 2000
+                    }
                 });
             });
         }
@@ -2660,8 +2638,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 self.saveConfigSettings();
                             });
                         });
-                    },
-                    timeout: 5000
+                    }
                 });
             }
 
@@ -3298,8 +3275,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     $('.list-row__cell.list-row__cell-template-event_object').bind('click', function (e) {
                         e.stopPropagation();
                     });
-                },
-                timeout: 2000
+                }
             });
         }
 
@@ -4312,8 +4288,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                                 getTimersInfo(); // показываем таймер справа в меню
                                 modalTimer(); // запускаем работу таймера
                             }
-                        },
-                        timeout: 2000
+                        }
                     });
                 }
 
