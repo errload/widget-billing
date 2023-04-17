@@ -200,8 +200,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                         $('.modal-export__file-container .modal-export__file-time').text(`
                             ${ data.date } в ${ data.time }
                         `);
-                    },
-                    timeout: 2000
+                    }
                 });
             });
         }
@@ -1619,7 +1618,7 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                     value: '', placeholder: 'введите стоимость работы'
                 });
 
-                title = $('.modal__details .price__details__item').text().trim().split('р.')[0];
+                title = $('.modal__details .price__details__item').text().trim().split('р.')[0].trim();
                 $('.modal__details .price__details__item').text('');
                 $('.modal__details .price__details__item').append(input_price_details_item);
                 $('.modal__details .input__price__details__item').val(title);
