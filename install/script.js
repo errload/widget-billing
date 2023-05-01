@@ -987,130 +987,132 @@ define(['jquery', 'underscore', 'twigjs', 'lib/components/base/modal'], function
                 </div>
             `);
 
-            const addClients = function (clients) {
-                clients.push({ id: 'my_option', option: 'Добавить свой вариант' });
-                // селект с клиентами
-                let select_clients = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-                    items: clients,
-                    class_name: 'select__clients'
-                });
+            // const addClients = function (clients) {
+            //     clients.push({ id: 'my_option', option: 'Добавить свой вариант' });
+            //     // селект с клиентами
+            //     let select_clients = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+            //         items: clients,
+            //         class_name: 'select__clients'
+            //     });
+            //
+            //     $('.modal__finish .clients__wrapper').append(select_clients);
+            //     $('.modal__finish .select__clients').css('margin-top', '3px');
+            //     $('.modal__finish .select__clients .control--select--button').css('width', '100%');
+            //     $('.modal__finish .select__clients ul').css({
+            //         'margin-left': '13px',
+            //         'width': 'auto',
+            //         'min-width': $('.modal__finish').outerWidth() - 13
+            //     });
+            //
+            //     // выбор клиента
+            //     $('.modal__finish .select__clients ul li').unbind('click');
+            //     $('.modal__finish .select__clients ul li').bind('click', function () {
+            //         // если выбор варианта, вставляем поле ввода
+            //         if ($(this).find('.control--select--list--item-inner').text().trim() === 'Добавить свой вариант') {
+            //             let input_client_name = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+            //                 name: 'input-client-name',
+            //                 class_name: 'input__client__name',
+            //                 value: '',
+            //                 placeholder: 'введите имя клиента'
+            //             });
+            //
+            //             // меняем селект на поле ввода
+            //             $('.modal__finish .clients__wrapper span').after(input_client_name);
+            //             $('.modal__finish .input__client__name').css({ 'width': '100%', 'margin-top': '3px' });
+            //             $('.modal__finish .select__clients').remove();
+            //             $('.modal__finish .input__client__name').focus();
+            //         }
+            //     });
+            // }
+            //
+            // // поиск цены контактов сущности
+            // if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID + '?with=contacts';
+            // if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID + '?with=contacts';
+            //
+            // $.ajax({
+            //     url: entity_url,
+            //     method: 'GET',
+            //     success: function (data) {
+            //         let clients = [];
+            //         clients.push({ id: 'null', option: 'Выберите клиента' });
+            //
+            //         if (data._embedded.contacts.length) {
+            //             let count = 0;
+            //             let contacts_length = data._embedded.contacts.length;
+            //
+            //             $.each(data._embedded.contacts, function () {
+            //                 $.ajax({
+            //                     url: '/api/v4/contacts/' + this.id,
+            //                     method: 'GET',
+            //                     success: function (data) {
+            //                         clients.push({ id: data.id, option: data.name });
+            //                         count++;
+            //
+            //                         // если последний элемент, добавляем контакты в селект
+            //                         if (count === contacts_length) addClients(clients);
+            //                     }
+            //                 });
+            //             });
+            //
+            //             // иначе отображаем селект без контактов
+            //         } else addClients(clients);
+            //
+            //     }
+            // });
 
-                $('.modal__finish .clients__wrapper').append(select_clients);
-                $('.modal__finish .select__clients').css('margin-top', '3px');
-                $('.modal__finish .select__clients .control--select--button').css('width', '100%');
-                $('.modal__finish .select__clients ul').css({
-                    'margin-left': '13px',
-                    'width': 'auto',
-                    'min-width': $('.modal__finish').outerWidth() - 13
-                });
-
-                // выбор клиента
-                $('.modal__finish .select__clients ul li').unbind('click');
-                $('.modal__finish .select__clients ul li').bind('click', function () {
-                    // если выбор варианта, вставляем поле ввода
-                    if ($(this).find('.control--select--list--item-inner').text().trim() === 'Добавить свой вариант') {
-                        let input_client_name = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-                            name: 'input-client-name',
-                            class_name: 'input__client__name',
-                            value: '',
-                            placeholder: 'введите имя клиента'
-                        });
-
-                        // меняем селект на поле ввода
-                        $('.modal__finish .clients__wrapper span').after(input_client_name);
-                        $('.modal__finish .input__client__name').css({ 'width': '100%', 'margin-top': '3px' });
-                        $('.modal__finish .select__clients').remove();
-                        $('.modal__finish .input__client__name').focus();
-                    }
-                });
-            }
-
-            // поиск цены контактов сущности
-            if (AMOCRM.getBaseEntity() === 'leads') entity_url = '/api/v4/leads/' + entity_ID + '?with=contacts';
-            if (AMOCRM.getBaseEntity() === 'customers') entity_url = '/api/v4/customers/' + entity_ID + '?with=contacts';
-
+            /* поиск контактов на сервере */
             $.ajax({
-                url: entity_url,
-                method: 'GET',
+                url: url_link_t,
+                method: 'POST',
+                data: {
+                    'domain': document.domain,
+                    'method': 'get_clients',
+                    'essence_ID': self.essense_ID
+                },
+                dataType: 'json',
                 success: function (data) {
                     let clients = [];
                     clients.push({ id: 'null', option: 'Выберите клиента' });
 
-                    if (data._embedded.contacts.length) {
-                        let count = 0;
-                        let contacts_length = data._embedded.contacts.length;
+                    $.each(data, function () { clients.push({ id: this[0], option: this[1] }) });
+                    clients.push({ id: 'my_option', option: 'Добавить свой вариант' });
 
-                        $.each(data._embedded.contacts, function () {
-                            $.ajax({
-                                url: '/api/v4/contacts/' + this.id,
-                                method: 'GET',
-                                success: function (data) {
-                                    clients.push({ id: data.id, option: data.name });
-                                    count++;
+                    // селект с клиентами
+                    let select_clients = Twig({ ref: '/tmpl/controls/select.twig' }).render({
+                        items: clients,
+                        class_name: 'select__clients'
+                    });
 
-                                    // если последний элемент, добавляем контакты в селект
-                                    if (count === contacts_length) addClients(clients);
-                                }
+                    $('.modal__finish .clients__wrapper').append(select_clients);
+                    $('.modal__finish .select__clients').css('margin-top', '3px');
+                    $('.modal__finish .select__clients .control--select--button').css('width', '100%');
+                    $('.modal__finish .select__clients ul').css({
+                        'margin-left': '13px',
+                        'width': 'auto',
+                        'min-width': $('.modal__finish').outerWidth() - 13
+                    });
+
+                    // выбор клиента
+                    $('.modal__finish .select__clients ul li').unbind('click');
+                    $('.modal__finish .select__clients ul li').bind('click', function () {
+                        // если выбор варианта, вставляем поле ввода
+                        if ($(this).find('.control--select--list--item-inner').text().trim() === 'Добавить свой вариант') {
+                            let input_client_name = Twig({ ref: '/tmpl/controls/input.twig' }).render({
+                                name: 'input-client-name',
+                                class_name: 'input__client__name',
+                                value: '',
+                                placeholder: 'введите имя клиента'
                             });
-                        });
 
-                        // иначе отображаем селект без контактов
-                    } else addClients(clients);
-
+                            // меняем селект на поле ввода
+                            $('.modal__finish .clients__wrapper span').after(input_client_name);
+                            $('.modal__finish .input__client__name').css({ 'width': '100%', 'margin-top': '3px' });
+                            $('.modal__finish .select__clients').remove();
+                            $('.modal__finish .input__client__name').focus();
+                        }
+                    });
                 }
             });
-
-            /* поиск контактов на сервере */
-
-            // $.ajax({
-            //     url: url_link_t,
-            //     method: 'POST',
-            //     data: {
-            //         'domain': document.domain,
-            //         'method': 'get_clients',
-            //         'essence_ID': self.essense_ID
-            //     },
-            //     dataType: 'json',
-            //     success: function (data) {
-            //         $.each(data, function () { clients.push({ id: this[0], option: this[1] }) });
-            //         clients.push({ id: 'my_option', option: 'Добавить свой вариант' });
-            //
-            //         // селект с клиентами
-            //         let select_clients = Twig({ ref: '/tmpl/controls/select.twig' }).render({
-            //             items: clients,
-            //             class_name: 'select__clients'
-            //         });
-            //
-            //         $('.modal__finish .clients__wrapper').append(select_clients);
-            //         $('.modal__finish .select__clients').css('margin-top', '3px');
-            //         $('.modal__finish .select__clients .control--select--button').css('width', '100%');
-            //         $('.modal__finish .select__clients ul').css({
-            //             'margin-left': '13px',
-            //             'width': 'auto',
-            //             'min-width': $('.modal__finish').outerWidth() - 13
-            //         });
-            //
-            //         // выбор клиента
-            //         $('.modal__finish .select__clients ul li').unbind('click');
-            //         $('.modal__finish .select__clients ul li').bind('click', function () {
-            //             // если выбор варианта, вставляем поле ввода
-            //             if ($(this).find('.control--select--list--item-inner').text().trim() === 'Добавить свой вариант') {
-            //                 let input_client_name = Twig({ ref: '/tmpl/controls/input.twig' }).render({
-            //                     name: 'input-client-name',
-            //                     class_name: 'input__client__name',
-            //                     value: '',
-            //                     placeholder: 'введите имя клиента'
-            //                 });
-            //
-            //                 // меняем селект на поле ввода
-            //                 $('.modal__finish .clients__wrapper span').after(input_client_name);
-            //                 $('.modal__finish .input__client__name').css({ 'width': '100%', 'margin-top': '3px' });
-            //                 $('.modal__finish .select__clients').remove();
-            //                 $('.modal__finish .input__client__name').focus();
-            //             }
-            //         });
-            //     }
-            // });
         }
 
         // список услуг
